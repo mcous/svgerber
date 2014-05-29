@@ -6,11 +6,10 @@
 #   alert 'file api is no'
 
 # read a file to a div
-readFile = (event) ->
+readFileToDiv = (event) ->
   if event.target.readyState == FileReader.DONE
-    textFile = event.target
     textDiv = document.createElement 'p'
-    textDiv.innerHTML = textFile.result
+    textDiv.innerHTML = event.target.result
     document.getElementById('file-contents').insertBefore(textDiv, null)
 
 # take care of a file event
@@ -22,16 +21,16 @@ handleFileSelect = (event) ->
   # add some html to the output
   for f in importFiles
     output.push '<li><strong>', escape(f.name), '</li>'
-    #reader.readAsText(f)
 
   # append the file names to the HTML
   document.getElementById('list').innerHTML = '<ul>' + output.join('') + '</ul>'
 
-  for fi in importFiles
+  # read the uploaded files to a div
+  for f in importFiles
     # file reader with onload event attached
     reader = new FileReader()
-    reader.addEventListener('loadend', readFile, false)
-    reader.readAsText(fi)
+    reader.addEventListener('loadend', readFileToDiv, false)
+    reader.readAsText(f)
 
 # attach the event listener
 document.getElementById('files').addEventListener('change', handleFileSelect, false)
