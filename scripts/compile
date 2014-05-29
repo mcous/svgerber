@@ -12,3 +12,5 @@ jade --pretty jade/index.jade --out .
 
 
 # compile coffeescript
+cd ${DIR}/..
+coffee  --map --output js --compile coffee/*

@@ -4,6 +4,7 @@
 # get script directory
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-# watch jade
+# watch jade and coffee script
 cd ${DIR}/..
-exec jade --pretty --watch jade/index.jade --out .
+exec jade --pretty --watch jade/index.jade --out . &
+exec coffee --map --output js --watch coffee/*
