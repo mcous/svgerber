@@ -1,0 +1,11 @@
+{
+  "name"            : "labs.cosine.io",
+  "version"         : "0.0.1",
+  "devDependencies" :
+  {
+    "jade"          : "*",
+    "less"          : "*",
+    "coffee-script" : "*",
+    "node-static"   : "*"
+  }
+}

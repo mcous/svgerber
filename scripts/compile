@@ -1,0 +1,14 @@
+#! /bin/sh
+# compile the necessary files
+
+# get script directory
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# compile jade
+cd ${DIR}/..
+jade --pretty jade/index.jade --out .
+
+# compile less
+
+
+# compile coffeescript
