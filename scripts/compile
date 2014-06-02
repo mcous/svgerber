@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/bash
 # compile the necessary files
 
 # get script directory
