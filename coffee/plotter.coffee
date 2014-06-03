@@ -2,24 +2,12 @@
 # constructor takes in gerber file as string
 
 # export the class for node or browser
-root = exports #? this
+root = exports ? this
 
 # aperture class
 class Aperture
-  constructor: (@code, @shape) ->
-    console.log @print()
-
-  print: ->
-    "aperture " + @code + " is a " + (
-      if @shape is 'C'
-        "circle"
-      else if @shape is 'R'
-        "rectangle"
-      else if @shape is 'O'
-        "obcircle"
-      else if @shape is 'P'
-        "polygon"
-    )
+  constructor: (@code, @shape, @params) ->
+    console.log "aperture " + @code + " was created and is a " + @shape
 
 class root.Plotter
   constructor: (gerberFile) ->
@@ -100,7 +88,56 @@ class root.Plotter
       throw "NoValidUnitsGivenError"
 
   parseAperture: (a) ->
-    a = new Aperture(10, "C")
+    # specific aperture parsing functions
+    # circle parsing
+    parseCircle = (shape) ->
+      circleMatch = ///
+        C,[\d\.]+         # circle with diameter definition
+        (X[\d\.]+){0,2}   # up to two optional parameters for hole
+        $                 # end of string
+      ///
+      # if it's a good circle input
+      if shape.match circleMatch
+        # get the numbers
+        params = shape.match /[\d\.]+/g
+        for p, i in params
+          # check for a valid decimal number
+          if p.match /^((\d+\.?\d*)|(\d*\.?\d+))$/
+            params[i] = parseFloat p
+          else
+            throw "BadCircleApertureError"
+        params
+      # else throw an error
+      else
+        throw "BadCircleApertureError"
+
+    # first, check that input was at least a little good
+    apertureMatch = /^%AD.*$/
+    if not a.match apertureMatch
+      throw "InputTo_parseAperture_NotAnApertureError"
+
+    # get tool code
+    code = a.match /D[1-9]\d+/
+    if code?
+      code = parseInt(code[0][1..], 10)
+    else
+      throw "InvalidApertureToolCodeError"
+
+    # get shape and parse accordingly
+    shape = a.match /[CROP].*(?=\*%$)/
+    if shape?
+      shape = shape[0]
+      params = (
+        switch shape[0]
+          when "C"
+            parseCircle shape
+      )
+      shape = shape[0]
+    else
+      throw "NoApertureShapeError"
+
+    # return the aperture
+    a = new Aperture(code, shape, params)
 
   plot: ->
     # flags for specs
@@ -130,6 +167,8 @@ class root.Plotter
       # once we've got those things, we can read the rest of the file
       else
         # check for an aperture definition
+        if line.match apertureMatch
+          apertures.push parseAperture line
 
     # once we leave the read loop
     # problem if we never saw a format

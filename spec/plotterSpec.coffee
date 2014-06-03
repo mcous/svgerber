@@ -178,37 +178,95 @@ describe 'Plotter class', ->
       expect(result).toBe "NoValidUnitsGivenError"
 
   describe 'aperture definition parsing', ->
-    # some apertures
+    # test aperture
     testAp  = "%ADD10C,0.006000*%"
-    badCodes = [
-      "%ADD1C,0.006000*%"
-      "%ADD00C,0.006000*%"
-      "%ADD01C,0.006000*%"
-      "%ADC,0.006000*%"
-    ]
-    goodCircles = [
-      "%ADD10C,0.006000*%"
-    ]
+
+    it 'should throw an error if passed bad input', ->
+      result = "NoErrorCaught"
+      try
+        p.parseAperture("")
+      catch error
+        result = error
+      expect(result).toBe "InputTo_parseAperture_NotAnApertureError"
 
     it 'should return an aperture class', ->
       result = p.parseAperture(testAp)
       result = result.constructor.name
       expect(result).toBe "Aperture"
 
-    it 'should assign the proper tool code', ->
-      result = p.parseAperture(testAp)
-      result = result.code
-      expect(result).toBe '10'
+    describe 'tool code', ->
+      badCodes = [
+        "%ADD1C,0.006000*%"
+        "%ADD00C,0.006000*%"
+        "%ADD01C,0.006000*%"
+        "%ADC,0.006000*%"
+      ]
 
-    it 'should throw an error if no or bad tool code', ->
-      for bad in badCodes
+      it 'should assign the proper tool code', ->
+        result = p.parseAperture(testAp)
+        result = result.code
+        expect(result).toBe 10
+
+      it 'should throw an error if no or bad tool code', ->
+        for bad in badCodes
+          result = "NoErrorCaught"
+          try
+            p.parseAperture(bad)
+          catch error
+            result = error
+          expect(result).toBe "InvalidApertureToolCodeError"
+
+    describe 'aperture shape', ->
+      noShape = "%ADD10*%"
+
+      it 'should throw an error if there is no shape data', ->
         result = "NoErrorCaught"
         try
-          p.parseAperture(bad)
+          p.parseAperture(noShape)
         catch error
           result = error
-        expect(result).toBe "InvalidApertureToolCode"
+        expect(result).toBe "NoApertureShapeError"
 
+      describe 'circles', ->
+        goodCircles = [
+          "%ADD10C,0*%"
+          "%ADD10C,.025*%"
+          "%ADD10C,0.5*%"
+          "%ADD10C,0.5X0.25*%"
+          "%ADD10C,0.5X0.29X0.29*%"
+        ]
+        badCircles = [
+          "%ADD10C.025*%"
+          "%ADD10C,0.5X0.29X0.29X0.65*%"
+          "%ADD10C,0.5X0.2.9X0.29*%"
+        ]
+
+        it 'should set aperture to circle if given a good circle input', ->
+          for good in goodCircles
+            result = p.parseAperture(good)
+            result = result.shape
+            expect(result).toBe 'C'
+
+        it 'should pass in parameters properly', ->
+          result = p.parseAperture goodCircles[0]
+          result = result.params[0]
+          expect(result).toBe 0
+
+          result = result = p.parseAperture goodCircles[4]
+          result = result.params
+          expect(result[0]).toBe 0.5
+          expect(result[1]).toBe 0.29
+          expect(result[2]).toBe 0.29
+
+        it 'should throw an error if bad circle', ->
+          for bad in badCircles
+            console.log "testing bad circle: " + bad
+            result = "NoErrorCaught"
+            try
+              p.parseAperture(bad)
+            catch error
+              result = error
+            expect(result).toBe "BadCircleApertureError"
 
     #
     # it 'should parse a circular aperture', ->
