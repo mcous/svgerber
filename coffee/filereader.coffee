@@ -23,6 +23,69 @@ units = 'M'
 # apertures
 aps = []
 
+class Plotter
+  constructor: (@a, @cF, @u) ->
+    @xPosition = 0
+    @yPosition = 0
+
+  plot: (gerber) ->
+    for line in gerber
+      console.log "parsing line: " + line
+      # check for comment
+      if line.match /^G04/
+        console.log "comment"
+
+      # then check for end of file
+      else if line.match "M02"
+        console.log "end of file"
+        break
+
+      else
+        if line.match /^(G54)?D\d{2,}/
+          console.log "tool change"
+          @changeTool line.match(/D\d{2,}/)[0][1..]
+          console.log "new tool: " + @tool.print()
+
+        if (line.match('X') or line.match('Y')) and line.match('D')
+          console.log "command with movement"
+          # get the x and y chunks of the command
+          x = line.match(/X[\d\.-]{1,12}/)
+          y = line.match(/Y[\d\.-]{1,12}/)
+          # if those chunks were found, parse accordingly
+          x = @parseCoordinate(x[0][1..], @cF.xLead, @cF.xTrail) if x?
+          y = @parseCoordinate(y[0][1..], @cF.yLead, @cF.yTrail) if y?
+          # move to the parsed coordinates
+          @move(x, y)
+
+  parseCoordinate: (c, ld, tr) ->
+    # get zeros formate
+    z = @cF.zeros
+    lead = 0
+    trail = 0
+    # act according to the zero suppression rules
+    # leading zeros suppresed
+    if z is 'L'
+      lead = c[..-tr-1]
+      trail = c[-tr..]
+      parseFloat(lead + "." + trail)
+    # trailing zeros suppressed
+    else if z is 'T'
+      lead = c[..ld-1]
+      trail = c[ld..]
+      parseFloat(lead + "." + trail)
+
+
+  changeTool: (toolNumber) ->
+    @tool = @a[toolNumber]
+
+  move: (xNew = @xPosition, yNew = @yPosition) ->
+    console.log "moving to " + xNew + ", " + yNew
+    @xPosition = xNew
+    @yPosition = yNew
+
+  traceLine: (aperture, x1, y1, x2, y2) ->
+
+
 # aperture class
 class Aperture
   constructor: (@code, @shape) ->
@@ -118,7 +181,7 @@ getGerberUnits = (lines) ->
 getGerberFormat = (lines) ->
   formatMatch = /// ^  # start of regex and line
     %FS                # looking for file specification
-    [LTD]              # then, an Leading Zeros Omitted, Trailing, or Decimal
+    [LT]               # then, leading or trailing zeros
     [AI]               # Absolute or Incremental
     (N\d+)?            # optional sequence number
     (G\d+)?            # optional preparatory function code
@@ -168,6 +231,11 @@ fileToSVG = (file) ->
 
   console.log lines
   console.log aps
+
+  p = new Plotter(aps, coordFormat, units)
+  p.plot lines
+
+  "done"
 
 # read a file to a div
 readFileToDiv = (event) ->
