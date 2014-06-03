@@ -19,16 +19,16 @@ describe 'Plotter class', ->
       result = Array.isArray(p.gerber)
       expect(result).toBe true
 
-    it 'constructor should strip out comments', ->
-      p = new plotter.Plotter("G04 this is a gerber comment*")
-      result = p.gerber.length
-      expect(result).toBe 0
+    # it 'constructor should strip out comments', ->
+    #   p = new plotter.Plotter("G04 this is a gerber comment*")
+    #   result = p.gerber.length
+    #   expect(result).toBe 0
+    #
+    #   p = new plotter.Plotter("This is not a gerber comment")
+    #   result = p.gerber.length
+    #   expect(result).toBe 1
 
-      p = new plotter.Plotter("This is not a gerber comment")
-      result = p.gerber.length
-      expect(result).toBe 1
-
-  describe 'format identification', ->
+  describe 'format parsing', ->
     leadSuppression  = "%FSLAX34Y34*%"
     trailSuppression = "%FSTAX34Y34*%"
     noSuppression    = "%FSAX34Y34*%"
@@ -44,121 +44,174 @@ describe 'Plotter class', ->
     noY              = "%FSLAX77*%"
     mismatch         = "%FSLAX34Y56*%"
 
-    it 'should throw an error if the format spec is not the first line', ->
-      p = new plotter.Plotter("not a format spec\nalso not a fs")
+    it 'should throw an error if given bad input', ->
       result = "NoErrorCaught"
       try
-        p.getFormatSpec()
+        p.parseFormatSpec "asdafreaewr"
       catch error
         result = error
-      expect(result).toBe "FirstNonCommentNotFormatSpecError"
+      expect(result).toBe "InputTo_parseFormatSpec_NotAFormatSpecError"
+
 
     describe 'zero omission', ->
       it 'should identify the zero omission', ->
-        p = new plotter.Plotter(leadSuppression)
-        p.getFormatSpec()
+        p.parseFormatSpec(leadSuppression)
         result = p.zeroOmit
         expect(result).toBe "L"
 
-        p = new plotter.Plotter(trailSuppression)
-        p.getFormatSpec()
+        p.parseFormatSpec(trailSuppression)
         result = p.zeroOmit
         expect(result).toBe "T"
 
       it 'should throw an error if no zero suppression is defined', ->
-        p = new plotter.Plotter(noSuppression)
         result = "NoErrorCaught"
         try
-          p.getFormatSpec()
+          p.parseFormatSpec(noSuppression)
         catch error
           result = error
         expect(result).toBe "NoZeroSuppressionInFormatSpecError"
 
     describe 'coordinate notation', ->
       it 'should identify absolute or incremental coordinates', ->
-        p = new plotter.Plotter(absCoordinates)
-        p.getFormatSpec()
+        p.parseFormatSpec(absCoordinates)
         result = p.notation
         expect(result).toBe "A"
 
-        p = new plotter.Plotter(incCoordinates)
-        p.getFormatSpec()
+        p.parseFormatSpec(incCoordinates)
         result = p.notation
         expect(result).toBe "I"
 
       it 'should thrown an error if abs or inc notation is not defined', ->
-        p = new plotter.Plotter(noCoordinates)
         result = "NoErrorCaught"
         try
-          p.getFormatSpec()
+          p.parseFormatSpec(noCoordinates)
         catch error
           result = error
         expect(result).toBe "NoCoordinateNotationInFormatSpecError"
 
     describe 'coordinate format', ->
       it 'should identify the number format for x and y', ->
-        p = new plotter.Plotter(threeFour)
-        p.getFormatSpec()
+        p.parseFormatSpec(threeFour)
         result = [p.leadDigits, p.trailDigits]
         expect(result[0]).toBe 3
         expect(result[1]).toBe 4
 
-        p = new plotter.Plotter(sevenSeven)
-        p.getFormatSpec()
+        p.parseFormatSpec(sevenSeven)
         result = [p.leadDigits, p.trailDigits]
         expect(result[0]).toBe 7
         expect(result[1]).toBe 7
 
       it 'should throw an error if the number formats are invalid', ->
-        p = new plotter.Plotter(eightEight)
         result = "NoErrorCaught"
         try
-          p.getFormatSpec()
+          p.parseFormatSpec(eightEight)
         catch error
           result = error
         expect(result).toBe "InvalidCoordinateFormatInFormatSpecError"
 
-        p = new plotter.Plotter(zeroSix)
         result = "NoErrorCaught"
         try
-          p.getFormatSpec()
+          p.parseFormatSpec(zeroSix)
         catch error
           result = error
         expect(result).toBe "InvalidCoordinateFormatInFormatSpecError"
 
 
       it 'should throw an error if the number formats are different', ->
-        p = new plotter.Plotter(mismatch)
         result = "NoErrorCaught"
         try
-          p.getFormatSpec()
+          p.parseFormatSpec(mismatch)
         catch error
           result = error
         expect(result).toBe "CoordinateFormatMismatchInFormatSpecError"
 
       it 'should throw an error if the number format is missing', ->
-        p = new plotter.Plotter(noX)
         result = "NoErrorCaught"
         try
-          p.getFormatSpec()
+          p.parseFormatSpec(noX)
         catch error
           result = error
         expect(result).toBe "MissingCoordinateFormatInFormatSpecError"
 
-        p = new plotter.Plotter(noY)
         result = "NoErrorCaught"
         try
-          p.getFormatSpec()
+          p.parseFormatSpec(noY)
         catch error
           result = error
         expect(result).toBe "MissingCoordinateFormatInFormatSpecError"
 
-        p = new plotter.Plotter(noneNone)
         result = "NoErrorCaught"
         try
-          p.getFormatSpec()
+          p.parseFormatSpec(noneNone)
         catch error
           result = error
         expect(result).toBe "MissingCoordinateFormatInFormatSpecError"
 
-  describe 'unit identification', ->
+  describe 'unit parsing', ->
+    millimeters = "%MOMM*%"
+    inches      = "%MOIN*%"
+    badUnits    = "%MOKM*%"
+    noUnits     = ""
+
+    it 'should get the units', ->
+      p.parseUnits(inches)
+      result = p.units
+      expect(result).toBe "IN"
+
+      p.parseUnits(millimeters)
+      result = p.units
+      expect(result).toBe "MM"
+
+    it 'should throw an error if no proper units are given', ->
+      result = "NoErrorCaught"
+      try
+        p.parseUnits(badUnits)
+      catch error
+        result = error
+      expect(result).toBe "NoValidUnitsGivenError"
+
+      result = "NoErrorCaught"
+      try
+        p.parseUnits(noUnits)
+      catch error
+        result = error
+      expect(result).toBe "NoValidUnitsGivenError"
+
+  describe 'aperture definition parsing', ->
+    # some apertures
+    testAp  = "%ADD10C,0.006000*%"
+    badCodes = [
+      "%ADD1C,0.006000*%"
+      "%ADD00C,0.006000*%"
+      "%ADD01C,0.006000*%"
+      "%ADC,0.006000*%"
+    ]
+    goodCircles = [
+      "%ADD10C,0.006000*%"
+    ]
+
+    it 'should return an aperture class', ->
+      result = p.parseAperture(testAp)
+      result = result.constructor.name
+      expect(result).toBe "Aperture"
+
+    it 'should assign the proper tool code', ->
+      result = p.parseAperture(testAp)
+      result = result.code
+      expect(result).toBe '10'
+
+    it 'should throw an error if no or bad tool code', ->
+      for bad in badCodes
+        result = "NoErrorCaught"
+        try
+          p.parseAperture(bad)
+        catch error
+          result = error
+        expect(result).toBe "InvalidApertureToolCode"
+
+
+    #
+    # it 'should parse a circular aperture', ->
+    #   p.parseAperture
+    #
+    # it 'should throw an error for an incorrect circular aperture', ->
