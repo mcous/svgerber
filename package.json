@@ -6,6 +6,7 @@
     "jade"          : "*",
     "less"          : "*",
     "coffee-script" : "*",
-    "node-static"   : "*"
+    "node-static"   : "*",
+    "jasmine-node"  : "*"
   }
 }
