@@ -7,7 +7,7 @@ root = exports ? this
 # aperture class
 class Aperture
   constructor: (@code, @shape, @params) ->
-    console.log "aperture " + @code + " was created and is a " + @shape
+    console.log "Aperture " + @code + " was created and is a " + @shape
 
 class root.Plotter
   constructor: (gerberFile) ->
@@ -30,7 +30,7 @@ class root.Plotter
     # for line in gerberFile
     #   @gerber.push(line) unless line.match(/^G04/)
     # notify those concerned
-    console.log "Plotter class created"
+    console.log "Plotter created"
 
   parseFormatSpec: (fS) ->
     formatMatch = /^%FS.*\*%$/  # file spec regex
@@ -47,6 +47,7 @@ class root.Plotter
     @zeroOmit = fS.match zeroMatch
     if @zeroOmit?
       @zeroOmit = @zeroOmit[0][0]
+      console.log "zero omission set to: " + @zeroOmit
     else
       throw "NoZeroSuppressionInFormatSpecError"
 
@@ -54,6 +55,7 @@ class root.Plotter
     @notation = fS.match notationMatch
     if @notation?
       @notation = @notation[0][0]
+      console.log "notation set to: " + @notation
     else
       throw "NoCoordinateNotationInFormatSpecError"
 
@@ -79,6 +81,8 @@ class root.Plotter
     # check to make sure values are in range
     if not ((0 < @leadDigits < 8) and (0 < @trailDigits < 8))
       throw "InvalidCoordinateFormatInFormatSpecError"
+    else
+      console.log "coordinate format set to: " + @leadDigits + ", " + @trailDigits
 
   parseUnits: (u) ->
     unitMatch = /^%MO((MM)|(IN))\*%/
@@ -131,6 +135,9 @@ class root.Plotter
         switch shape[0]
           when "C"
             parseCircle shape
+          when "R", "O", "P"
+            throw "UnimplementedApertureError"
+
       )
       shape = shape[0]
     else
@@ -159,16 +166,16 @@ class root.Plotter
       # first we need a format and units
       if (not gotFormat) or (not gotUnits)
         if line.match formatMatch
-          parseFormatSpec line
+          @parseFormatSpec line
           gotFormat = true
         else if line.match unitMatch
-          parseUnits line
+          @parseUnits line
           gotUnits = true
       # once we've got those things, we can read the rest of the file
       else
         # check for an aperture definition
         if line.match apertureMatch
-          apertures.push parseAperture line
+          @apertures.push @parseAperture line
 
     # once we leave the read loop
     # problem if we never saw a format
