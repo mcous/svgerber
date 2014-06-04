@@ -88,7 +88,7 @@
     };
 
     Plotter.prototype.parseAperture = function(a) {
-      var apertureMatch, code, params, parseCircle, shape;
+      var apertureMatch, code, params, parseCircle, parseRectangle, shape;
       parseCircle = function(shape) {
         var circleMatch, i, p, params, _i, _len;
         circleMatch = /C,[\d\.]+(X[\d\.]+){0,2}$/;
@@ -105,6 +105,24 @@
           return params;
         } else {
           throw "BadCircleApertureError";
+        }
+      };
+      parseRectangle = function(shape) {
+        var i, p, params, rectangleMatch, _i, _len;
+        rectangleMatch = /R,[\d\.]+X[\d\.]+(X[\d\.]+){0,2}$/;
+        if (shape.match(rectangleMatch)) {
+          params = shape.match(/[\d\.]+/g);
+          for (i = _i = 0, _len = params.length; _i < _len; i = ++_i) {
+            p = params[i];
+            if (p.match(/^((\d+\.?\d*)|(\d*\.?\d+))$/)) {
+              params[i] = parseFloat(p);
+            } else {
+              throw "BadRectangleApertureError";
+            }
+          }
+          return params;
+        } else {
+          throw "BadRectangleApertureError";
         }
       };
       apertureMatch = /^%AD.*$/;
@@ -125,6 +143,7 @@
             case "C":
               return parseCircle(shape);
             case "R":
+              return parseRectangle(shape);
             case "O":
             case "P":
               throw "UnimplementedApertureError";
@@ -138,7 +157,7 @@
     };
 
     Plotter.prototype.plot = function() {
-      var apertureMatch, fileEnd, formatMatch, gotFormat, gotUnits, interpolationMode, line, quadrantMode, unitMatch, _i, _len, _ref;
+      var ap, apertureMatch, fileEnd, formatMatch, gotFormat, gotUnits, interpolationMode, line, quadrantMode, unitMatch, _i, _len, _ref;
       gotFormat = false;
       gotUnits = false;
       fileEnd = false;
@@ -160,7 +179,12 @@
           }
         } else {
           if (line.match(apertureMatch)) {
-            this.apertures.push(this.parseAperture(line));
+            ap = this.parseAperture(line);
+            if (this.apertures[ap.code - 10] === null) {
+              this.apertures[ap.code];
+            } else {
+              throw "ApertureAlreadyExistsError";
+            }
           }
         }
       }

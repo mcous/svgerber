@@ -19,15 +19,6 @@ describe 'Plotter class', ->
       result = Array.isArray(p.gerber)
       expect(result).toBe true
 
-    # it 'constructor should strip out comments', ->
-    #   p = new plotter.Plotter("G04 this is a gerber comment*")
-    #   result = p.gerber.length
-    #   expect(result).toBe 0
-    #
-    #   p = new plotter.Plotter("This is not a gerber comment")
-    #   result = p.gerber.length
-    #   expect(result).toBe 1
-
   describe 'format parsing', ->
     leadSuppression  = "%FSLAX34Y34*%"
     trailSuppression = "%FSTAX34Y34*%"
@@ -268,8 +259,88 @@ describe 'Plotter class', ->
               result = error
             expect(result).toBe "BadCircleApertureError"
 
-    #
-    # it 'should parse a circular aperture', ->
-    #   p.parseAperture
-    #
-    # it 'should throw an error for an incorrect circular aperture', ->
+      describe 'rectangles', ->
+        goodRects = [
+          "%ADD22R,0.044X0.025*%"
+          "%ADD22R,0.044X0.025X0.019*%"
+          "%ADD22R,0.044X0.025X0.024X0.013*%"
+        ]
+        badRects = [
+          "%ADD22R,0.044*%"
+          "%ADD22R0.044X0.025X0.019*%"
+          "%ADD22R,0.044X0.025X0.024X0.013X0.04*%"
+        ]
+
+        it 'should set aperture to rectangle if given a good input', ->
+          for good in goodRects
+            result = p.parseAperture(good)
+            result = result.shape
+            expect(result).toBe 'R'
+
+        it 'should pass in parameters properly', ->
+          result = p.parseAperture goodRects[0]
+          result = result.params
+          expect(result[0]).toBe 0.044
+          expect(result[1]).toBe 0.025
+
+          result = result = p.parseAperture goodRects[2]
+          result = result.params
+          expect(result[0]).toBe 0.044
+          expect(result[1]).toBe 0.025
+          expect(result[2]).toBe 0.024
+          expect(result[3]).toBe 0.013
+
+        it 'should throw an error if bad rectangle', ->
+          for bad in badRects
+            console.log "testing bad rectangle: " + bad
+            result = "NoErrorCaught"
+            try
+              p.parseAperture(bad)
+            catch error
+              result = error
+            expect(result).toBe "BadRectangleApertureError"
+
+  describe 'plotting', ->
+    it 'should complain if no format spec', ->
+      badGerber = """
+        %MOIN*%
+        %ADD10C,0.006000*%
+        %ADD11C,0.003937*%
+      """
+      p = new plotter.Plotter(badGerber)
+      result = "NoErrorCaught"
+      try
+        p.plot()
+      catch error
+        result = error
+      expect(result).toBe "NoFormatSpecGivenError"
+
+    it 'should complain if no unit spec', ->
+      badGerber = """
+        %FSLAX34Y34*%
+        %ADD10C,0.006000*%
+        %ADD11C,0.003937*%
+      """
+
+      p = new plotter.Plotter(badGerber)
+      result = "NoErrorCaught"
+      try
+        p.plot()
+      catch error
+        result = error
+      expect(result).toBe "NoValidUnitsGivenError"
+
+    it 'should not allow redefinition of apertures', ->
+      badGerber = """
+        %FSLAX34Y34*%
+        %MOIN*%
+        %ADD10C,0.006000*%
+        %ADD10C,0.003937*%
+      """
+      p = new plotter.Plotter(badGerber)
+      result = "NoErrorCaught"
+      try
+        p.plot()
+      catch error
+        result = error
+      expect(result).toBe "ApertureAlreadyExistsError"

@@ -22,13 +22,8 @@ class root.Plotter
     # aperture list
     @apertures = []
 
-
     # parse the monolithic string into an array of lines
     @gerber = gerberFile.split '\n'
-    # strip out the comments
-    # @gerber = []
-    # for line in gerberFile
-    #   @gerber.push(line) unless line.match(/^G04/)
     # notify those concerned
     console.log "Plotter created"
 
@@ -115,6 +110,29 @@ class root.Plotter
       else
         throw "BadCircleApertureError"
 
+    # rectangle parsing
+    parseRectangle = (shape) ->
+      rectangleMatch = ///
+        R,[\d\.]+X[\d\.]+ # rectangle with x and y definition
+        (X[\d\.]+){0,2}   # up to two optional parameters for hole
+        $                 # end of string
+      ///
+      # if it's a good circle input
+      if shape.match rectangleMatch
+        # get the numbers
+        params = shape.match /[\d\.]+/g
+        for p, i in params
+          # check for a valid decimal number
+          if p.match /^((\d+\.?\d*)|(\d*\.?\d+))$/
+            params[i] = parseFloat p
+          else
+            throw "BadRectangleApertureError"
+        params
+      # else throw an error
+      else
+        throw "BadRectangleApertureError"
+
+
     # first, check that input was at least a little good
     apertureMatch = /^%AD.*$/
     if not a.match apertureMatch
@@ -135,7 +153,9 @@ class root.Plotter
         switch shape[0]
           when "C"
             parseCircle shape
-          when "R", "O", "P"
+          when "R"
+            parseRectangle shape
+          when "O", "P"
             throw "UnimplementedApertureError"
 
       )
@@ -175,7 +195,11 @@ class root.Plotter
       else
         # check for an aperture definition
         if line.match apertureMatch
-          @apertures.push @parseAperture line
+          ap = @parseAperture line
+          if @apertures[ap.code-10] is null
+            @apertures[ap.code]
+          else
+            throw "ApertureAlreadyExistsError"
 
     # once we leave the read loop
     # problem if we never saw a format
