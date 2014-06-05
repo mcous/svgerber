@@ -4,6 +4,7 @@
 
   fileToSVG = function(file) {
     var p;
+    console.log('converting to svg');
     p = new Plotter(file);
     return p.plot();
   };

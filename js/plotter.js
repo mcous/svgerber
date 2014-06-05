@@ -24,6 +24,8 @@
       this.trailDigits = null;
       this.units = null;
       this.apertures = [];
+      this.iMode = null;
+      this.aMode = null;
       this.gerber = gerberFile.split('\n');
       console.log("Plotter created");
     }
@@ -88,43 +90,7 @@
     };
 
     Plotter.prototype.parseAperture = function(a) {
-      var apertureMatch, code, params, parseCircle, parseRectangle, shape;
-      parseCircle = function(shape) {
-        var circleMatch, i, p, params, _i, _len;
-        circleMatch = /C,[\d\.]+(X[\d\.]+){0,2}$/;
-        if (shape.match(circleMatch)) {
-          params = shape.match(/[\d\.]+/g);
-          for (i = _i = 0, _len = params.length; _i < _len; i = ++_i) {
-            p = params[i];
-            if (p.match(/^((\d+\.?\d*)|(\d*\.?\d+))$/)) {
-              params[i] = parseFloat(p);
-            } else {
-              throw "BadCircleApertureError";
-            }
-          }
-          return params;
-        } else {
-          throw "BadCircleApertureError";
-        }
-      };
-      parseRectangle = function(shape) {
-        var i, p, params, rectangleMatch, _i, _len;
-        rectangleMatch = /R,[\d\.]+X[\d\.]+(X[\d\.]+){0,2}$/;
-        if (shape.match(rectangleMatch)) {
-          params = shape.match(/[\d\.]+/g);
-          for (i = _i = 0, _len = params.length; _i < _len; i = ++_i) {
-            p = params[i];
-            if (p.match(/^((\d+\.?\d*)|(\d*\.?\d+))$/)) {
-              params[i] = parseFloat(p);
-            } else {
-              throw "BadRectangleApertureError";
-            }
-          }
-          return params;
-        } else {
-          throw "BadRectangleApertureError";
-        }
-      };
+      var apertureMatch, code, params, shape;
       apertureMatch = /^%AD.*$/;
       if (!a.match(apertureMatch)) {
         throw "InputTo_parseAperture_NotAnApertureError";
@@ -141,19 +107,77 @@
         params = ((function() {
           switch (shape[0]) {
             case "C":
-              return parseCircle(shape);
             case "R":
-              return parseRectangle(shape);
             case "O":
+              return this.parseBasicAperture(shape);
             case "P":
               throw "UnimplementedApertureError";
           }
-        })());
+        }).call(this));
         shape = shape[0];
       } else {
         throw "NoApertureShapeError";
       }
       return a = new Aperture(code, shape, params);
+    };
+
+    Plotter.prototype.parseBasicAperture = function(string) {
+      var badInput, circle, circleMatch, i, obround, obroundMatch, p, params, rect, rectangleMatch, _i, _len;
+      circleMatch = /^C,[\d\.]+(X[\d\.]+){0,2}$/;
+      rectangleMatch = /^R,[\d\.]+X[\d\.]+(X[\d\.]+){0,2}$/;
+      obroundMatch = /^O,[\d\.]+X[\d\.]+(X[\d\.]+){0,2}$/;
+      badInput = true;
+      if (((circle = string[0][0] === 'C') && string.match(circleMatch)) || ((rect = string[0][0] === 'R') && string.match(rectangleMatch)) || ((obround = string[0][0] === 'O') && string.match(obroundMatch))) {
+        params = string.match(/[\d\.]+/g);
+        for (i = _i = 0, _len = params.length; _i < _len; i = ++_i) {
+          p = params[i];
+          if (p.match(/^((\d+\.?\d*)|(\d*\.?\d+))$/)) {
+            params[i] = parseFloat(p);
+            badInput = false;
+          } else {
+            badInput = true;
+            break;
+          }
+        }
+      }
+      if (badInput) {
+        if (circle) {
+          throw "BadCircleApertureError";
+        } else if (rect) {
+          throw "BadRectangleApertureError";
+        } else if (obround) {
+          throw "BadObroundApertureError";
+        }
+      }
+      return params;
+    };
+
+    Plotter.prototype.parseGCode = function(s) {
+      var code, match;
+      match = s.match(/^G\d{1,2}(?=\D)/);
+      if (!match) {
+        throw "InputTo_parseGCode_NotAGCodeError";
+      } else {
+        match = match[0];
+      }
+      code = parseInt(match.slice(1), 10);
+      switch (code) {
+        case 1:
+        case 2:
+        case 3:
+          this.iMode = code;
+          break;
+        case 4:
+          console.log("found a comment");
+          return "";
+        case 74:
+        case 75:
+          this.aMode = code;
+          break;
+        default:
+          throw "UnimplementedGCodeError";
+      }
+      return s.slice(match.length);
     };
 
     Plotter.prototype.plot = function() {

@@ -14,11 +14,13 @@ describe 'Plotter class', ->
   beforeEach ->
     p = new plotter.Plotter(testGerber)
 
+  # tests for the plotter constructor
   describe 'constructor', ->
-    it 'constructor should split the file string into an array', ->
+    it 'constructor should split the file into an array', ->
       result = Array.isArray(p.gerber)
       expect(result).toBe true
 
+  # tests for parsing the format spec command
   describe 'format parsing', ->
     leadSuppression  = "%FSLAX34Y34*%"
     trailSuppression = "%FSTAX34Y34*%"
@@ -138,6 +140,7 @@ describe 'Plotter class', ->
           result = error
         expect(result).toBe "MissingCoordinateFormatInFormatSpecError"
 
+  # tests for parsing the unit set command
   describe 'unit parsing', ->
     millimeters = "%MOMM*%"
     inches      = "%MOIN*%"
@@ -168,6 +171,7 @@ describe 'Plotter class', ->
         result = error
       expect(result).toBe "NoValidUnitsGivenError"
 
+  # tests for parsing the aperture definition command
   describe 'aperture definition parsing', ->
     # test aperture
     testAp  = "%ADD10C,0.006000*%"
@@ -251,7 +255,6 @@ describe 'Plotter class', ->
 
         it 'should throw an error if bad circle', ->
           for bad in badCircles
-            console.log "testing bad circle: " + bad
             result = "NoErrorCaught"
             try
               p.parseAperture(bad)
@@ -292,7 +295,6 @@ describe 'Plotter class', ->
 
         it 'should throw an error if bad rectangle', ->
           for bad in badRects
-            console.log "testing bad rectangle: " + bad
             result = "NoErrorCaught"
             try
               p.parseAperture(bad)
@@ -300,6 +302,47 @@ describe 'Plotter class', ->
               result = error
             expect(result).toBe "BadRectangleApertureError"
 
+      describe 'obrounds', ->
+        goodObrounds = [
+          "%ADD22O,0.044X0.025*%"
+          "%ADD22O,0.044X0.025X0.019*%"
+          "%ADD22O,0.044X0.025X0.024X0.013*%"
+        ]
+        badObrounds = [
+          "%ADD22O,0.044*%"
+          "%ADD22O0.044X0.025X0.019*%"
+          "%ADD22O,0.044X0.025X0.024X0.013X0.04*%"
+        ]
+
+        it 'should set aperture to obround if given a good input', ->
+          for good in goodObrounds
+            result = p.parseAperture(good)
+            result = result.shape
+            expect(result).toBe 'O'
+
+        it 'should pass in parameters properly', ->
+          result = p.parseAperture goodObrounds[0]
+          result = result.params
+          expect(result[0]).toBe 0.044
+          expect(result[1]).toBe 0.025
+
+          result = result = p.parseAperture goodObrounds[2]
+          result = result.params
+          expect(result[0]).toBe 0.044
+          expect(result[1]).toBe 0.025
+          expect(result[2]).toBe 0.024
+          expect(result[3]).toBe 0.013
+
+        it 'should throw an error if bad obround', ->
+          for bad in badObrounds
+            result = "NoErrorCaught"
+            try
+              p.parseAperture(bad)
+            catch error
+              result = error
+            expect(result).toBe "BadObroundApertureError"
+
+  # tests for running through the gerber file
   describe 'plotting', ->
     it 'should complain if no format spec', ->
       badGerber = """
@@ -344,3 +387,75 @@ describe 'Plotter class', ->
       catch error
         result = error
       expect(result).toBe "ApertureAlreadyExistsError"
+
+  # tests for parsing a line that starts with a G-code
+  describe 'G-code parsing', ->
+    it 'should throw an error if passed a bad string', ->
+      badString = ""
+      result = "NoErrorCaught"
+      try
+        p.parseGCode badString
+      catch error
+        result = error
+      expect(result).toBe "InputTo_parseGCode_NotAGCodeError"
+
+      badString = "G001"
+      result = "NoErrorCaught"
+      try
+        p.parseGCode badString
+      catch error
+        result = error
+      expect(result).toBe "InputTo_parseGCode_NotAGCodeError"
+
+    it 'should return the string with the G command stripped out', ->
+      g = "G01X0Y250D01*"
+      result = p.parseGCode g
+      expect(result).toBe "X0Y250D01*"
+
+    it 'should set mode to linear interpolation if it sees a G01 or G1', ->
+      g = "G01X0Y250D01*"
+      p.parseGCode g
+      result = p.iMode
+      expect(result).toBe 1
+
+      g = "G1X0Y250D01*"
+      p.parseGCode g
+      result = p.iMode
+      expect(result).toBe 1
+
+    it 'should set mode to circular interp. (CW or CCW) if G2/02, G3/03', ->
+      g = "G02X0Y250D01*"
+      p.parseGCode g
+      result = p.iMode
+      expect(result).toBe 2
+
+      g = "G2X0Y250D01*"
+      p.parseGCode g
+      result = p.iMode
+      expect(result).toBe 2
+
+      g = "G03X0Y250D01*"
+      p.parseGCode g
+      result = p.iMode
+      expect(result).toBe 3
+
+      g = "G3X0Y250D01*"
+      p.parseGCode g
+      result = p.iMode
+      expect(result).toBe 3
+
+    it 'should return an empty string if G4/04 (comment)', ->
+      g="G04 gerber comments ftwzzzzzz"
+      result = p.parseGCode g
+      expect(result).toBe ""
+
+    it 'should set the arc mode to 74 or 75 if given the G74/75 command', ->
+      g="G74*"
+      p.parseGCode g
+      result = p.aMode
+      expect(result).toBe 74
+
+      g="G75*"
+      p.parseGCode g
+      result = p.aMode
+      expect(result).toBe 75

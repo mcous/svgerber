@@ -166,7 +166,7 @@ fileToSVG = (file) ->
   #
   # console.log lines
   # console.log aps
-
+  console.log 'converting to svg'
   p = new Plotter(file)
   p.plot()
 

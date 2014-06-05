@@ -21,6 +21,10 @@ class root.Plotter
     @units = null
     # aperture list
     @apertures = []
+    # interpolation mode
+    @iMode = null
+    # arc mode
+    @aMode = null
 
     # parse the monolithic string into an array of lines
     @gerber = gerberFile.split '\n'
@@ -87,52 +91,6 @@ class root.Plotter
       throw "NoValidUnitsGivenError"
 
   parseAperture: (a) ->
-    # specific aperture parsing functions
-    # circle parsing
-    parseCircle = (shape) ->
-      circleMatch = ///
-        C,[\d\.]+         # circle with diameter definition
-        (X[\d\.]+){0,2}   # up to two optional parameters for hole
-        $                 # end of string
-      ///
-      # if it's a good circle input
-      if shape.match circleMatch
-        # get the numbers
-        params = shape.match /[\d\.]+/g
-        for p, i in params
-          # check for a valid decimal number
-          if p.match /^((\d+\.?\d*)|(\d*\.?\d+))$/
-            params[i] = parseFloat p
-          else
-            throw "BadCircleApertureError"
-        params
-      # else throw an error
-      else
-        throw "BadCircleApertureError"
-
-    # rectangle parsing
-    parseRectangle = (shape) ->
-      rectangleMatch = ///
-        R,[\d\.]+X[\d\.]+ # rectangle with x and y definition
-        (X[\d\.]+){0,2}   # up to two optional parameters for hole
-        $                 # end of string
-      ///
-      # if it's a good circle input
-      if shape.match rectangleMatch
-        # get the numbers
-        params = shape.match /[\d\.]+/g
-        for p, i in params
-          # check for a valid decimal number
-          if p.match /^((\d+\.?\d*)|(\d*\.?\d+))$/
-            params[i] = parseFloat p
-          else
-            throw "BadRectangleApertureError"
-        params
-      # else throw an error
-      else
-        throw "BadRectangleApertureError"
-
-
     # first, check that input was at least a little good
     apertureMatch = /^%AD.*$/
     if not a.match apertureMatch
@@ -151,11 +109,9 @@ class root.Plotter
       shape = shape[0]
       params = (
         switch shape[0]
-          when "C"
-            parseCircle shape
-          when "R"
-            parseRectangle shape
-          when "O", "P"
+          when "C", "R", "O"
+            @parseBasicAperture shape
+          when "P"
             throw "UnimplementedApertureError"
 
       )
@@ -165,6 +121,81 @@ class root.Plotter
 
     # return the aperture
     a = new Aperture(code, shape, params)
+
+  # basic (circle, rectangle, obround) aperture parsing
+  parseBasicAperture: (string) ->
+    circleMatch = /// ^
+      C,[\d\.]+         # circle with diameter definition
+      (X[\d\.]+){0,2}   # up to two optional parameters for hole
+      $                 # end of the string
+    ///
+
+    rectangleMatch = /// ^
+      R,[\d\.]+X[\d\.]+ # rectangle with x and y definition
+      (X[\d\.]+){0,2}   # up to two optional parameters for hole
+      $                 # end of string
+    ///
+
+    obroundMatch = /// ^
+      O,[\d\.]+X[\d\.]+ # obround with x and y definition
+      (X[\d\.]+){0,2}   # up to two optional parameters for hole
+      $                 # end of string
+    ///
+
+    badInput = true
+    if (
+      # figure out what shape tha aperture is and check format
+      ((circle = (string[0][0] is 'C')) and string.match circleMatch) or
+      ((rect = (string[0][0] is 'R')) and string.match rectangleMatch) or
+      ((obround = (string[0][0] is 'O')) and string.match obroundMatch)
+    )
+      # if it passes that test, parse the floats
+      params = string.match /[\d\.]+/g
+      for p, i in params
+        # check for a valid decimal number with
+        if p.match /^((\d+\.?\d*)|(\d*\.?\d+))$/
+          params[i] = parseFloat p
+          badInput = false
+        else
+          badInput = true
+          break
+
+    # else throw an error
+    if badInput
+      if circle
+        throw "BadCircleApertureError"
+      else if rect
+        throw "BadRectangleApertureError"
+      else if obround
+        throw "BadObroundApertureError"
+    # return the parameters
+    params
+
+  parseGCode: (s) ->
+    # throw an error if the input isn't a G-code
+    match = (s.match /^G\d{1,2}(?=\D)/)
+    if not match
+      throw "InputTo_parseGCode_NotAGCodeError"
+    else match = match[0]
+
+    # get the actual code
+    code = parseInt(match[1..], 10)
+    # set mode accordingly
+    switch code
+      when 1, 2, 3
+        @iMode = code
+      when 4
+        console.log "found a comment"
+        return ""
+      when 74, 75
+        @aMode = code
+
+      else
+        throw "UnimplementedGCodeError"
+
+    # return the rest of the string
+    s[match.length..]
+
 
   plot: ->
     # flags for specs
