@@ -227,10 +227,12 @@ class root.Plotter
         # check for an aperture definition
         if line.match apertureMatch
           ap = @parseAperture line
-          if @apertures[ap.code-10] is null
-            @apertures[ap.code]
+          if not @apertures[ap.code-10]?
+            @apertures[ap.code-10] = ap
           else
             throw "ApertureAlreadyExistsError"
+        else
+          console.log "don't know what #{line} means"
 
     # once we leave the read loop
     # problem if we never saw a format

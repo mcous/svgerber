@@ -204,11 +204,13 @@
         } else {
           if (line.match(apertureMatch)) {
             ap = this.parseAperture(line);
-            if (this.apertures[ap.code - 10] === null) {
-              this.apertures[ap.code];
+            if (this.apertures[ap.code - 10] == null) {
+              this.apertures[ap.code - 10] = ap;
             } else {
               throw "ApertureAlreadyExistsError";
             }
+          } else {
+            console.log("don't know what " + line + " means");
           }
         }
       }
