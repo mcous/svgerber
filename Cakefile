@@ -17,10 +17,15 @@ output = 'app.js'
 # compiler options
 opts = '--map'
 
+# server stuff
+port = 8080
+
 # dependencies
 # gonna need fs to read the files and exec to do stuff
 fs = require 'fs'
 {exec} = require 'child_process'
+# also use node static as a basic webserver
+stat = require 'node-static'
 
 # constants
 # match for the require call
@@ -118,6 +123,20 @@ task 'watch', 'watch coffeescript files for changes and recompile', (options) ->
       fs.watchFile n.file, (now, old) ->
         console.log "#{n.file} changed. rebuilding"
         invoke 'build' if +now.mtime isnt +old.mtime
+
+# serve task
+task 'serve', 'serve the files on a local webserver at port 8080', (options) ->
+  invoke 'build'
+  # start up a dev server
+  devServer = new stat.Server '.'
+  require('http').createServer( (request, response) ->
+    request.addListener( 'end', ->
+      devServer.serve(request, response, (error, result)->
+        if error then console.log "error serving #{request.url}"
+        else console.log "served #{request.url}"
+      )
+    ).resume()
+  ).listen port
 
 # build task
 task 'build', 'resolve dependencies and build the app', (options) ->
