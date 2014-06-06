@@ -180,18 +180,43 @@ class root.Plotter
 
     # get the actual code
     code = parseInt(match[1..], 10)
-    # set mode accordingly
+    # act accordingly
     switch code
+      # codes 1, 2, and 3 are interpolation modes
       when 1, 2, 3
         @iMode = code
+      # code 4 is a comment
       when 4
         console.log "found a comment"
         return ""
+      # 74 and 75 determine the arc mode
       when 74, 75
         @aMode = code
-
+      # 54 and 55 are deprecated and don't do anything
+      when 54, 55
+        console.log "deprecated G#{code} found"
+      # 70 is a deprecated command to set the units to inches
+      when 70
+        if not @units?
+          console.log "warning: deprecated G70 command used to set units to in"
+          @units = 'I'
+      # 71 is a deprecated command to set the units to mm
+      when 71
+        if not @units?
+          console.log "warning: deprecated G70 command used to set units to mm"
+          @units = 'M'
+      # 90 is a deprecated command to set absolute notation
+      when 90
+        if not @notation?
+          console.log "warning: deprecated G90 command used to set notation to abs"
+          @notation = 'A'
+      # 91 is a deprecated command to set incremental notation
+      when 91
+        if not @notation?
+          console.log "warning: deprecated G91 command used to set notation to inc"
+          @notation = 'I'
       else
-        throw "UnimplementedGCodeError"
+        throw "G#{code}IsUnimplementedGCodeError"
 
     # return the rest of the string
     s[match.length..]
@@ -210,7 +235,8 @@ class root.Plotter
     # different types of lines (all others ignored)
     formatMatch   = /^%FS.*\*%$/           # file spec
     unitMatch     = /^%MO((MM)|(IN))\*%$/  # unit spec
-    apertureMatch = /^%AD.*$/              # aperture definition
+    apertureMatch = /^%AD.*\*%$/            # aperture definition
+    gMatch        = /^G.*\*$/
 
     # loop through the lines of the gerber
     for line in @gerber
@@ -224,8 +250,11 @@ class root.Plotter
           gotUnits = true
       # once we've got those things, we can read the rest of the file
       else
+        # take care of any commands
+        if line.match gMatch
+          line = @parseGCode line
         # check for an aperture definition
-        if line.match apertureMatch
+        else if line.match apertureMatch
           ap = @parseAperture line
           if not @apertures[ap.code-10]?
             @apertures[ap.code-10] = ap

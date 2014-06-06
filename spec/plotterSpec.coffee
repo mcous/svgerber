@@ -397,13 +397,12 @@ describe 'Plotter class', ->
         %ADD30C,0.003937*%
       """
 
-      p = new plotter.Plotter(badGerber)
+      p = new plotter.Plotter(goodGerber)
+      p.plot()
       result = p.apertures
       expect(result[0].code).toBe 10
       expect(result[1].code).toBe 11
       expect(result[20].code).toBe 30
-
-
 
   # tests for parsing a line that starts with a G-code
   describe 'G-code parsing', ->

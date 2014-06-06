@@ -174,14 +174,42 @@
         case 75:
           this.aMode = code;
           break;
+        case 54:
+        case 55:
+          console.log("deprecated G" + code + " found");
+          break;
+        case 70:
+          if (this.units == null) {
+            console.log("warning: deprecated G70 command used to set units to in");
+            this.units = 'I';
+          }
+          break;
+        case 71:
+          if (this.units == null) {
+            console.log("warning: deprecated G70 command used to set units to mm");
+            this.units = 'M';
+          }
+          break;
+        case 90:
+          if (this.notation == null) {
+            console.log("warning: deprecated G90 command used to set notation to abs");
+            this.notation = 'A';
+          }
+          break;
+        case 91:
+          if (this.notation == null) {
+            console.log("warning: deprecated G91 command used to set notation to inc");
+            this.notation = 'I';
+          }
+          break;
         default:
-          throw "UnimplementedGCodeError";
+          throw "G" + code + "IsUnimplementedGCodeError";
       }
       return s.slice(match.length);
     };
 
     Plotter.prototype.plot = function() {
-      var ap, apertureMatch, fileEnd, formatMatch, gotFormat, gotUnits, interpolationMode, line, quadrantMode, unitMatch, _i, _len, _ref;
+      var ap, apertureMatch, fileEnd, formatMatch, gMatch, gotFormat, gotUnits, interpolationMode, line, quadrantMode, unitMatch, _i, _len, _ref;
       gotFormat = false;
       gotUnits = false;
       fileEnd = false;
@@ -189,7 +217,8 @@
       quadrantMode = null;
       formatMatch = /^%FS.*\*%$/;
       unitMatch = /^%MO((MM)|(IN))\*%$/;
-      apertureMatch = /^%AD.*$/;
+      apertureMatch = /^%AD.*\*%$/;
+      gMatch = /^G.*\*$/;
       _ref = this.gerber;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         line = _ref[_i];
@@ -202,7 +231,9 @@
             gotUnits = true;
           }
         } else {
-          if (line.match(apertureMatch)) {
+          if (line.match(gMatch)) {
+            line = this.parseGCode(line);
+          } else if (line.match(apertureMatch)) {
             ap = this.parseAperture(line);
             if (this.apertures[ap.code - 10] == null) {
               this.apertures[ap.code - 10] = ap;
