@@ -17,6 +17,12 @@ output = 'app.js'
 # compiler options
 opts = '--map'
 
+# jade
+# input files
+jadein = 'jade/index.jade'
+# output directories
+jadeout = '.'
+
 # server stuff
 port = 8080
 
@@ -112,6 +118,11 @@ gatherChildren = (file, parent=null) ->
   node
 
 # Cakefile tasks
+# build jade
+task 'jade', 'compile jade index to html', (options) ->
+  console.log "compiling #{jadein}"
+  exec "jade #{jadein} --out #{jadeout}"
+
 # watch task
 task 'watch', 'watch coffeescript files for changes and recompile', (options) ->
   # do a build to get our dependency graph
