@@ -1,15 +1,16 @@
-# plotter class for svgerber
-# constructor takes in gerber file as string
+# plotter classes for svgerber
 
-# export the class for node or browser
-root = exports ? this
+# we need the board class
+#require 'board'
 
-# aperture class
+# aperture class used by the plotter
 class Aperture
   constructor: (@code, @shape, @params) ->
     console.log "Aperture " + @code + " was created and is a " + @shape
 
-class root.Plotter
+# plotter class is exported
+class Plotter
+  # constructor takes in gerber file as string
   constructor: (gerberFile) ->
     # stuff we'll be using
     # formatting
@@ -272,3 +273,6 @@ class root.Plotter
       throw "NoFormatSpecGivenError"
     if not gotUnits
       throw "NoValidUnitsGivenError"
+
+# export the Plotter class for node unit testing
+if exports? then exports.Plotter = Plotter

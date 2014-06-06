@@ -1,5 +1,6 @@
 # simple file reader for svGerber
 
+# app dependencies
 #require 'plotter'
 
 # convert a file to an svg
