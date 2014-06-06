@@ -155,6 +155,7 @@ task 'serve', 'watch and serve the files to localhost:8080', (options) ->
       )
     ).resume()
   ).listen port
+  console.log "server started at http://localhost:#{port}\n"
 
 # build task
 task 'build', 'resolve dependencies and build the app', (options) ->
