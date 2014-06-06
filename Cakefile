@@ -1,15 +1,16 @@
-# cakefile to resolve coffeescript dependencies
+# cakefile for svgerber
 #
-# The goal is to have coffeescript join the files in the right order
-# before compilation into js. In any file that requires another file, put:
+# This cakefile supports automatic dependency resolution by sticking:
 
   #require "filename"
 
-# then let the cakefile work the rest out
+# in any file that depends on another file.
+#
+# coffeescript files will be concatinated into one javascript file
 
-# config
+# coffeescript
 # main project file
-main = 'svgerber.coffee'
+main = 'app.coffee'
 # coffeescript source directory
 input = 'coffee'
 # output file
@@ -23,7 +24,7 @@ jadein = 'jade/index.jade'
 # output directories
 jadeout = '.'
 
-# server stuff
+# simple dev server with node-static
 port = 8080
 
 # dependencies
@@ -125,10 +126,8 @@ task 'jade', 'compile jade index to html', (options) ->
 
 # watch task
 task 'watch', 'watch coffeescript and jade files for changes', (options) ->
-  # do a build to get our dependency graph
+  # do a build to get our dependency graph and html
   invoke 'build'
-  # build the jade to be safe
-  invoke 'jade'
 
   # watch all the coffeescript files
   for n in nodes

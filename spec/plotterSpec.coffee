@@ -388,6 +388,23 @@ describe 'Plotter class', ->
         result = error
       expect(result).toBe "ApertureAlreadyExistsError"
 
+    it 'should add apertures to the list without problem', ->
+      goodGerber ="""
+        %FSLAX34Y34*%
+        %MOIN*%
+        %ADD10C,0.006000*%
+        %ADD11C,0.003937*%
+        %ADD30C,0.003937*%
+      """
+
+      p = new plotter.Plotter(badGerber)
+      result = p.apertures
+      expect(result[0].code).toBe 10
+      expect(result[1].code).toBe 11
+      expect(result[20].code).toBe 30
+
+
+
   # tests for parsing a line that starts with a G-code
   describe 'G-code parsing', ->
     it 'should throw an error if passed a bad string', ->
