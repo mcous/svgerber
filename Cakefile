@@ -124,7 +124,7 @@ task 'jade', 'compile jade index to html', (options) ->
   exec "jade #{jadein} --out #{jadeout}"
 
 # watch task
-task 'watch', 'watch coffeescript files for changes and recompile', (options) ->
+task 'watch', 'watch coffeescript and jade files for changes', (options) ->
   # do a build to get our dependency graph
   invoke 'build'
   # build the jade to be safe
@@ -182,3 +182,6 @@ task 'build', 'resolve dependencies and build the app', (options) ->
   # compile the coffee script
   console.log "compiling #{output}\n"
   exec "coffee #{opts} --join #{output} --compile #{fileList}"
+
+  # compile the jade
+  invoke 'jade'
