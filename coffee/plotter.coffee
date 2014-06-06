@@ -1,12 +1,8 @@
 # plotter classes for svgerber
 
-# we need the board class
+# we need the aperture and board class
 #require 'board'
-
-# aperture class used by the plotter
-class Aperture
-  constructor: (@code, @shape, @params) ->
-    console.log "Aperture " + @code + " was created and is a " + @shape
+#require 'aperture'
 
 # plotter class is exported
 class Plotter
