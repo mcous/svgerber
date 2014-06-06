@@ -120,24 +120,32 @@ gatherChildren = (file, parent=null) ->
 # Cakefile tasks
 # build jade
 task 'jade', 'compile jade index to html', (options) ->
-  console.log "compiling #{jadein}"
+  console.log "compiling #{jadein}\n"
   exec "jade #{jadein} --out #{jadeout}"
 
 # watch task
 task 'watch', 'watch coffeescript files for changes and recompile', (options) ->
   # do a build to get our dependency graph
   invoke 'build'
+  # build the jade to be safe
+  invoke 'jade'
 
-  # watch all the files
+  # watch all the coffeescript files
   for n in nodes
     do (n) ->
       fs.watchFile n.file, (now, old) ->
         console.log "#{n.file} changed. rebuilding"
         invoke 'build' if +now.mtime isnt +old.mtime
 
+  for j in jadein.split ' '
+    do (j) ->
+      fs.watchFile j, (now, old) ->
+        console.log "#{j} changed. rebuilding"
+        invoke 'jade' if +now.mtime isnt +old.mtime
+
 # serve task
-task 'serve', 'serve the files on a local webserver at port 8080', (options) ->
-  invoke 'build'
+task 'serve', 'watch and serve the files to localhost:8080', (options) ->
+  invoke 'watch'
   # start up a dev server
   devServer = new stat.Server '.'
   require('http').createServer( (request, response) ->
