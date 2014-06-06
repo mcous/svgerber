@@ -181,13 +181,13 @@
         case 70:
           if (this.units == null) {
             console.log("warning: deprecated G70 command used to set units to in");
-            this.units = 'I';
+            this.units = 'IN';
           }
           break;
         case 71:
           if (this.units == null) {
-            console.log("warning: deprecated G70 command used to set units to mm");
-            this.units = 'M';
+            console.log("warning: deprecated G71 command used to set units to mm");
+            this.units = 'MM';
           }
           break;
         case 90:
@@ -233,6 +233,9 @@
         } else {
           if (line.match(gMatch)) {
             line = this.parseGCode(line);
+          }
+          if ((line === "") || (line.match(/^\*$/))) {
+            console.log("empty (or emptied) line");
           } else if (line.match(apertureMatch)) {
             ap = this.parseAperture(line);
             if (this.apertures[ap.code - 10] == null) {

@@ -475,3 +475,43 @@ describe 'Plotter class', ->
       p.parseGCode g
       result = p.aMode
       expect(result).toBe 75
+
+    it 'should set the units with G70 and G71 if the units are null', ->
+      p = new plotter.Plotter("")
+      g = "G70*"
+      p.parseGCode g
+      result = p.units
+      expect(result).toBe 'IN'
+
+      p = new plotter.Plotter("")
+      g = "G71*"
+      p.parseGCode g
+      result = p.units
+      expect(result).toBe 'MM'
+
+    it 'shouldnt do anything with G70/71 if units are already set', ->
+      p.plot()
+      g = "G71*"
+      p.parseGCode g
+      result = p.units
+      expect(result).toBe 'IN'
+
+    it 'should set the notation with G90 and G91 if the notation is null', ->
+      p = new plotter.Plotter("")
+      g = "G90*"
+      p.parseGCode g
+      result = p.notation
+      expect(result).toBe 'A'
+
+      p = new plotter.Plotter("")
+      g = "G91*"
+      p.parseGCode g
+      result = p.notation
+      expect(result).toBe 'I'
+
+    it 'shouldnt do anything with G90/91 if notation is already set', ->
+      p.plot()
+      g = "G91*"
+      p.parseGCode g
+      result = p.notation
+      expect(result).toBe 'A'

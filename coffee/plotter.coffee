@@ -199,12 +199,12 @@ class root.Plotter
       when 70
         if not @units?
           console.log "warning: deprecated G70 command used to set units to in"
-          @units = 'I'
+          @units = 'IN'
       # 71 is a deprecated command to set the units to mm
       when 71
         if not @units?
-          console.log "warning: deprecated G70 command used to set units to mm"
-          @units = 'M'
+          console.log "warning: deprecated G71 command used to set units to mm"
+          @units = 'MM'
       # 90 is a deprecated command to set absolute notation
       when 90
         if not @notation?
@@ -253,6 +253,9 @@ class root.Plotter
         # take care of any commands
         if line.match gMatch
           line = @parseGCode line
+        # check for an empty line
+        if (line is "") or (line.match /^\*$/)
+          console.log "empty (or emptied) line"
         # check for an aperture definition
         else if line.match apertureMatch
           ap = @parseAperture line
