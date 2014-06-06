@@ -21,7 +21,7 @@ opts = '--map'
 # jade
 # input files
 jadein = 'jade/index.jade'
-# output directories
+# output directory
 jadeout = '.'
 
 # simple dev server with node-static
