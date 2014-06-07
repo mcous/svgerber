@@ -20,9 +20,27 @@ fileToSVG = (file) ->
 # read a file to a div
 readFileToDiv = (event) ->
   if event.target.readyState is FileReader.DONE
-    textDiv = document.createElement 'p'
-    textDiv.innerHTML = fileToSVG event.target.result
-    document.getElementById('file-contents').insertBefore(textDiv, null)
+    # textDiv = document.createElement 'p'
+    # textDiv.innerHTML = fileToSVG event.target.result
+
+    # make a new layer to draw on
+    layer = new Layer 'testlayer'
+    # make a pad and add it to the layer
+    pad = new Pad 'C', 5, 5, [5]
+    trace = new Trace 'C', 50, 50, [10, 100, 60]
+    layer.layerObjects.push pad
+    layer.layerObjects.push trace
+
+    # create a div for the drawing to live in
+    drawDiv = document.createElement('div')
+    drawDiv.id = "layer-#{layer.name}"
+    drawDiv.class = 'layer-div'
+
+    document.getElementById('layers').insertBefore(drawDiv, null)
+
+    layer.draw(drawDiv.id)
+
+
 
 # take care of a file event
 handleFileSelect = (event) ->

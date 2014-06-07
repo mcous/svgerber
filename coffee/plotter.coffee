@@ -1,7 +1,7 @@
 # plotter classes for svgerber
 
 # we need the aperture and board class
-#require 'board'
+#require 'layer'
 #require 'aperture'
 
 # plotter class is exported
@@ -22,6 +22,10 @@ class Plotter
     @iMode = null
     # arc mode
     @aMode = null
+    # current x position
+    @xPos = 0
+    # current y position
+    @yPos
 
     # parse the monolithic string into an array of lines
     @gerber = gerberFile.split '\n'
@@ -218,6 +222,8 @@ class Plotter
     # return the rest of the string
     s[match.length..]
 
+  parseMove: (line) ->
+    
 
   plot: ->
     # flags for specs
@@ -232,11 +238,12 @@ class Plotter
     # different types of lines (all others ignored)
     formatMatch   = /^%FS.*\*%$/           # file spec
     unitMatch     = /^%MO((MM)|(IN))\*%$/  # unit spec
-    apertureMatch = /^%AD.*\*%$/            # aperture definition
-    gMatch        = /^G.*\*$/
+    apertureMatch = /^%AD.*\*%$/           # aperture definition
+    gMatch        = /^G.*\*$/              # G command code
+    endMatch      = /^M0?2\*$/             # end of file command code
 
     # loop through the lines of the gerber
-    for line in @gerber
+    for line, i in @gerber
       # first we need a format and units
       if (not gotFormat) or (not gotUnits)
         if line.match formatMatch
@@ -247,12 +254,14 @@ class Plotter
           gotUnits = true
       # once we've got those things, we can read the rest of the file
       else
+        # make sure the file hasn't ended
+        if line.match endMatch
+          console.log "#{line} indicates end of file at line: #{i}"
+          fileEnd = true
+          break
         # take care of any commands
-        if line.match gMatch
+        else if line.match gMatch
           line = @parseGCode line
-        # check for an empty line
-        if (line is "") or (line.match /^\*$/)
-          console.log "empty (or emptied) line"
         # check for an aperture definition
         else if line.match apertureMatch
           ap = @parseAperture line
@@ -269,6 +278,8 @@ class Plotter
       throw "NoFormatSpecGivenError"
     if not gotUnits
       throw "NoValidUnitsGivenError"
+    if not fileEnd
+      throw "NoM02CommandBeforeEndError"
 
 # export the Plotter class for node unit testing
 if exports? then exports.Plotter = Plotter

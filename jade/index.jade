@@ -6,16 +6,18 @@ html(lang="en")
     title svgerber
 
   body
-    h1 svgerber
+    h1 svgerbeR
     p let's do this thing
 
     // multiple files
     input(type='file' name='files[]' multiple)#files
     output#list
 
-    div#file-contents
+    div#layers
 
     // javascript
+    // svg.js
+    script(src='lib/svg.js')
     // app
     script(src='app.js')
     // plotter

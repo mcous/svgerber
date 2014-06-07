@@ -12,15 +12,14 @@
 # main project file
 main = 'app.coffee'
 # coffeescript source directory
-input = 'coffee'
+coffeedir = 'coffee'
 # output file
-output = 'app.js'
+jsout = 'app.js'
 # compiler options
 opts = '--map'
 
 # jade
-# input files
-jadein = 'jade/index.jade'
+jadedir = 'jade'
 # output directory
 jadeout = '.'
 
@@ -83,12 +82,12 @@ class Node
       deps[i] = d.match(/('[\w\.]+')|("[\w\.]+")/)[0]
       deps[i] = deps[i][1..-2]
       # lets find that file
-      if fs.existsSync(input+'/'+deps[i])
-        @depList.push input+'/'+deps[i]
-      else if fs.existsSync(input+'/'+deps[i]+'.coffee')
-        @depList.push input+'/'+deps[i]+'.coffee'
-      else if fs.existsSync(input+'/'+deps[i]+'.litcoffee')
-        @depList.push input+'/'+deps[i]+'.litcoffee'
+      if fs.existsSync(coffeedir+'/'+deps[i])
+        @depList.push coffeedir+'/'+deps[i]
+      else if fs.existsSync(coffeedir+'/'+deps[i]+'.coffee')
+        @depList.push coffeedir+'/'+deps[i]+'.coffee'
+      else if fs.existsSync(coffeedir+'/'+deps[i]+'.litcoffee')
+        @depList.push coffeedir+'/'+deps[i]+'.litcoffee'
       else
         throw "UnableToFind_#{deps[i]}_Error"
 
@@ -121,26 +120,40 @@ gatherChildren = (file, parent=null) ->
 # Cakefile tasks
 # build jade
 task 'jade', 'compile jade index to html', (options) ->
-  console.log "compiling #{jadein}\n"
-  exec "jade #{jadein} --out #{jadeout}"
+  console.log "compiling #{jadedir}\n"
+  exec "jade #{jadedir}/* --out #{jadeout}", (error, stdout, stderr) ->
+    if error? then console.log "error: #{stderr}"
+
 
 # watch task
 task 'watch', 'watch coffeescript and jade files for changes', (options) ->
   # do a build to get our dependency graph and html
   invoke 'build'
 
-  # watch all the coffeescript files
-  for n in nodes
-    do (n) ->
-      fs.watchFile n.file, (now, old) ->
-        console.log "#{n.file} changed. rebuilding"
-        invoke 'build' if +now.mtime isnt +old.mtime
+  # watch coffeescript files
+  fs.watch(coffeedir, (event, filename) ->
+    console.log "#{filename} was #{event}d; rebuilding #{jsout}"
+    invoke 'coffee'
+  )
 
-  for j in jadein.split ' '
-    do (j) ->
-      fs.watchFile j, (now, old) ->
-        console.log "#{j} changed. rebuilding"
-        invoke 'jade' if +now.mtime isnt +old.mtime
+  # watch jade files
+  fs.watch(jadedir, (event, filename) ->
+    console.log "#{filename} was #{event}d; rebuilding #{filename[..-6]}.html"
+    invoke 'jade'
+  )
+  # watch jade files
+  # watch all the coffeescript files
+  # for n in nodes
+  #   do (n) ->
+  #     fs.watchFile n.file, (now, old) ->
+  #       console.log "#{n.file} changed. rebuilding"
+  #       invoke 'build' if +now.mtime isnt +old.mtime
+  #
+  # for j in jadein.split ' '
+  #   do (j) ->
+  #     fs.watchFile j, (now, old) ->
+  #       console.log "#{j} changed. rebuilding"
+  #       invoke 'jade' if +now.mtime isnt +old.mtime
 
 # serve task
 task 'serve', 'watch and serve the files to localhost:8080', (options) ->
@@ -156,12 +169,11 @@ task 'serve', 'watch and serve the files to localhost:8080', (options) ->
     ).resume()
   ).listen port
 
-# build task
-task 'build', 'resolve dependencies and build the app', (options) ->
+task 'coffee', 'resolve dependencies and build the js app', (options) ->
   # gather all the children of the main app
   console.log "gathering dependencies of #{main}"
   nodes = []
-  gatherChildren input+'/'+main
+  gatherChildren coffeedir+'/'+main
 
   # sort the files be tree depth
   nodes.sort( (a,b) ->
@@ -179,8 +191,14 @@ task 'build', 'resolve dependencies and build the app', (options) ->
   console.log "files found: #{fileList}"
 
   # compile the coffee script
-  console.log "compiling #{output}\n"
-  exec "coffee #{opts} --join #{output} --compile #{fileList}"
+  console.log "compiling #{jsout}\n"
+  exec "coffee #{opts} --join #{jsout} --compile #{fileList}", (error, stdout, stderr) ->
+    if error? then console.log "error: #{stderr}"
 
+
+# build task
+task 'build', 'resolve dependencies and build the app', (options) ->
+  # compile the coffeescript
+  invoke 'coffee'
   # compile the jade
   invoke 'jade'
