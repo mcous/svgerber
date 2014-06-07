@@ -241,7 +241,10 @@ class Plotter
     apertureMatch = /^%AD.*\*%$/           # aperture definition
     gMatch        = /^G.*\*$/              # G command code
     endMatch      = /^M0?2\*$/             # end of file command code
-    moveMatch     = /^$/
+    moveMatch     = /^X[+-]?\d+Y[+-]?\d+D0?[123]$/ # move command
+
+    # create a new layer object
+    layer = new Layer('layerName')
 
     # loop through the lines of the gerber
     for line, i in @gerber
@@ -270,6 +273,8 @@ class Plotter
             @apertures[ap.code-10] = ap
           else
             throw "ApertureAlreadyExistsError"
+        else if line.match moveMatch
+
         else
           console.log "don't know what #{line} means"
 
