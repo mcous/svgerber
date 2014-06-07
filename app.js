@@ -190,7 +190,7 @@
 
     Layer.prototype.draw = function(id) {
       var o, svg, _i, _len, _ref, _results;
-      svg = SVG(id).size(500, 500);
+      svg = SVG(id);
       _ref = this.layerObjects;
       _results = [];
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -405,7 +405,7 @@
     Plotter.prototype.parseMove = function(line) {};
 
     Plotter.prototype.plot = function() {
-      var ap, apertureMatch, endMatch, fileEnd, formatMatch, gMatch, gotFormat, gotUnits, i, interpolationMode, line, quadrantMode, unitMatch, _i, _len, _ref;
+      var ap, apertureMatch, endMatch, fileEnd, formatMatch, gMatch, gotFormat, gotUnits, i, interpolationMode, line, moveMatch, quadrantMode, unitMatch, _i, _len, _ref;
       gotFormat = false;
       gotUnits = false;
       fileEnd = false;
@@ -416,6 +416,7 @@
       apertureMatch = /^%AD.*\*%$/;
       gMatch = /^G.*\*$/;
       endMatch = /^M0?2\*$/;
+      moveMatch = /^$/;
       _ref = this.gerber;
       for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
         line = _ref[i];
@@ -476,8 +477,8 @@
     var drawDiv, layer, pad, trace;
     if (event.target.readyState === FileReader.DONE) {
       layer = new Layer('testlayer');
-      pad = new Pad('C', 5, 5, [5]);
-      trace = new Trace('C', 50, 50, [10, 100, 60]);
+      pad = new Pad('C', '1in', '1in', ['0.5in']);
+      trace = new Trace('C', '0.01in', '1in', ['0.005in', '3in', '1in']);
       layer.layerObjects.push(pad);
       layer.layerObjects.push(trace);
       drawDiv = document.createElement('div');

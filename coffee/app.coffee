@@ -26,8 +26,8 @@ readFileToDiv = (event) ->
     # make a new layer to draw on
     layer = new Layer 'testlayer'
     # make a pad and add it to the layer
-    pad = new Pad 'C', 5, 5, [5]
-    trace = new Trace 'C', 50, 50, [10, 100, 60]
+    pad = new Pad 'C', '1in', '1in', ['0.5in']
+    trace = new Trace 'C', '0.01in', '1in', ['0.005in', '3in', '1in']
     layer.layerObjects.push pad
     layer.layerObjects.push trace
 

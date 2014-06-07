@@ -223,7 +223,7 @@ class Plotter
     s[match.length..]
 
   parseMove: (line) ->
-    
+
 
   plot: ->
     # flags for specs
@@ -241,6 +241,7 @@ class Plotter
     apertureMatch = /^%AD.*\*%$/           # aperture definition
     gMatch        = /^G.*\*$/              # G command code
     endMatch      = /^M0?2\*$/             # end of file command code
+    moveMatch     = /^$/
 
     # loop through the lines of the gerber
     for line, i in @gerber

@@ -126,7 +126,7 @@ class Layer
 
   draw: (id) ->
     # create an SVG object
-    svg = SVG(id).size 500,500
+    svg = SVG(id)
     # draw a rectanle
     # rect = drawing.rect(100, 100).attr({ fill: '#f06' })
     # return the div
