@@ -25,7 +25,7 @@ class Plotter
     # current x position
     @xPos = 0
     # current y position
-    @yPos
+    @yPos = 0
 
     # parse the monolithic string into an array of lines
     @gerber = gerberFile.split '\n'
@@ -222,8 +222,18 @@ class Plotter
     # return the rest of the string
     s[match.length..]
 
-  parseMove: (line) ->
+  # takes a coordinate in the form of [XY]nnnnnnn
+  # returns a dec
+  parseCoordinate: (coord) ->
+    if
 
+  parseMove: (line) ->
+    # get the x coordinate if there is one
+    x = line.match /X[+-]?[\d]+/
+    if x? then x = parseCoordinate x[0]
+    # do the same with y
+    y = line.match /Y[+-]?[\d]+/
+    if y? then y = parseCoordinate y[0]
 
   plot: ->
     # flags for specs
@@ -241,14 +251,20 @@ class Plotter
     apertureMatch = /^%AD.*\*%$/           # aperture definition
     gMatch        = /^G.*\*$/              # G command code
     endMatch      = /^M0?2\*$/             # end of file command code
-    moveMatch     = /^X[+-]?\d+Y[+-]?\d+D0?[123]$/ # move command
+    moveMatch     = /^(X[+-]?\d+)?(Y[+-]?\d+)?D0?[123]$/ # move command
 
     # create a new layer object
     layer = new Layer('layerName')
 
     # loop through the lines of the gerber
     for line, i in @gerber
-      # first we need a format and units
+      # make sure the file hasn't ended
+      if line.match endMatch
+        console.log "#{line} indicates end of file at line: #{i}"
+        fileEnd = true
+        break
+
+      # if we haven't got format and units yet, we'll need them
       if (not gotFormat) or (not gotUnits)
         if line.match formatMatch
           @parseFormatSpec line
@@ -256,24 +272,24 @@ class Plotter
         else if line.match unitMatch
           @parseUnits line
           gotUnits = true
+
       # once we've got those things, we can read the rest of the file
       else
-        # make sure the file hasn't ended
-        if line.match endMatch
-          console.log "#{line} indicates end of file at line: #{i}"
-          fileEnd = true
-          break
         # take care of any commands
-        else if line.match gMatch
+        if line.match gMatch
           line = @parseGCode line
+
+        # line will now be stripped of any g commands
         # check for an aperture definition
-        else if line.match apertureMatch
+        if line.match apertureMatch
           ap = @parseAperture line
           if not @apertures[ap.code-10]?
             @apertures[ap.code-10] = ap
           else
             throw "ApertureAlreadyExistsError"
+        # check for a move command
         else if line.match moveMatch
+
 
         else
           console.log "don't know what #{line} means"
@@ -286,6 +302,9 @@ class Plotter
       throw "NoValidUnitsGivenError"
     if not fileEnd
       throw "NoM02CommandBeforeEndError"
+
+    # return the layer that was plotted
+    layer
 
 # export the Plotter class for node unit testing
 if exports? then exports.Plotter = Plotter

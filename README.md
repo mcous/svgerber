@@ -2,7 +2,7 @@
 Get it?
 
 ## what?
-It's a coffeescript based client-side gerber file to svg converter.
+It's a browser based client-side gerber file to svg converter.
 
 ## why?
 'Cause.

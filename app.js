@@ -219,7 +219,7 @@
       this.iMode = null;
       this.aMode = null;
       this.xPos = 0;
-      this.yPos;
+      this.yPos = 0;
       this.gerber = gerberFile.split('\n');
       console.log("Plotter created");
     }
@@ -405,7 +405,7 @@
     Plotter.prototype.parseMove = function(line) {};
 
     Plotter.prototype.plot = function() {
-      var ap, apertureMatch, endMatch, fileEnd, formatMatch, gMatch, gotFormat, gotUnits, i, interpolationMode, line, moveMatch, quadrantMode, unitMatch, _i, _len, _ref;
+      var ap, apertureMatch, endMatch, fileEnd, formatMatch, gMatch, gotFormat, gotUnits, i, interpolationMode, layer, line, moveMatch, quadrantMode, unitMatch, _i, _len, _ref;
       gotFormat = false;
       gotUnits = false;
       fileEnd = false;
@@ -416,10 +416,16 @@
       apertureMatch = /^%AD.*\*%$/;
       gMatch = /^G.*\*$/;
       endMatch = /^M0?2\*$/;
-      moveMatch = /^$/;
+      moveMatch = /^(X[+-]?\d+)?(Y[+-]?\d+)?D0?[123]$/;
+      layer = new Layer('layerName');
       _ref = this.gerber;
       for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
         line = _ref[i];
+        if (line.match(endMatch)) {
+          console.log("" + line + " indicates end of file at line: " + i);
+          fileEnd = true;
+          break;
+        }
         if ((!gotFormat) || (!gotUnits)) {
           if (line.match(formatMatch)) {
             this.parseFormatSpec(line);
@@ -429,19 +435,18 @@
             gotUnits = true;
           }
         } else {
-          if (line.match(endMatch)) {
-            console.log("" + line + " indicates end of file at line: " + i);
-            fileEnd = true;
-            break;
-          } else if (line.match(gMatch)) {
+          if (line.match(gMatch)) {
             line = this.parseGCode(line);
-          } else if (line.match(apertureMatch)) {
+          }
+          if (line.match(apertureMatch)) {
             ap = this.parseAperture(line);
             if (this.apertures[ap.code - 10] == null) {
               this.apertures[ap.code - 10] = ap;
             } else {
               throw "ApertureAlreadyExistsError";
             }
+          } else if (line.match(moveMatch)) {
+
           } else {
             console.log("don't know what " + line + " means");
           }
@@ -456,6 +461,7 @@
       if (!fileEnd) {
         throw "NoM02CommandBeforeEndError";
       }
+      return layer;
     };
 
     return Plotter;
