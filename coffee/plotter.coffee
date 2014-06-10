@@ -4,8 +4,11 @@
 #require 'layer'
 #require 'aperture'
 
+# export the Plotter
+root = exports ? this
+
 # plotter class is exported
-class Plotter
+class root.Plotter
   # constructor takes in gerber file as string
   constructor: (gerberFile) ->
     # stuff we'll be using
@@ -345,6 +348,3 @@ class Plotter
 
     # return the layer that was plotted
     layer
-
-# export the Plotter class for node unit testing
-if exports? then exports.Plotter = Plotter

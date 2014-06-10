@@ -1,6 +1,10 @@
 # a selection of classes for building a circuit board
 
+#require 'lib/svg.js'
 #require 'aperture.coffee'
+
+# export the Layer
+root = exports ? this
 
 # layer object (pad or trace)
 class LayerObject
@@ -104,7 +108,7 @@ class Trace extends LayerObject
 class Fill extends LayerObject
 
 # layer class
-class Layer
+class root.Layer
   constructor: (@name) ->
     @layerObjects = []
 
@@ -133,8 +137,3 @@ class Layer
     #drawDiv
     # draw all the objects
     o.draw(svg) for o in @layerObjects
-
-
-
-# export the Board class for node unit testing
-if exports? then exports.Layer = Layer

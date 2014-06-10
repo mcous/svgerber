@@ -8,20 +8,46 @@
 #
 # coffeescript files will be concatinated into one javascript file
 
+# Cakefile options
+# valid build environments (first value is default)
+envs = [
+  'dev'          # development environment (default)
+  'productions'  # production environment
+]
+env = null
+
 # coffeescript
 # main project file
 main = 'app.coffee'
 # coffeescript source directory
-coffeedir = 'coffee'
-# output file
-jsout = 'app.js'
+coffeeDir = 'coffee'
+# intermediate js output directory
+jsDir = 'js'
 # compiler options
-opts = '--map'
+coffeeOpts = {
+  'dev': '--map'
+  'production': ''
+}
+# dependency resolution
+nodes = []
+jsList = ''
+
+# uglify.js
+uglyOpts = ''
+# output bundle file
+bundle = 'app.js'
 
 # jade
-jadedir = 'jade'
+jadeDir = 'jade'
 # output directory
-jadeout = '.'
+jadeOut = '.'
+# includes directory
+jadeIncludes = 'jade-includes'
+# compiler options
+jadeOpts = {
+  'dev': '--pretty'
+  'production': ''
+}
 
 # simple dev server with node-static
 port = 8080
@@ -35,7 +61,7 @@ stat = require 'node-static'
 
 # constants
 # match for the require call
-requireMatch = /^#require\s+(('[\w\.]+')|("[\w\.]+"))\s*$/
+requireMatch = /^#require\s+(('[\w\.\/]+')|("[\w\.\/]+"))\s*$/
 
 # dependency node class to build out the graph
 class Node
@@ -79,20 +105,21 @@ class Node
     # format them into their full filenames
     for d,i in deps
       # strip away the require stuff
-      deps[i] = d.match(/('[\w\.]+')|("[\w\.]+")/)[0]
+      deps[i] = d.match(/('[\w\.\/]+')|("[\w\.\/]+")/)[0]
       deps[i] = deps[i][1..-2]
       # lets find that file
-      if fs.existsSync(coffeedir+'/'+deps[i])
-        @depList.push coffeedir+'/'+deps[i]
-      else if fs.existsSync(coffeedir+'/'+deps[i]+'.coffee')
-        @depList.push coffeedir+'/'+deps[i]+'.coffee'
-      else if fs.existsSync(coffeedir+'/'+deps[i]+'.litcoffee')
-        @depList.push coffeedir+'/'+deps[i]+'.litcoffee'
+      if fs.existsSync(deps[i])
+        @depList.push deps[i]
+      else if fs.existsSync(coffeeDir+'/'+deps[i])
+        @depList.push coffeeDir+'/'+deps[i]
+      else if fs.existsSync(coffeeDir+'/'+deps[i]+'.coffee')
+        @depList.push coffeeDir+'/'+deps[i]+'.coffee'
+      else if fs.existsSync(coffeeDir+'/'+deps[i]+'.litcoffee')
+        @depList.push coffeeDir+'/'+deps[i]+'.litcoffee'
       else
         throw "UnableToFind_#{deps[i]}_Error"
 
 # build the file node list recursively
-nodes = []
 gatherChildren = (file, parent=null) ->
   # check to see if the file has already got a node
   nodeExists = false
@@ -117,13 +144,46 @@ gatherChildren = (file, parent=null) ->
   # return the node for recursability
   node
 
+
+# Cakefile options
+option '-e', '--environment [ENV_NAME]', 'set the build environment (dev or production)'
+
+# build the environment
+task 'build:environment', (options) ->
+  env = options.environment ? envs[0]
+  if env in envs is -1 then throw "#{env} is not a valid environment (dev or production)"
+  console.log "env set to #{env}"
+invoke 'build:environment'
+
+
 # Cakefile tasks
 # build jade
-task 'jade', 'compile jade index to html', (options) ->
-  console.log "compiling #{jadedir}\n"
-  exec "jade #{jadedir}/* --out #{jadeout}", (error, stdout, stderr) ->
-    if error? then console.log "error: #{stderr}"
+task 'build:jade', 'compile jade index to html', (options) ->
+  # get our list of scripts
+  scripts = ''
+  if nodes.length is 0 then throw 'coffeeNotCompiledError'
 
+  if env is 'dev'
+    for j in jsList.split ' '
+      if j.length isnt 0 then scripts += "script(src='#{j}')\n"
+  else if env is 'production'
+    scripts = "script(src='#{bundle}')\n"
+
+  # write the scripts.jade file
+  console.log "building jade include for scripts for #{env}"
+  fs.mkdir(jadeIncludes, (error) ->
+    fs.writeFile("#{jadeIncludes}/scripts.jade", scripts, (error) ->
+      if error then throw error
+      console.log "#{jadeIncludes}/scripts.jade written; make sure it is included in the necessary jade files"
+
+      # compile the jade
+      console.log "compiling jade to html"
+      exec "jade #{jadeOpts[env]} --out #{jadeOut} #{jadeDir}/*", (error, stdout, stderr) ->
+        if error then throw error
+        console.log "...done compiling jade"
+        console.log stdout + stderr
+    )
+  )
 
 # watch task
 task 'watch', 'watch coffeescript and jade files for changes', (options) ->
@@ -131,29 +191,17 @@ task 'watch', 'watch coffeescript and jade files for changes', (options) ->
   invoke 'build'
 
   # watch coffeescript files
-  fs.watch(coffeedir, (event, filename) ->
-    console.log "#{filename} was #{event}d; rebuilding #{jsout}"
-    invoke 'coffee'
+  fs.watch(coffeeDir, (event, filename) ->
+    console.log "#{filename} was #{event}d; rebuilding"
+    invoke 'build'
   )
 
   # watch jade files
-  fs.watch(jadedir, (event, filename) ->
+  fs.watch(jadeDir, (event, filename) ->
     console.log "#{filename} was #{event}d; rebuilding #{filename[..-6]}.html"
-    invoke 'jade'
+    invoke 'build'
   )
-  # watch jade files
-  # watch all the coffeescript files
-  # for n in nodes
-  #   do (n) ->
-  #     fs.watchFile n.file, (now, old) ->
-  #       console.log "#{n.file} changed. rebuilding"
-  #       invoke 'build' if +now.mtime isnt +old.mtime
-  #
-  # for j in jadein.split ' '
-  #   do (j) ->
-  #     fs.watchFile j, (now, old) ->
-  #       console.log "#{j} changed. rebuilding"
-  #       invoke 'jade' if +now.mtime isnt +old.mtime
+
 
 # serve task
 task 'serve', 'watch and serve the files to localhost:8080', (options) ->
@@ -169,11 +217,11 @@ task 'serve', 'watch and serve the files to localhost:8080', (options) ->
     ).resume()
   ).listen port
 
-task 'coffee', 'resolve dependencies and build the js app', (options) ->
+task 'build', 'resolve coffee dependencies, compile coffee, and compile jade', (options) ->
   # gather all the children of the main app
   console.log "gathering dependencies of #{main}"
   nodes = []
-  gatherChildren coffeedir+'/'+main
+  gatherChildren coffeeDir+'/'+main
 
   # sort the files be tree depth
   nodes.sort( (a,b) ->
@@ -186,19 +234,44 @@ task 'coffee', 'resolve dependencies and build the js app', (options) ->
 
   # create a list of files in order
   fileList = ''
+  jsList = ''
+  coffeeList = ''
   for n in nodes
-    fileList += n.file + ' '
+    f = n.file
+    fileList += f + ' '
+    # check if the file is coffee
+    if f.match /^.+\.(lit)?coffee$/
+      # add it to the coffee list
+      coffeeList += f + ' '
+      # strip out coffee extension and dir and replace with js
+      f = f[coffeeDir.length..]
+      f = f.match /.*(?=((lit)?coffee$))/
+      f = jsDir + f[0] + 'js'
+    # push the files to the js list
+    jsList += f + ' '
   console.log "files found: #{fileList}"
 
+  # it is now fine to build the jade
+  invoke 'build:jade'
+
   # compile the coffee script
-  console.log "compiling #{jsout}\n"
-  exec "coffee #{opts} --join #{jsout} --compile #{fileList}", (error, stdout, stderr) ->
-    if error? then console.log "error: #{stderr}"
+  console.log "compiling coffeescript"
+  exec "coffee #{coffeeOpts[env]} --output #{jsDir} --compile #{coffeeList}", (error, stdout, stderr) ->
+    if error then throw error
 
+    console.log "...done compiling coffee"
+    console.log stdout + stderr
 
-# build task
-task 'build', 'resolve dependencies and build the app', (options) ->
-  # compile the coffeescript
-  invoke 'coffee'
-  # compile the jade
-  invoke 'jade'
+    # if the dev is production, bundle the js
+    if env is 'production' then invoke 'build:bundle'
+
+task 'build:bundle', 'bundle all the js files together', (options) ->
+  # throw an error if coffee wasn't built beforehand
+  if jsList.length is 0 then throw 'CoffeeNotCompiledError'
+
+  # concatinate the js files
+  console.log "concatinating javascript files..."
+  exec "uglifyjs #{jsList} --verbose --output #{bundle}", (error, stdout, stderr) ->
+    if error then throw error
+    console.log "...done concatinating"
+    console.log stdout + stderr
