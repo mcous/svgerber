@@ -216,6 +216,7 @@
       this.trailDigits = null;
       this.units = null;
       this.apertures = [];
+      this.tool = null;
       this.iMode = null;
       this.aMode = null;
       this.xPos = 0;
@@ -402,10 +403,67 @@
       return s.slice(match.length);
     };
 
-    Plotter.prototype.parseMove = function(line) {};
+    Plotter.prototype.parseCoordinate = function(coord) {
+      var c;
+      console.log("parsing coordinates");
+      coord = coord.slice(1);
+      if (this.zeroOmit === 'L') {
+        console.log("coord is " + coord);
+        c = coord.slice(0, +(-(this.trailDigits + 1)) + 1 || 9e9) + '.' + coord.slice(-this.trailDigits);
+        console.log("c is " + c);
+        return parseFloat(c);
+      } else if (this.zeroOmit === 'T') {
+        c = coord.slice(0, +this.leadDigits + 1 || 9e9) + '.' + coord.slice(this.leadDigits);
+        return parseFloat(coord.slice(0, +this.leadDigits + 1 || 9e9) + '.' + coord.slice(this.leadDigits));
+      }
+    };
+
+    Plotter.prototype.parseMove = function(line) {
+      var x, y;
+      x = line.match(/X[+-]?[\d]+/);
+      if (x != null) {
+        x = this.parseCoordinate(x[0]);
+      }
+      y = line.match(/Y[+-]?[\d]+/);
+      if (y != null) {
+        y = this.parseCoordinate(y[0]);
+      }
+      return this.move(x, y);
+    };
+
+    Plotter.prototype.move = function(x, y) {
+      console.log("moving to " + x + ", " + y);
+      this.xPos = x;
+      return this.yPos = y;
+    };
+
+    Plotter.prototype.stroke = function(x, y) {
+      var t;
+      return t = new Trace(this.tool, this.xPos, this.yPos, [x, y]);
+    };
+
+    Plotter.prototype.flash = function(x, y) {
+      return console.log;
+    };
+
+    Plotter.prototype.parseToolChange = function(line) {
+      var tool;
+      if (!line.match(/^D1\d+\*$/)) {
+        throw "BadToolLineError";
+      }
+      tool = parseInt(line.slice(1, -1), 10);
+      return this.changeTool(tool);
+    };
+
+    Plotter.prototype.changeTool = function(tool) {
+      if (tool < 10) {
+        throw "Tool_" + tool + "_IsOutOfRangeError";
+      }
+      return this.tool = this.apertures[tool - 10];
+    };
 
     Plotter.prototype.plot = function() {
-      var ap, apertureMatch, endMatch, fileEnd, formatMatch, gMatch, gotFormat, gotUnits, i, interpolationMode, layer, line, moveMatch, quadrantMode, unitMatch, _i, _len, _ref;
+      var ap, apertureMatch, endMatch, fileEnd, formatMatch, gMatch, gotFormat, gotUnits, i, interpolationMode, layer, line, moveMatch, quadrantMode, toolMatch, unitMatch, _i, _len, _ref;
       gotFormat = false;
       gotUnits = false;
       fileEnd = false;
@@ -416,7 +474,8 @@
       apertureMatch = /^%AD.*\*%$/;
       gMatch = /^G.*\*$/;
       endMatch = /^M0?2\*$/;
-      moveMatch = /^(X[+-]?\d+)?(Y[+-]?\d+)?D0?[123]$/;
+      toolMatch = /^D1\d+\*$/;
+      moveMatch = /^(X[+-]?\d+)?(Y[+-]?\d+)?D0?[123]\*$/;
       layer = new Layer('layerName');
       _ref = this.gerber;
       for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
@@ -445,8 +504,12 @@
             } else {
               throw "ApertureAlreadyExistsError";
             }
+          } else if (line.match(toolMatch)) {
+            console.log("changing tool to " + line);
+            this.parseToolChange(line);
+            console.log("current tool " + this.tool.code + " is a " + this.tool.shape);
           } else if (line.match(moveMatch)) {
-
+            this.parseMove(line);
           } else {
             console.log("don't know what " + line + " means");
           }
@@ -480,18 +543,8 @@
   };
 
   readFileToDiv = function(event) {
-    var drawDiv, layer, pad, trace;
     if (event.target.readyState === FileReader.DONE) {
-      layer = new Layer('testlayer');
-      pad = new Pad('C', '1in', '1in', ['0.5in']);
-      trace = new Trace('C', '0.01in', '1in', ['0.005in', '3in', '1in']);
-      layer.layerObjects.push(pad);
-      layer.layerObjects.push(trace);
-      drawDiv = document.createElement('div');
-      drawDiv.id = "layer-" + layer.name;
-      drawDiv["class"] = 'layer-div';
-      document.getElementById('layers').insertBefore(drawDiv, null);
-      return layer.draw(drawDiv.id);
+      return fileToSVG(event.target.result);
     }
   };
 

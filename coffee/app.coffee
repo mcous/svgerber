@@ -23,22 +23,25 @@ readFileToDiv = (event) ->
     # textDiv = document.createElement 'p'
     # textDiv.innerHTML = fileToSVG event.target.result
 
-    # make a new layer to draw on
-    layer = new Layer 'testlayer'
-    # make a pad and add it to the layer
-    pad = new Pad 'C', '1in', '1in', ['0.5in']
-    trace = new Trace 'C', '0.01in', '1in', ['0.005in', '3in', '1in']
-    layer.layerObjects.push pad
-    layer.layerObjects.push trace
+    # plot something
+    fileToSVG event.target.result
 
-    # create a div for the drawing to live in
-    drawDiv = document.createElement('div')
-    drawDiv.id = "layer-#{layer.name}"
-    drawDiv.class = 'layer-div'
-
-    document.getElementById('layers').insertBefore(drawDiv, null)
-
-    layer.draw(drawDiv.id)
+    # # make a new layer to draw on
+    # layer = new Layer 'testlayer'
+    # # make a pad and add it to the layer
+    # pad = new Pad 'C', '1in', '1in', ['0.5in']
+    # trace = new Trace 'C', '0.01in', '1in', ['0.005in', '3in', '1in']
+    # layer.layerObjects.push pad
+    # layer.layerObjects.push trace
+    #
+    # # create a div for the drawing to live in
+    # drawDiv = document.createElement('div')
+    # drawDiv.id = "layer-#{layer.name}"
+    # drawDiv.class = 'layer-div'
+    #
+    # document.getElementById('layers').insertBefore(drawDiv, null)
+    #
+    # layer.draw(drawDiv.id)
 
 
 

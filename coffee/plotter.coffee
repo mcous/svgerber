@@ -16,15 +16,14 @@ class Plotter
     @trailDigits = null
     # units
     @units = null
-    # aperture list
+    # aperture list and current tool
     @apertures = []
-    # interpolation mode
+    @tool = null
+    # interpolation and arc mode
     @iMode = null
-    # arc mode
     @aMode = null
-    # current x position
+    # current position
     @xPos = 0
-    # current y position
     @yPos = 0
 
     # parse the monolithic string into an array of lines
@@ -225,15 +224,48 @@ class Plotter
   # takes a coordinate in the form of [XY]nnnnnnn
   # returns a dec
   parseCoordinate: (coord) ->
-    if
+    console.log "parsing coordinates"
+    coord = coord[1..]
+    if @zeroOmit is 'L'
+      console.log "coord is #{coord}"
+      c = coord[0..-(@trailDigits+1)] + '.' + coord[-@trailDigits..]
+      console.log "c is #{c}"
+      parseFloat c
+    else if @zeroOmit is 'T'
+      c = coord[0..@leadDigits] + '.' + coord[@leadDigits..]
+      parseFloat coord[0..@leadDigits] + '.' + coord[@leadDigits..]
 
   parseMove: (line) ->
     # get the x coordinate if there is one
     x = line.match /X[+-]?[\d]+/
-    if x? then x = parseCoordinate x[0]
+    if x? then x = @parseCoordinate x[0]
     # do the same with y
     y = line.match /Y[+-]?[\d]+/
-    if y? then y = parseCoordinate y[0]
+    if y? then y = @parseCoordinate y[0]
+
+
+
+    @move x, y
+
+  move: (x, y) ->
+    console.log "moving to #{x}, #{y}"
+    @xPos = x
+    @yPos = y
+
+  stroke: (x, y) ->
+    t = new Trace(@tool, @xPos, @yPos, [x, y])
+
+  flash: (x, y) ->
+    console.log
+
+  parseToolChange: (line) ->
+    unless line.match /^D1\d+\*$/ then throw "BadToolLineError"
+    tool = parseInt(line[1..-2], 10)
+    @changeTool tool
+
+  changeTool: (tool) ->
+    if tool < 10 then throw "Tool_#{tool}_IsOutOfRangeError"
+    @tool = @apertures[tool-10]
 
   plot: ->
     # flags for specs
@@ -251,7 +283,8 @@ class Plotter
     apertureMatch = /^%AD.*\*%$/           # aperture definition
     gMatch        = /^G.*\*$/              # G command code
     endMatch      = /^M0?2\*$/             # end of file command code
-    moveMatch     = /^(X[+-]?\d+)?(Y[+-]?\d+)?D0?[123]$/ # move command
+    toolMatch     = /^D1\d+\*$/            # tool select command
+    moveMatch     = /^(X[+-]?\d+)?(Y[+-]?\d+)?D0?[123]\*$/ # move command
 
     # create a new layer object
     layer = new Layer('layerName')
@@ -287,8 +320,15 @@ class Plotter
             @apertures[ap.code-10] = ap
           else
             throw "ApertureAlreadyExistsError"
+        # check for a tool select command
+        else if line.match toolMatch
+          console.log "changing tool to #{line}"
+          @parseToolChange line
+          console.log "current tool #{@tool.code} is a #{@tool.shape}"
         # check for a move command
         else if line.match moveMatch
+          # console.log "moving according to #{line}"
+          @parseMove line
 
 
         else
