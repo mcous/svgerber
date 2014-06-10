@@ -1,18 +1,13 @@
 # cakefile for svgerber
-#
 # This cakefile supports automatic dependency resolution by sticking:
-
   #require "filename"
-
 # in any file that depends on another file.
-#
-# coffeescript files will be concatinated into one javascript file
 
 # Cakefile options
 # valid build environments (first value is default)
 envs = [
   'dev'          # development environment (default)
-  'productions'  # production environment
+  'production'  # production environment
 ]
 env = null
 
@@ -150,15 +145,17 @@ option '-e', '--environment [ENV_NAME]', 'set the build environment (dev or prod
 
 # build the environment
 task 'build:environment', (options) ->
+  console.log options.environment
   env = options.environment ? envs[0]
   if env in envs is -1 then throw "#{env} is not a valid environment (dev or production)"
   console.log "env set to #{env}"
-invoke 'build:environment'
-
 
 # Cakefile tasks
 # build jade
 task 'build:jade', 'compile jade index to html', (options) ->
+  # build the environment
+  invoke 'build:environment'
+
   # get our list of scripts
   scripts = ''
   if nodes.length is 0 then throw 'coffeeNotCompiledError'
