@@ -6,19 +6,14 @@ html(lang="en")
     title svgerber
 
   body
-    h1 svgerber
+    h1 svgerbeR
     p let's do this thing
 
     // multiple files
     input(type='file' name='files[]' multiple)#files
     output#list
 
-    div#file-contents
+    div#layers
 
     // javascript
-    // app
-    script(src='app.js')
-    // plotter
-    //script(src='js/plotter.js')
-    // app
-    //script(src='js/svgerber.js')
+    include ../jade-includes/scripts

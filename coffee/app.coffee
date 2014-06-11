@@ -1,9 +1,10 @@
 # simple file reader for svGerber
 
+# app dependencies
 #require 'plotter'
 
 # convert a file to an svg
-fileToSVG = (file) ->
+fileToSVG = (file, filename) ->
   # lines = file.split "\n"
   # lines = getGerberFormat lines
   # lines = getGerberUnits lines
@@ -13,15 +14,37 @@ fileToSVG = (file) ->
   # console.log lines
   # console.log aps
   console.log 'converting to svg'
-  p = new Plotter(file)
-  p.plot()
+  p = new Plotter(file, filename[-3..])
+
+  # plot and return the layer that was plotted
+  layer = p.plot()
 
 # read a file to a div
-readFileToDiv = (event) ->
+readFileToDiv = (event, filename) ->
   if event.target.readyState is FileReader.DONE
-    textDiv = document.createElement 'p'
-    textDiv.innerHTML = fileToSVG event.target.result
-    document.getElementById('file-contents').insertBefore(textDiv, null)
+    # textDiv = document.createElement 'p'
+    # textDiv.innerHTML = fileToSVG event.target.result
+
+    # plot something
+    layer = fileToSVG event.target.result, filename
+
+    # # make a new layer to draw on
+    # layer = new Layer 'testlayer'
+    # # make a pad and add it to the layer
+    # pad = new Pad 'C', '1in', '1in', ['0.5in']
+    # trace = new Trace 'C', '0.01in', '1in', ['0.005in', '3in', '1in']
+    # layer.layerObjects.push pad
+    # layer.layerObjects.push trace
+    #
+    # create a div for the drawing to live in
+    drawDiv = document.createElement('div')
+    drawDiv.id = "layer-#{layer.name}"
+    drawDiv.class = 'layer-div'
+    document.getElementById('layers').insertBefore(drawDiv, null)
+
+    layer.draw(drawDiv.id)
+
+
 
 # take care of a file event
 handleFileSelect = (event) ->
@@ -38,10 +61,12 @@ handleFileSelect = (event) ->
 
   # read the uploaded files to a div
   for f in importFiles
-    # file reader with onload event attached
-    reader = new FileReader()
-    reader.addEventListener('loadend', readFileToDiv, false)
-    reader.readAsText(f)
+    do (f) ->
+      # file reader with onload event attached
+      reader = new FileReader()
+      reader.onloadend = (event) ->
+        readFileToDiv event, f.name
+      reader.readAsText(f)
 
 # attach the event listener
 document.getElementById('files').addEventListener('change', handleFileSelect, false)

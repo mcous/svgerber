@@ -1,16 +1,16 @@
-# plotter class for svgerber
-# constructor takes in gerber file as string
+# plotter classes for svgerber
 
-# export the class for node or browser
+# we need the aperture and board class
+#require 'layer'
+#require 'aperture'
+
+# export the Plotter
 root = exports ? this
 
-# aperture class
-class Aperture
-  constructor: (@code, @shape, @params) ->
-    console.log "Aperture " + @code + " was created and is a " + @shape
-
+# plotter class is exported
 class root.Plotter
-  constructor: (gerberFile) ->
+  # constructor takes in gerber file as string
+  constructor: (gerberFile, @name) ->
     # stuff we'll be using
     # formatting
     @zeroOmit = null
@@ -19,17 +19,20 @@ class root.Plotter
     @trailDigits = null
     # units
     @units = null
-    # aperture list
+    # aperture list and current tool
     @apertures = []
-    # interpolation mode
+    @tool = null
+    # interpolation and arc mode
     @iMode = null
-    # arc mode
     @aMode = null
+    # current position
+    @xPos = 0
+    @yPos = 0
 
     # parse the monolithic string into an array of lines
     @gerber = gerberFile.split '\n'
     # notify those concerned
-    console.log "Plotter created"
+    console.log "Plotter for #{@name} created"
 
   parseFormatSpec: (fS) ->
     formatMatch = /^%FS.*\*%$/  # file spec regex
@@ -221,6 +224,64 @@ class root.Plotter
     # return the rest of the string
     s[match.length..]
 
+  # takes a coordinate in the form of [XY]nnnnnnn
+  # returns a dec
+  parseCoordinate: (coord) ->
+    console.log "parsing coordinates"
+    coord = coord[1..]
+    if @zeroOmit is 'L'
+      console.log "coord is #{coord}"
+      c = coord[0..-(@trailDigits+1)] + '.' + coord[-@trailDigits..]
+      console.log "c is #{c}"
+      parseFloat c
+    else if @zeroOmit is 'T'
+      c = coord[0..@leadDigits] + '.' + coord[@leadDigits..]
+      parseFloat coord[0..@leadDigits] + '.' + coord[@leadDigits..]
+
+  parseMove: (line, layer) ->
+    # get the x coordinate if there is one
+    x = line.match /X[+-]?[\d]+/
+    if x? then x = @parseCoordinate x[0]
+    # do the same with y
+    y = line.match /Y[+-]?[\d]+/
+    if y? then y = @parseCoordinate y[0]
+
+    command = line.match /D0?[123](?=\*$)/
+    if command? then command = command[0][-1..]
+
+    @move x, y, command, layer
+
+  move: (x, y, command, layer) ->
+    console.log command
+    # if stroke command
+    if command is '1'
+      console.log "making line with aperture #{@tool.code}"
+      layer.addObject('T', @tool, [@xPos, @yPos, x, y])
+    else if command is '2'
+      console.log "moving"
+    else if command is '3'
+      console.log "making pad"
+      layer.addObject('P', @tool, [x, y])
+    else
+      throw 'BadOperationCodeError'
+    console.log "moving to #{x}, #{y}"
+    @xPos = x
+    @yPos = y
+
+  stroke: (x, y) ->
+    t = new Trace(@tool, @xPos, @yPos, [x, y])
+
+  flash: (x, y) ->
+    console.log
+
+  parseToolChange: (line) ->
+    unless line.match /^D[1-9]\d+\*$/ then throw "BadToolLineError"
+    tool = parseInt(line[1..-2], 10)
+    @changeTool tool
+
+  changeTool: (tool) ->
+    if tool < 10 then throw "Tool_#{tool}_IsOutOfRangeError"
+    @tool = @apertures[tool-10]
 
   plot: ->
     # flags for specs
@@ -235,12 +296,24 @@ class root.Plotter
     # different types of lines (all others ignored)
     formatMatch   = /^%FS.*\*%$/           # file spec
     unitMatch     = /^%MO((MM)|(IN))\*%$/  # unit spec
-    apertureMatch = /^%AD.*\*%$/            # aperture definition
-    gMatch        = /^G.*\*$/
+    apertureMatch = /^%AD.*\*%$/           # aperture definition
+    gMatch        = /^G.*\*$/              # G command code
+    endMatch      = /^M0?2\*$/             # end of file command code
+    toolMatch     = /^D[1-9]\d+\*$/            # tool select command
+    moveMatch     = /^(X[+-]?\d+)?(Y[+-]?\d+)?D0?[123]\*$/ # move command
+
+    # create a new layer object
+    layer = new Layer(@name)
 
     # loop through the lines of the gerber
-    for line in @gerber
-      # first we need a format and units
+    for line, i in @gerber
+      # make sure the file hasn't ended
+      if line.match endMatch
+        console.log "#{line} indicates end of file at line: #{i}"
+        fileEnd = true
+        break
+
+      # if we haven't got format and units yet, we'll need them
       if (not gotFormat) or (not gotUnits)
         if line.match formatMatch
           @parseFormatSpec line
@@ -248,21 +321,33 @@ class root.Plotter
         else if line.match unitMatch
           @parseUnits line
           gotUnits = true
+          layer.setUnits(@units)
+
       # once we've got those things, we can read the rest of the file
       else
         # take care of any commands
         if line.match gMatch
           line = @parseGCode line
-        # check for an empty line
-        if (line is "") or (line.match /^\*$/)
-          console.log "empty (or emptied) line"
+
+        # line will now be stripped of any g commands
         # check for an aperture definition
-        else if line.match apertureMatch
+        if line.match apertureMatch
           ap = @parseAperture line
           if not @apertures[ap.code-10]?
             @apertures[ap.code-10] = ap
           else
             throw "ApertureAlreadyExistsError"
+        # check for a tool select command
+        else if line.match toolMatch
+          console.log "changing tool to #{line}"
+          @parseToolChange line
+          console.log "current tool #{@tool.code} is a #{@tool.shape}"
+        # check for a move command
+        else if line.match moveMatch
+          # console.log "moving according to #{line}"
+          @parseMove line, layer
+
+
         else
           console.log "don't know what #{line} means"
 
@@ -272,3 +357,8 @@ class root.Plotter
       throw "NoFormatSpecGivenError"
     if not gotUnits
       throw "NoValidUnitsGivenError"
+    if not fileEnd
+      throw "NoM02CommandBeforeEndError"
+
+    # return the layer that was plotted
+    layer
