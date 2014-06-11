@@ -10,20 +10,30 @@
       this.name = name;
       this.index = 0;
       this.line = 0;
+      this.end = false;
       this.format = {
         set: false
       };
+      this.mode = {
+        set: false
+      };
+      this.tools = {};
     }
 
     Plotter.prototype.plot = function() {
-      var layer, next;
+      var block, layer, next;
       layer = new Layer(this.name);
-      next = this.gerber[this.index];
-      if (next === '%') {
-        console.log("parameter command found at line " + this.line);
-        this.readParameter();
-      } else {
-        console.log("data block found at line " + this.line);
+      while (this.end !== 10) {
+        next = this.gerber[this.index];
+        if (next === '%') {
+          console.log("parameter command found at line " + this.line);
+          this.readParameter();
+        } else {
+          console.log("data block found at line " + this.line);
+          block = this.readBlock();
+          console.log("block found: " + block);
+        }
+        this.end++;
       }
       return layer;
     };
@@ -36,15 +46,20 @@
           this.line++;
         } else {
           block += this.gerber[this.index];
-          this.index++;
         }
+        this.index++;
       }
-      this.index++;
+      while (this.gerber[this.index] === '*' || this.gerber[this.index] === '\n') {
+        if (this.gerber[this.index] === '\n') {
+          this.line++;
+        }
+        this.index++;
+      }
       return block;
     };
 
     Plotter.prototype.readParameter = function() {
-      var block, c, command, param;
+      var block, c, command, param, _results;
       c = '';
       while (c !== '%') {
         block = this.readBlock();
@@ -61,6 +76,7 @@
             break;
           case 'AD':
             console.log("it's a aperture definition: " + block);
+            this.createTool(command);
             break;
           case 'AM':
             console.log("it's a aperture macro: " + block);
@@ -73,7 +89,14 @@
         }
         c = this.gerber[this.index];
       }
-      return console.log("done with parameter block");
+      console.log("done with parameter block");
+      this.index++;
+      _results = [];
+      while (this.gerber[this.index] === '\n') {
+        this.line++;
+        _results.push(this.index++);
+      }
+      return _results;
     };
 
     Plotter.prototype.setFormat = function(command) {
@@ -117,7 +140,109 @@
       return this.format.set = true;
     };
 
-    Plotter.prototype.setMode = function(command) {};
+    Plotter.prototype.setMode = function(command) {
+      console.log("setting unit mode according to " + command);
+      if (this.mode.set) {
+        throw "error at " + this.line + ": mode has already been set";
+      }
+      if (command === 'IN') {
+        this.mode.units = 'in';
+      } else if (command === 'MM') {
+        this.mode.units = 'mm';
+      } else {
+        throw "#error at {@line}: " + command + " is not a valid unit mode";
+      }
+      console.log("unit mode set to: " + this.mode.units);
+      return this.mode.set = true;
+    };
+
+    Plotter.prototype.createTool = function(command) {
+      var tool, toolCode, toolParams, toolShape;
+      console.log("creating a aperture according to " + command);
+      toolCode = command.slice(0, 3);
+      if (!toolCode.match(/D[1-9]\d+/)) {
+        throw "error at " + this.line + ": " + toolCode + " is not a valid tool number";
+      }
+      if (this.tools[toolCode] != null) {
+        throw "error at " + this.line + ": " + toolCode + " already exists";
+      }
+      toolShape = command.slice(3, 5);
+      toolParams = command.slice(5);
+      switch (toolShape) {
+        case 'C,':
+          toolParams = this.getCircleToolParams(toolParams);
+          break;
+        case 'R,':
+          toolParams = this.getRectToolParams(toolParams);
+          break;
+        case 'O,':
+          toolParams = this.getRectToolParams(toolParams);
+          break;
+        case 'P,':
+          console.log("tool " + toolCode + " is a polygon");
+          break;
+        default:
+          console.lot("tool " + toolCode + " might be a macro");
+      }
+      tool = new Aperture(toolCode, toolShape[0], toolParams);
+      return this.tools[toolCode] = tool;
+    };
+
+    Plotter.prototype.getCircleToolParams = function(command) {
+      var numbers, params, _ref;
+      numbers = this.gatherToolParams(command);
+      if (!((1 <= (_ref = numbers.length) && _ref <= 3))) {
+        throw "error at " + line + ": circle aperture must have between 1 and 3 params";
+      }
+      params = {
+        dia: numbers[0]
+      };
+      if (numbers[1] != null) {
+        params.holeX = numbers[1];
+      }
+      if (numbers[2] != null) {
+        params.holeY = numbers[2];
+      }
+      return params;
+    };
+
+    Plotter.prototype.getRectToolParams = function(command) {
+      var numbers, params, _ref;
+      numbers = this.gatherToolParams(command);
+      if (!((2 <= (_ref = numbers.length) && _ref <= 4))) {
+        throw "error at " + line + ": rect/obround aperture must have between 2 and 4 params";
+      }
+      if (!(numbers[0] > 0)) {
+        throw "error at " + line + ": rect/obround x size must be greater than 0";
+      }
+      if (!(numbers[1] > 0)) {
+        throw "error at " + line + ": rect/obround y size must be greater than 0";
+      }
+      params = {
+        sizeX: numbers[0],
+        sizeY: numbers[1]
+      };
+      if (numbers[2] != null) {
+        params.holeX = numbers[1];
+      }
+      if (numbers[3] != null) {
+        params.holeY = numbers[2];
+      }
+      return params;
+    };
+
+    Plotter.prototype.gatherToolParams = function(command) {
+      var i, n, numbers, _i, _len;
+      numbers = command.match(/[\+-]?[\d\.]+/g);
+      for (i = _i = 0, _len = numbers.length; _i < _len; i = ++_i) {
+        n = numbers[i];
+        if (!n.match(/^\+?((\d+\.?\d*)|(\d*\.?\d+))$/)) {
+          throw "error at " + line + ": " + n + " is not a valid number";
+        }
+        numbers[i] = parseFloat(n);
+      }
+      return numbers;
+    };
 
     return Plotter;
 

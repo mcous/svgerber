@@ -9,8 +9,35 @@
       this.code = code;
       this.shape = shape;
       this.params = params;
-      console.log("Aperture " + this.code + " was created and is a " + this.shape);
+      this.print();
     }
+
+    Aperture.prototype.print = function() {
+      var p;
+      p = "aperture " + this.code + " is a " + this.shape + " with ";
+      switch (this.shape) {
+        case 'C':
+          p += "dia: " + this.params.dia;
+          break;
+        case 'R':
+        case 'O':
+          p += "x size: " + this.params.sizeX + ", y size: " + this.params.sizeY;
+          break;
+        case 'P':
+          p += 'polygon stuff';
+          break;
+        default:
+          p += 'macro stuff';
+      }
+      if (this.params.holeX != null) {
+        if (this.params.holeY == null) {
+          p += ", hole dia: " + this.params.holeX;
+        } else {
+          p += ", hole x size: " + this.params.holeX + ", hole y size " + this.params.holeY;
+        }
+      }
+      return console.log(p);
+    };
 
     return Aperture;
 
