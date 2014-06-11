@@ -145,7 +145,6 @@ option '-e', '--environment [ENV_NAME]', 'set the build environment (dev or prod
 
 # build the environment
 task 'build:environment', (options) ->
-  console.log options.environment
   env = options.environment ? envs[0]
   if env in envs is -1 then throw "#{env} is not a valid environment (dev or production)"
   console.log "env set to #{env}"
