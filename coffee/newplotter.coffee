@@ -183,7 +183,7 @@ class root.Plotter
       when 'O,'
         toolParams = @getRectToolParams toolParams
       when 'P,'
-        console.log "tool #{toolCode} is a polygon"
+        toolParams = @getPolyToolParams toolParams
 
       else
         console.lot "tool #{toolCode} might be a macro"
@@ -197,13 +197,20 @@ class root.Plotter
     # there must be between 1 and 3 numbers
     unless 1 <= numbers.length <= 3 then throw "error at #{line}: circle aperture must have between 1 and 3 params"
 
+    # throw error if dia is not a whole number
+    unless numbers[0] >= 0 then throw "error at #{line}: circle dia must be greater than or equal to 0"
+
     # create the params object with the diameter
     params = {
       dia: numbers[0]
     }
     # hole stuff if it exists
-    if numbers[1]? then params.holeX = numbers[1]
-    if numbers[2]? then params.holeY = numbers[2]
+    if numbers[1]?
+      unless numbers[1] >= 0 then throw "error at #{line}: hole x size must be greater than or equal to 0"
+      params.holeX = numbers[1]
+    if numbers[2]?
+      unless numbers[2] >= 0 then throw "error at #{line}: hole y size must be greater than or equal to 0"
+      params.holeY = numbers[2]
 
     # return the params object
     params
@@ -223,8 +230,40 @@ class root.Plotter
       sizeY: numbers[1]
     }
     # hole stuff if it exists
-    if numbers[2]? then params.holeX = numbers[1]
-    if numbers[3]? then params.holeY = numbers[2]
+    if numbers[2]?
+      unless numbers[2] >= 0 then throw "error at #{line}: hole x size must be greater than or equal to 0"
+      params.holeX = numbers[2]
+    if numbers[3]?
+      unless numbers[3] >= 0 then throw "error at #{line}: hole y size must be greater than or equal to 0"
+      params.holeY = numbers[3]
+
+    # return the params object
+    params
+
+  getPolyToolParams: (command) ->
+    numbers = gatherToolParams command
+    # there must be between 2 and 5 numbers
+    unless 2 <= numbers.length <= 5 then throw "error at #{line}: polygon aperture must have between 2 and 4 params"
+
+    # circumscribed circle dia must be greater than 0
+    unless numbers[0] > 0 then throw "error at #{line}: polygon diameter must be greater than 0"
+    # number of polygon points must be between 3 and 12
+    unless 3 <= numbers[1] <= 12 then throw "error at #{line}: polygon must have 3 to 12 points"
+
+    params = {
+      dia: numbers[0]
+      points: numbers[1]
+    }
+
+    # other stuff if it exists
+    # rotation (negative or positive allowed)
+    if numbers[2]? then params.rotation = numbers[2]
+    if numbers[3]?
+      unless numbers[3] >= 0 then throw "error at #{line}: hole x size must be greater than or equal to 0"
+      params.holeY = numbers[3]
+    if numbers[4]?
+      unless numbers[4] >= 0 then throw "error at #{line}: hole y size must be greater than or equal to 0"
+      params.holeY = numbers[4]
 
     # return the params object
     params
@@ -233,7 +272,7 @@ class root.Plotter
     numbers = command.match /[\+-]?[\d\.]+/g
     # check that the numbers are actually numbers
     for n, i in numbers
-      unless n.match /^\+?((\d+\.?\d*)|(\d*\.?\d+))$/ then throw "error at #{line}: #{n} is not a valid number"
+      unless n.match /^[\+-]?((\d+\.?\d*)|(\d*\.?\d+))$/ then throw "error at #{line}: #{n} is not a valid number"
       numbers[i] = parseFloat n
     # return the array
     numbers

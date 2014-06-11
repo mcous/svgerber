@@ -179,7 +179,7 @@
           toolParams = this.getRectToolParams(toolParams);
           break;
         case 'P,':
-          console.log("tool " + toolCode + " is a polygon");
+          toolParams = this.getPolyToolParams(toolParams);
           break;
         default:
           console.lot("tool " + toolCode + " might be a macro");
@@ -194,13 +194,22 @@
       if (!((1 <= (_ref = numbers.length) && _ref <= 3))) {
         throw "error at " + line + ": circle aperture must have between 1 and 3 params";
       }
+      if (!(numbers[0] >= 0)) {
+        throw "error at " + line + ": circle dia must be greater than or equal to 0";
+      }
       params = {
         dia: numbers[0]
       };
       if (numbers[1] != null) {
+        if (!(numbers[1] >= 0)) {
+          throw "error at " + line + ": hole x size must be greater than or equal to 0";
+        }
         params.holeX = numbers[1];
       }
       if (numbers[2] != null) {
+        if (!(numbers[2] >= 0)) {
+          throw "error at " + line + ": hole y size must be greater than or equal to 0";
+        }
         params.holeY = numbers[2];
       }
       return params;
@@ -223,10 +232,50 @@
         sizeY: numbers[1]
       };
       if (numbers[2] != null) {
-        params.holeX = numbers[1];
+        if (!(numbers[2] >= 0)) {
+          throw "error at " + line + ": hole x size must be greater than or equal to 0";
+        }
+        params.holeX = numbers[2];
       }
       if (numbers[3] != null) {
-        params.holeY = numbers[2];
+        if (!(numbers[3] >= 0)) {
+          throw "error at " + line + ": hole y size must be greater than or equal to 0";
+        }
+        params.holeY = numbers[3];
+      }
+      return params;
+    };
+
+    Plotter.prototype.getPolyToolParams = function(command) {
+      var numbers, params, _ref, _ref1;
+      numbers = gatherToolParams(command);
+      if (!((2 <= (_ref = numbers.length) && _ref <= 5))) {
+        throw "error at " + line + ": polygon aperture must have between 2 and 4 params";
+      }
+      if (!(numbers[0] > 0)) {
+        throw "error at " + line + ": polygon diameter must be greater than 0";
+      }
+      if (!((3 <= (_ref1 = numbers[1]) && _ref1 <= 12))) {
+        throw "error at " + line + ": polygon must have 3 to 12 points";
+      }
+      params = {
+        dia: numbers[0],
+        points: numbers[1]
+      };
+      if (numbers[2] != null) {
+        params.rotation = numbers[2];
+      }
+      if (numbers[3] != null) {
+        if (!(numbers[3] >= 0)) {
+          throw "error at " + line + ": hole x size must be greater than or equal to 0";
+        }
+        params.holeY = numbers[3];
+      }
+      if (numbers[4] != null) {
+        if (!(numbers[4] >= 0)) {
+          throw "error at " + line + ": hole y size must be greater than or equal to 0";
+        }
+        params.holeY = numbers[4];
       }
       return params;
     };
@@ -236,7 +285,7 @@
       numbers = command.match(/[\+-]?[\d\.]+/g);
       for (i = _i = 0, _len = numbers.length; _i < _len; i = ++_i) {
         n = numbers[i];
-        if (!n.match(/^\+?((\d+\.?\d*)|(\d*\.?\d+))$/)) {
+        if (!n.match(/^[\+-]?((\d+\.?\d*)|(\d*\.?\d+))$/)) {
           throw "error at " + line + ": " + n + " is not a valid number";
         }
         numbers[i] = parseFloat(n);

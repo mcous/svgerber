@@ -24,7 +24,10 @@
           p += "x size: " + this.params.sizeX + ", y size: " + this.params.sizeY;
           break;
         case 'P':
-          p += 'polygon stuff';
+          p += "circumscribed dia: " + this.params.dia + ", points: " + this.params.points;
+          if (this.params.rotation != null) {
+            p += ", rotation: " + this.params.rotation;
+          }
           break;
         default:
           p += 'macro stuff';

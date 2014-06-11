@@ -14,7 +14,9 @@ class root.Aperture
       when 'R', 'O'
         p += "x size: #{@params.sizeX}, y size: #{@params.sizeY}"
       when 'P'
-        p += 'polygon stuff'
+        p += "circumscribed dia: #{@params.dia}, points: #{@params.points}"
+        if @params.rotation?
+          p+= ", rotation: #{@params.rotation}"
       else
         p += 'macro stuff'
     if @params.holeX?
