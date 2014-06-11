@@ -66,8 +66,6 @@ handleFileSelect = (event) ->
       reader = new FileReader()
       reader.onloadend = (event) ->
         readFileToDiv event, f.name
-
-      #reader.addEventListener('loadend', readFileToDiv, false)
       reader.readAsText(f)
 
 # attach the event listener
