@@ -15,7 +15,9 @@ fileToSVG = (file) ->
   # console.log aps
   console.log 'converting to svg'
   p = new Plotter(file)
-  p.plot()
+
+  # plot and return the layer that was plotted
+  layer = p.plot()
 
 # read a file to a div
 readFileToDiv = (event) ->
@@ -24,7 +26,7 @@ readFileToDiv = (event) ->
     # textDiv.innerHTML = fileToSVG event.target.result
 
     # plot something
-    fileToSVG event.target.result
+    layer = fileToSVG event.target.result
 
     # # make a new layer to draw on
     # layer = new Layer 'testlayer'
@@ -34,14 +36,14 @@ readFileToDiv = (event) ->
     # layer.layerObjects.push pad
     # layer.layerObjects.push trace
     #
-    # # create a div for the drawing to live in
-    # drawDiv = document.createElement('div')
-    # drawDiv.id = "layer-#{layer.name}"
-    # drawDiv.class = 'layer-div'
-    #
-    # document.getElementById('layers').insertBefore(drawDiv, null)
-    #
-    # layer.draw(drawDiv.id)
+    # create a div for the drawing to live in
+    drawDiv = document.createElement('div')
+    drawDiv.id = "layer-#{layer.name}"
+    drawDiv.class = 'layer-div'
+
+    document.getElementById('layers').insertBefore(drawDiv, null)
+
+    layer.draw(drawDiv.id)
 
 
 

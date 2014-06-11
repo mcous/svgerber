@@ -3,15 +3,21 @@
   var fileToSVG, handleFileSelect, readFileToDiv;
 
   fileToSVG = function(file) {
-    var p;
+    var layer, p;
     console.log('converting to svg');
     p = new Plotter(file);
-    return p.plot();
+    return layer = p.plot();
   };
 
   readFileToDiv = function(event) {
+    var drawDiv, layer;
     if (event.target.readyState === FileReader.DONE) {
-      return fileToSVG(event.target.result);
+      layer = fileToSVG(event.target.result);
+      drawDiv = document.createElement('div');
+      drawDiv.id = "layer-" + layer.name;
+      drawDiv["class"] = 'layer-div';
+      document.getElementById('layers').insertBefore(drawDiv, null);
+      return layer.draw(drawDiv.id);
     }
   };
 

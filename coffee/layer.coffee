@@ -9,45 +9,63 @@ root = exports ? this
 # layer object (pad or trace)
 class LayerObject
   # constructor takes in the tool shape, start position, parameters
-  constructor: (@shape, @x, @y, params) ->
-    @size = null
+  constructor: (tool, params) ->
+    @parseTool(tool)
     @parseParams(params)
 
-  parseParams: (p) ->
+  parseTool: (t) ->
+    @shape = t.shape
+    p = t.params
     switch @shape
       when 'C'
         unless p[0]? then throw "BadCircleParamsError"
-        @size = p[0]
+        @dia = p[0]
       when 'R'
         unless p.length > 1 then throw "BadRectParamsError"
         @size = p[0..1]
+
+  parseParams: (p) ->
+    if p < 2 then throw 'NotEnoughToolParamsError'
+    @x = p[0]
+    @y = p[1]
 
 
 # pad class for Layer
 class Pad extends LayerObject
   # parse the parameters into something useful
-  parseParams: (p) ->
-    switch @shape
+  parseTool: (t) ->
+    p = t.params
+    switch t.shape
       when 'C'
         @holeX = if p[1]? then p[1] else null
         @holeY = if p[2]? then p[2] else null
       when 'R', 'O'
         @holeX = if p[2]? then p[2] else null
         @holeY = if p[3]? then p[3] else null
-    super p
+    super t
+
+  # parseParams: (p) ->
+  #   super p
+
+  getRange: ->
+    [@x, @y]
 
   # draw to SVG
-  draw: (drawing) ->
+  draw: (drawing, origin, units) ->
     pad = null
     switch @shape
       when'C'
-        console.log "circular pad at #{@x}, #{@y}"
-        pad = drawing.circle(@size).center(@x, @y)
+        console.log "drawing circular pad at #{@x}, #{@y}"
+        pad = drawing.circle("#{@dia}#{units}")
+        pad.center("#{@x-origin[0]}#{units}", "#{@y-origin[1]}#{units}")
 
       when 'R'
         console.log "rectangular pad at #{@x}, #{@y}"
-        pad = drawing.rect(@size[0], @size[1]).center(@x, @y)
-
+        pad = drawing.rect("#{@size[0]}#{units}", "#{@size[1]}#{units}")
+        #pad.center("#{@x-origin[0]}#{units}", "#{@y-origin[1]}#{units}")
+        moveX = "#{@x-@size[0]/2 - origin[0]}#{units}"
+        moveY = "#{@y-@size[1]/2 - origin[1]}#{units}"
+        pad.move(moveX,moveY)
       when 'O'
         console.log "obround pad"
       when 'P'
@@ -73,36 +91,46 @@ class Pad extends LayerObject
 
 # trace class for Layer
 class Trace extends LayerObject
-  # parse the parameters into something useful
-  parseParams: (p) ->
-    switch @shape
+  # parse the tool for errors
+  parseTool: (t) ->
+    p = t.params
+    switch t.shape
       when 'C'
-        if p.length isnt 3 then throw "BadCircleTraceError"
-        @end = p[1..2]
+        if p.length isnt 1 then throw "BadCircleTraceError"
       when 'R'
-        if p.length isnt 4 then throw "BadRectTraceError"
-        @end = p[2..3]
+        if p.length isnt 2 then throw "BadRectTraceError"
       else
-        throw "InvalidTraceShapeError"
+        console.log "shape #{@shape}, params length: #{p.length}"
+        throw "InvalidTraceToolError"
+    super t
+
+  # parse the params for the end point
+  parseParams: (p) ->
+    if p.length isnt 4 then throw 'NotEnoughParamsForTraceError'
+    @xEnd = p[2]
+    @yEnd = p[3]
     super p
 
+  getRange: ->
+    [@x, @y, @xEnd, @yEnd]
+
   # draw to SVG
-  draw: (drawing) ->
+  draw: (drawing, origin, units) ->
+    trace = null
     # if the tool shape is a circle, then we do a line with rounded caps
     if @shape is 'C'
       trace = drawing.line()
       # first param is circle dia
       trace.stroke {
-        width: @size
+        width: "#{@dia}#{units}"
         linecap: 'round'
       }
       # plot the stroke to the end
-      trace.plot @x, @y, @end[0], @end[1]
+      trace.plot "#{@x-origin[0]}#{units}", "#{@y-origin[1]}#{units}", "#{@xEnd-origin[0]}#{units}", "#{@yEnd-origin[1]}#{units}"
 
     # if the tool shape is a rect, then we gotta get fancy
     else if @shape is 'R'
       console.log "fancy trace"
-
 
 # fill class
 class Fill extends LayerObject
@@ -111,17 +139,51 @@ class Fill extends LayerObject
 class root.Layer
   constructor: (@name) ->
     @layerObjects = []
+    @minX = null
+    @minY = null
+    @maxX = null
+    @maxY = null
+
+  setUnits: (u) ->
+    if u is 'IN' then @units = 'in' else if u is 'MM' then @units = 'mm'
+
+
+  getSize: ->
+    [@minX, @maxX, @minY, @maxY]
 
   # add a pad, trace, or fill(?)
   addObject: (action, tool, params) ->
     switch action
       # draw a trace
       when 'T'
-        t = new Trace(tool.shape, tool.params)
+        t = new Trace(tool, params)
+        for m, i in t.getRange()
+          if i%2 is 0
+            if (not @minX?) or (m < @minX)
+              @minX = m
+            else if (not @maxX?) or (m > @maxX)
+              @maxX = m
+          else
+            if (not @minY?) or (m < @minY)
+              @minY = m
+            else if (not @maxY?) or (m > @maxY)
+              @maxY = m
+        @layerObjects.push t
       # flash a pad
       when 'P'
-        p = new Pad(tool.shape, tool.params)
-
+        p = new Pad(tool, params)
+        for m, i in p.getRange()
+          if i%2 is 0
+            if (not @minX?) or (m < @minX)
+              @minX = m
+            else if (not @maxX?) or (m > @maxX)
+              @maxX = m
+          else
+            if (not @minY?) or (m < @minY)
+              @minY = m
+            else if (not @maxY?) or (m > @maxY)
+              @maxY = m
+        @layerObjects.push p
       # create a region fill
       when 'F'
         console.log "create a fill or something"
@@ -129,11 +191,13 @@ class root.Layer
         throw "#{action}_IsInvalidInputTo_Layer::addObject_Error"
 
   draw: (id) ->
+    console.log "drawing layer origin at #{@minX}, #{@minY}"
+    console.log "objects to draw: #{@layerObjects.length}"
     # create an SVG object
-    svg = SVG(id)
+    svg = SVG(id).size("#{0.5+(@maxX-@minX)}#{@units}", "#{0.5+(@maxY-@minY)}#{@units}",)
     # draw a rectanle
     # rect = drawing.rect(100, 100).attr({ fill: '#f06' })
     # return the div
     #drawDiv
     # draw all the objects
-    o.draw(svg) for o in @layerObjects
+    o.draw(svg, [@minX-0.25, @minY-0.25], @units) for o in @layerObjects

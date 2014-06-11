@@ -214,8 +214,8 @@
       }
     };
 
-    Plotter.prototype.parseMove = function(line) {
-      var x, y;
+    Plotter.prototype.parseMove = function(line, layer) {
+      var command, x, y;
       x = line.match(/X[+-]?[\d]+/);
       if (x != null) {
         x = this.parseCoordinate(x[0]);
@@ -224,10 +224,26 @@
       if (y != null) {
         y = this.parseCoordinate(y[0]);
       }
-      return this.move(x, y);
+      command = line.match(/D0?[123](?=\*$)/);
+      if (command != null) {
+        command = command[0].slice(-1);
+      }
+      return this.move(x, y, command, layer);
     };
 
-    Plotter.prototype.move = function(x, y) {
+    Plotter.prototype.move = function(x, y, command, layer) {
+      console.log(command);
+      if (command === '1') {
+        console.log("making line with aperture " + this.tool.code);
+        layer.addObject('T', this.tool, [this.xPos, this.yPos, x, y]);
+      } else if (command === '2') {
+        console.log("moving");
+      } else if (command === '3') {
+        console.log("making pad");
+        layer.addObject('P', this.tool, [x, y]);
+      } else {
+        throw 'BadOperationCodeError';
+      }
       console.log("moving to " + x + ", " + y);
       this.xPos = x;
       return this.yPos = y;
@@ -244,7 +260,7 @@
 
     Plotter.prototype.parseToolChange = function(line) {
       var tool;
-      if (!line.match(/^D1\d+\*$/)) {
+      if (!line.match(/^D[1-9]\d+\*$/)) {
         throw "BadToolLineError";
       }
       tool = parseInt(line.slice(1, -1), 10);
@@ -270,7 +286,7 @@
       apertureMatch = /^%AD.*\*%$/;
       gMatch = /^G.*\*$/;
       endMatch = /^M0?2\*$/;
-      toolMatch = /^D1\d+\*$/;
+      toolMatch = /^D[1-9]\d+\*$/;
       moveMatch = /^(X[+-]?\d+)?(Y[+-]?\d+)?D0?[123]\*$/;
       layer = new Layer('layerName');
       _ref = this.gerber;
@@ -288,6 +304,7 @@
           } else if (line.match(unitMatch)) {
             this.parseUnits(line);
             gotUnits = true;
+            layer.setUnits(this.units);
           }
         } else {
           if (line.match(gMatch)) {
@@ -305,7 +322,7 @@
             this.parseToolChange(line);
             console.log("current tool " + this.tool.code + " is a " + this.tool.shape);
           } else if (line.match(moveMatch)) {
-            this.parseMove(line);
+            this.parseMove(line, layer);
           } else {
             console.log("don't know what " + line + " means");
           }

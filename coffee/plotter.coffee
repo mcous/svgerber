@@ -238,7 +238,7 @@ class root.Plotter
       c = coord[0..@leadDigits] + '.' + coord[@leadDigits..]
       parseFloat coord[0..@leadDigits] + '.' + coord[@leadDigits..]
 
-  parseMove: (line) ->
+  parseMove: (line, layer) ->
     # get the x coordinate if there is one
     x = line.match /X[+-]?[\d]+/
     if x? then x = @parseCoordinate x[0]
@@ -246,11 +246,24 @@ class root.Plotter
     y = line.match /Y[+-]?[\d]+/
     if y? then y = @parseCoordinate y[0]
 
+    command = line.match /D0?[123](?=\*$)/
+    if command? then command = command[0][-1..]
 
+    @move x, y, command, layer
 
-    @move x, y
-
-  move: (x, y) ->
+  move: (x, y, command, layer) ->
+    console.log command
+    # if stroke command
+    if command is '1'
+      console.log "making line with aperture #{@tool.code}"
+      layer.addObject('T', @tool, [@xPos, @yPos, x, y])
+    else if command is '2'
+      console.log "moving"
+    else if command is '3'
+      console.log "making pad"
+      layer.addObject('P', @tool, [x, y])
+    else
+      throw 'BadOperationCodeError'
     console.log "moving to #{x}, #{y}"
     @xPos = x
     @yPos = y
@@ -262,7 +275,7 @@ class root.Plotter
     console.log
 
   parseToolChange: (line) ->
-    unless line.match /^D1\d+\*$/ then throw "BadToolLineError"
+    unless line.match /^D[1-9]\d+\*$/ then throw "BadToolLineError"
     tool = parseInt(line[1..-2], 10)
     @changeTool tool
 
@@ -286,7 +299,7 @@ class root.Plotter
     apertureMatch = /^%AD.*\*%$/           # aperture definition
     gMatch        = /^G.*\*$/              # G command code
     endMatch      = /^M0?2\*$/             # end of file command code
-    toolMatch     = /^D1\d+\*$/            # tool select command
+    toolMatch     = /^D[1-9]\d+\*$/            # tool select command
     moveMatch     = /^(X[+-]?\d+)?(Y[+-]?\d+)?D0?[123]\*$/ # move command
 
     # create a new layer object
@@ -308,6 +321,7 @@ class root.Plotter
         else if line.match unitMatch
           @parseUnits line
           gotUnits = true
+          layer.setUnits(@units)
 
       # once we've got those things, we can read the rest of the file
       else
@@ -331,7 +345,7 @@ class root.Plotter
         # check for a move command
         else if line.match moveMatch
           # console.log "moving according to #{line}"
-          @parseMove line
+          @parseMove line, layer
 
 
         else

@@ -7,27 +7,35 @@
   root = typeof exports !== "undefined" && exports !== null ? exports : this;
 
   LayerObject = (function() {
-    function LayerObject(shape, x, y, params) {
-      this.shape = shape;
-      this.x = x;
-      this.y = y;
-      this.size = null;
+    function LayerObject(tool, params) {
+      this.parseTool(tool);
       this.parseParams(params);
     }
 
-    LayerObject.prototype.parseParams = function(p) {
+    LayerObject.prototype.parseTool = function(t) {
+      var p;
+      this.shape = t.shape;
+      p = t.params;
       switch (this.shape) {
         case 'C':
           if (p[0] == null) {
             throw "BadCircleParamsError";
           }
-          return this.size = p[0];
+          return this.dia = p[0];
         case 'R':
           if (!(p.length > 1)) {
             throw "BadRectParamsError";
           }
           return this.size = p.slice(0, 2);
       }
+    };
+
+    LayerObject.prototype.parseParams = function(p) {
+      if (p < 2) {
+        throw 'NotEnoughToolParamsError';
+      }
+      this.x = p[0];
+      return this.y = p[1];
     };
 
     return LayerObject;
@@ -41,8 +49,10 @@
       return Pad.__super__.constructor.apply(this, arguments);
     }
 
-    Pad.prototype.parseParams = function(p) {
-      switch (this.shape) {
+    Pad.prototype.parseTool = function(t) {
+      var p;
+      p = t.params;
+      switch (t.shape) {
         case 'C':
           this.holeX = p[1] != null ? p[1] : null;
           this.holeY = p[2] != null ? p[2] : null;
@@ -52,20 +62,28 @@
           this.holeX = p[2] != null ? p[2] : null;
           this.holeY = p[3] != null ? p[3] : null;
       }
-      return Pad.__super__.parseParams.call(this, p);
+      return Pad.__super__.parseTool.call(this, t);
     };
 
-    Pad.prototype.draw = function(drawing) {
-      var h, m, p, pad;
+    Pad.prototype.getRange = function() {
+      return [this.x, this.y];
+    };
+
+    Pad.prototype.draw = function(drawing, origin, units) {
+      var h, m, moveX, moveY, p, pad;
       pad = null;
       switch (this.shape) {
         case 'C':
-          console.log("circular pad at " + this.x + ", " + this.y);
-          pad = drawing.circle(this.size).center(this.x, this.y);
+          console.log("drawing circular pad at " + this.x + ", " + this.y);
+          pad = drawing.circle("" + this.dia + units);
+          pad.center("" + (this.x - origin[0]) + units, "" + (this.y - origin[1]) + units);
           break;
         case 'R':
           console.log("rectangular pad at " + this.x + ", " + this.y);
-          pad = drawing.rect(this.size[0], this.size[1]).center(this.x, this.y);
+          pad = drawing.rect("" + this.size[0] + units, "" + this.size[1] + units);
+          moveX = "" + (this.x - this.size[0] / 2 - origin[0]) + units;
+          moveY = "" + (this.y - this.size[1] / 2 - origin[1]) + units;
+          pad.move(moveX, moveY);
           break;
         case 'O':
           console.log("obround pad");
@@ -105,35 +123,50 @@
       return Trace.__super__.constructor.apply(this, arguments);
     }
 
-    Trace.prototype.parseParams = function(p) {
-      switch (this.shape) {
+    Trace.prototype.parseTool = function(t) {
+      var p;
+      p = t.params;
+      switch (t.shape) {
         case 'C':
-          if (p.length !== 3) {
+          if (p.length !== 1) {
             throw "BadCircleTraceError";
           }
-          this.end = p.slice(1, 3);
           break;
         case 'R':
-          if (p.length !== 4) {
+          if (p.length !== 2) {
             throw "BadRectTraceError";
           }
-          this.end = p.slice(2, 4);
           break;
         default:
-          throw "InvalidTraceShapeError";
+          console.log("shape " + this.shape + ", params length: " + p.length);
+          throw "InvalidTraceToolError";
       }
+      return Trace.__super__.parseTool.call(this, t);
+    };
+
+    Trace.prototype.parseParams = function(p) {
+      if (p.length !== 4) {
+        throw 'NotEnoughParamsForTraceError';
+      }
+      this.xEnd = p[2];
+      this.yEnd = p[3];
       return Trace.__super__.parseParams.call(this, p);
     };
 
-    Trace.prototype.draw = function(drawing) {
+    Trace.prototype.getRange = function() {
+      return [this.x, this.y, this.xEnd, this.yEnd];
+    };
+
+    Trace.prototype.draw = function(drawing, origin, units) {
       var trace;
+      trace = null;
       if (this.shape === 'C') {
         trace = drawing.line();
         trace.stroke({
-          width: this.size,
+          width: "" + this.dia + units,
           linecap: 'round'
         });
-        return trace.plot(this.x, this.y, this.end[0], this.end[1]);
+        return trace.plot("" + (this.x - origin[0]) + units, "" + (this.y - origin[1]) + units, "" + (this.xEnd - origin[0]) + units, "" + (this.yEnd - origin[1]) + units);
       } else if (this.shape === 'R') {
         return console.log("fancy trace");
       }
@@ -158,15 +191,67 @@
     function Layer(name) {
       this.name = name;
       this.layerObjects = [];
+      this.minX = null;
+      this.minY = null;
+      this.maxX = null;
+      this.maxY = null;
     }
 
+    Layer.prototype.setUnits = function(u) {
+      if (u === 'IN') {
+        return this.units = 'in';
+      } else if (u === 'MM') {
+        return this.units = 'mm';
+      }
+    };
+
+    Layer.prototype.getSize = function() {
+      return [this.minX, this.maxX, this.minY, this.maxY];
+    };
+
     Layer.prototype.addObject = function(action, tool, params) {
-      var p, t;
+      var i, m, p, t, _i, _j, _len, _len1, _ref, _ref1;
       switch (action) {
         case 'T':
-          return t = new Trace(tool.shape, tool.params);
+          t = new Trace(tool, params);
+          _ref = t.getRange();
+          for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
+            m = _ref[i];
+            if (i % 2 === 0) {
+              if ((this.minX == null) || (m < this.minX)) {
+                this.minX = m;
+              } else if ((this.maxX == null) || (m > this.maxX)) {
+                this.maxX = m;
+              }
+            } else {
+              if ((this.minY == null) || (m < this.minY)) {
+                this.minY = m;
+              } else if ((this.maxY == null) || (m > this.maxY)) {
+                this.maxY = m;
+              }
+            }
+          }
+          return this.layerObjects.push(t);
         case 'P':
-          return p = new Pad(tool.shape, tool.params);
+          p = new Pad(tool, params);
+          _ref1 = p.getRange();
+          for (i = _j = 0, _len1 = _ref1.length; _j < _len1; i = ++_j) {
+            m = _ref1[i];
+            if (i % 2 === 0) {
+              if ((this.minX == null) || (m < this.minX)) {
+                this.minX = m;
+              } else if ((this.maxX == null) || (m > this.maxX)) {
+                this.maxX = m;
+              }
+            } else {
+              if ((this.minY == null) || (m < this.minY)) {
+                this.minY = m;
+              } else if ((this.maxY == null) || (m > this.maxY)) {
+                this.maxY = m;
+              }
+            }
+          }
+          return this.layerObjects.push(p);
         case 'F':
           return console.log("create a fill or something");
         default:
@@ -176,12 +261,14 @@
 
     Layer.prototype.draw = function(id) {
       var o, svg, _i, _len, _ref, _results;
-      svg = SVG(id);
+      console.log("drawing layer origin at " + this.minX + ", " + this.minY);
+      console.log("objects to draw: " + this.layerObjects.length);
+      svg = SVG(id).size("" + (0.5 + (this.maxX - this.minX)) + this.units, "" + (0.5 + (this.maxY - this.minY)) + this.units);
       _ref = this.layerObjects;
       _results = [];
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         o = _ref[_i];
-        _results.push(o.draw(svg));
+        _results.push(o.draw(svg, [this.minX - 0.25, this.minY - 0.25], this.units));
       }
       return _results;
     };
