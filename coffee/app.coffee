@@ -4,7 +4,7 @@
 #require 'plotter'
 
 # convert a file to an svg
-fileToSVG = (file) ->
+fileToSVG = (file, filename) ->
   # lines = file.split "\n"
   # lines = getGerberFormat lines
   # lines = getGerberUnits lines
@@ -14,19 +14,19 @@ fileToSVG = (file) ->
   # console.log lines
   # console.log aps
   console.log 'converting to svg'
-  p = new Plotter(file)
+  p = new Plotter(file, filename[-3..])
 
   # plot and return the layer that was plotted
   layer = p.plot()
 
 # read a file to a div
-readFileToDiv = (event) ->
+readFileToDiv = (event, filename) ->
   if event.target.readyState is FileReader.DONE
     # textDiv = document.createElement 'p'
     # textDiv.innerHTML = fileToSVG event.target.result
 
     # plot something
-    layer = fileToSVG event.target.result
+    layer = fileToSVG event.target.result, filename
 
     # # make a new layer to draw on
     # layer = new Layer 'testlayer'
@@ -40,7 +40,6 @@ readFileToDiv = (event) ->
     drawDiv = document.createElement('div')
     drawDiv.id = "layer-#{layer.name}"
     drawDiv.class = 'layer-div'
-
     document.getElementById('layers').insertBefore(drawDiv, null)
 
     layer.draw(drawDiv.id)
@@ -62,10 +61,14 @@ handleFileSelect = (event) ->
 
   # read the uploaded files to a div
   for f in importFiles
-    # file reader with onload event attached
-    reader = new FileReader()
-    reader.addEventListener('loadend', readFileToDiv, false)
-    reader.readAsText(f)
+    do (f) ->
+      # file reader with onload event attached
+      reader = new FileReader()
+      reader.onloadend = (event) ->
+        readFileToDiv event, f.name
+
+      #reader.addEventListener('loadend', readFileToDiv, false)
+      reader.readAsText(f)
 
 # attach the event listener
 document.getElementById('files').addEventListener('change', handleFileSelect, false)

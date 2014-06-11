@@ -5,7 +5,8 @@
   root = typeof exports !== "undefined" && exports !== null ? exports : this;
 
   root.Plotter = (function() {
-    function Plotter(gerberFile) {
+    function Plotter(gerberFile, name) {
+      this.name = name;
       this.zeroOmit = null;
       this.notation = null;
       this.leadDigits = null;
@@ -18,7 +19,7 @@
       this.xPos = 0;
       this.yPos = 0;
       this.gerber = gerberFile.split('\n');
-      console.log("Plotter created");
+      console.log("Plotter for " + this.name + " created");
     }
 
     Plotter.prototype.parseFormatSpec = function(fS) {
@@ -288,7 +289,7 @@
       endMatch = /^M0?2\*$/;
       toolMatch = /^D[1-9]\d+\*$/;
       moveMatch = /^(X[+-]?\d+)?(Y[+-]?\d+)?D0?[123]\*$/;
-      layer = new Layer('layerName');
+      layer = new Layer(this.name);
       _ref = this.gerber;
       for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
         line = _ref[i];

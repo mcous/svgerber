@@ -10,7 +10,7 @@ root = exports ? this
 # plotter class is exported
 class root.Plotter
   # constructor takes in gerber file as string
-  constructor: (gerberFile) ->
+  constructor: (gerberFile, @name) ->
     # stuff we'll be using
     # formatting
     @zeroOmit = null
@@ -32,7 +32,7 @@ class root.Plotter
     # parse the monolithic string into an array of lines
     @gerber = gerberFile.split '\n'
     # notify those concerned
-    console.log "Plotter created"
+    console.log "Plotter for #{@name} created"
 
   parseFormatSpec: (fS) ->
     formatMatch = /^%FS.*\*%$/  # file spec regex
@@ -303,7 +303,7 @@ class root.Plotter
     moveMatch     = /^(X[+-]?\d+)?(Y[+-]?\d+)?D0?[123]\*$/ # move command
 
     # create a new layer object
-    layer = new Layer('layerName')
+    layer = new Layer(@name)
 
     # loop through the lines of the gerber
     for line, i in @gerber

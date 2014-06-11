@@ -2,17 +2,17 @@
 (function() {
   var fileToSVG, handleFileSelect, readFileToDiv;
 
-  fileToSVG = function(file) {
+  fileToSVG = function(file, filename) {
     var layer, p;
     console.log('converting to svg');
-    p = new Plotter(file);
+    p = new Plotter(file, filename.slice(-3));
     return layer = p.plot();
   };
 
-  readFileToDiv = function(event) {
+  readFileToDiv = function(event, filename) {
     var drawDiv, layer;
     if (event.target.readyState === FileReader.DONE) {
-      layer = fileToSVG(event.target.result);
+      layer = fileToSVG(event.target.result, filename);
       drawDiv = document.createElement('div');
       drawDiv.id = "layer-" + layer.name;
       drawDiv["class"] = 'layer-div';
@@ -22,7 +22,7 @@
   };
 
   handleFileSelect = function(event) {
-    var f, importFiles, output, reader, _i, _j, _len, _len1, _results;
+    var f, importFiles, output, _i, _j, _len, _len1, _results;
     importFiles = event.target.files;
     output = [];
     for (_i = 0, _len = importFiles.length; _i < _len; _i++) {
@@ -33,9 +33,14 @@
     _results = [];
     for (_j = 0, _len1 = importFiles.length; _j < _len1; _j++) {
       f = importFiles[_j];
-      reader = new FileReader();
-      reader.addEventListener('loadend', readFileToDiv, false);
-      _results.push(reader.readAsText(f));
+      _results.push((function(f) {
+        var reader;
+        reader = new FileReader();
+        reader.onloadend = function(event) {
+          return readFileToDiv(event, f.name);
+        };
+        return reader.readAsText(f);
+      })(f));
     }
     return _results;
   };
