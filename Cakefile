@@ -28,7 +28,8 @@ nodes = []
 jsList = ''
 
 # uglify.js
-uglyOpts = ''
+uglyOpts = '--preamble "/* view source at github.com/mcous/svgerber */"
+            --compress drop_console=true'
 # output bundle file
 bundle = 'app.js'
 
@@ -268,7 +269,7 @@ task 'build:bundle', 'bundle all the js files together', (options) ->
 
   # concatinate the js files
   console.log "concatinating javascript files..."
-  exec "uglifyjs #{jsList} --verbose --output #{bundle}", (error, stdout, stderr) ->
+  exec "uglifyjs #{uglyOpts} #{jsList} --verbose --output #{bundle}", (error, stdout, stderr) ->
     if error then throw error
     console.log "...done concatinating"
     console.log stdout + stderr
