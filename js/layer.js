@@ -7,36 +7,13 @@
   root = typeof exports !== "undefined" && exports !== null ? exports : this;
 
   LayerObject = (function() {
-    function LayerObject(tool, params) {
-      this.parseTool(tool);
-      this.parseParams(params);
+    function LayerObject(tool, x, y, coord) {
+      this.tool = tool;
+      this.x = x;
+      this.y = y;
+      this.coord = coord != null ? coord : null;
+      this.print();
     }
-
-    LayerObject.prototype.parseTool = function(t) {
-      var p;
-      this.shape = t.shape;
-      p = t.params;
-      switch (this.shape) {
-        case 'C':
-          if (p[0] == null) {
-            throw "BadCircleParamsError";
-          }
-          return this.dia = p[0];
-        case 'R':
-          if (!(p.length > 1)) {
-            throw "BadRectParamsError";
-          }
-          return this.size = p.slice(0, 2);
-      }
-    };
-
-    LayerObject.prototype.parseParams = function(p) {
-      if (p < 2) {
-        throw 'NotEnoughToolParamsError';
-      }
-      this.x = p[0];
-      return this.y = p[1];
-    };
 
     return LayerObject;
 
@@ -49,40 +26,32 @@
       return Pad.__super__.constructor.apply(this, arguments);
     }
 
-    Pad.prototype.parseTool = function(t) {
-      var p;
-      p = t.params;
-      switch (t.shape) {
-        case 'C':
-          this.holeX = p[1] != null ? p[1] : null;
-          this.holeY = p[2] != null ? p[2] : null;
-          break;
-        case 'R':
-        case 'O':
-          this.holeX = p[2] != null ? p[2] : null;
-          this.holeY = p[3] != null ? p[3] : null;
-      }
-      return Pad.__super__.parseTool.call(this, t);
+    Pad.prototype.print = function() {
+      return console.log("" + this.tool.shape + " pad created at " + this.x + ", " + this.y);
     };
 
     Pad.prototype.getRange = function() {
       return [this.x, this.y];
     };
 
-    Pad.prototype.draw = function(drawing, origin, units) {
-      var h, m, moveX, moveY, p, pad;
+    Pad.prototype.draw = function(drawing, origin, canvas, units) {
+      var h, m, moveX, moveY, p, pad, x, y;
       pad = null;
-      switch (this.shape) {
+      x = this.x - origin.x + canvas.margin;
+      x = "" + x + units;
+      y = canvas.height - (this.y - origin.y) + canvas.margin;
+      y = "" + y + units;
+      switch (this.tool.shape) {
         case 'C':
-          console.log("drawing circular pad at " + this.x + ", " + this.y);
-          pad = drawing.circle("" + this.dia + units);
-          pad.center("" + (this.x - origin[0]) + units, "" + (this.y - origin[1]) + units);
+          console.log("drawing circular pad at " + this.x + ", " + this.y + " with dia " + this.tool.params.dia);
+          pad = drawing.circle("" + this.tool.params.dia + units);
+          pad.center(x, y);
           break;
         case 'R':
-          console.log("rectangular pad at " + this.x + ", " + this.y);
-          pad = drawing.rect("" + this.size[0] + units, "" + this.size[1] + units);
-          moveX = "" + (this.x - this.size[0] / 2 - origin[0]) + units;
-          moveY = "" + (this.y - this.size[1] / 2 - origin[1]) + units;
+          console.log("drawing rectangular pad at " + this.x + ", " + this.y + " with size " + this.tool.params.sizeX + ", " + this.tool.params.sizeY);
+          pad = drawing.rect("" + this.tool.params.sizeX + units, "" + this.tool.params.sizeY + units);
+          moveX = "" + (parseFloat(x) - this.tool.params.sizeX / 2) + units;
+          moveY = "" + (parseFloat(y) - this.tool.params.sizeY / 2) + units;
           pad.move(moveX, moveY);
           break;
         case 'O':
@@ -94,15 +63,15 @@
         default:
           console.log("unrecognized shape");
       }
-      if (this.holeX != null) {
+      if (this.tool.params.holeX != null) {
         p = pad.clone().fill({
           color: '#fff'
         });
         h = null;
-        if (this.holeY != null) {
-          h = drawing.rect(this.holeX, this.holeY);
+        if (this.tool.params.holeY != null) {
+          h = drawing.rect(this.tool.params.holeX, this.tool.params.holeY);
         } else {
-          h = drawing.circle(this.holeX);
+          h = drawing.circle(this.tool.params.holeX);
         }
         h.center(pad.cx(), pad.cy()).fill({
           color: '#000'
@@ -123,51 +92,33 @@
       return Trace.__super__.constructor.apply(this, arguments);
     }
 
-    Trace.prototype.parseTool = function(t) {
-      var p;
-      p = t.params;
-      switch (t.shape) {
-        case 'C':
-          if (p.length !== 1) {
-            throw "BadCircleTraceError";
-          }
-          break;
-        case 'R':
-          if (p.length !== 2) {
-            throw "BadRectTraceError";
-          }
-          break;
-        default:
-          console.log("shape " + this.shape + ", params length: " + p.length);
-          throw "InvalidTraceToolError";
-      }
-      return Trace.__super__.parseTool.call(this, t);
-    };
-
-    Trace.prototype.parseParams = function(p) {
-      if (p.length !== 4) {
-        throw 'NotEnoughParamsForTraceError';
-      }
-      this.xEnd = p[2];
-      this.yEnd = p[3];
-      return Trace.__super__.parseParams.call(this, p);
+    Trace.prototype.print = function() {
+      return console.log("trace created from " + this.x + ", " + this.y + " to " + this.coord.x + ", " + this.coord.y);
     };
 
     Trace.prototype.getRange = function() {
-      return [this.x, this.y, this.xEnd, this.yEnd];
+      return [this.x, this.y, this.coord.x, this.coord.y];
     };
 
-    Trace.prototype.draw = function(drawing, origin, units) {
-      var trace;
+    Trace.prototype.draw = function(drawing, origin, canvas, units) {
+      var trace, x1, x2, y1, y2;
       trace = null;
-      if (this.shape === 'C') {
+      x1 = this.x - origin.x + canvas.margin;
+      x2 = this.coord.x - origin.x + canvas.margin;
+      x1 = "" + x1 + units;
+      x2 = "" + x2 + units;
+      y1 = canvas.height - (this.y - origin.y) + canvas.margin;
+      y2 = canvas.height - (this.coord.y - origin.y) + canvas.margin;
+      y1 = "" + y1 + units;
+      y2 = "" + y2 + units;
+      if (this.tool.shape === 'C') {
         trace = drawing.line();
         trace.stroke({
-          width: "" + this.dia + units,
+          width: "" + this.tool.params.dia + units,
           linecap: 'round'
         });
-        return trace.plot("" + (this.x - origin[0]) + units, "" + (this.y - origin[1]) + units, "" + (this.xEnd - origin[0]) + units, "" + (this.yEnd - origin[1]) + units);
-      } else if (this.shape === 'R') {
+        return trace.plot(x1, y1, x2, y2);
+      } else if (this.tool.shape === 'R') {
         return console.log("fancy trace");
       }
     };
@@ -198,15 +149,79 @@
     }
 
     Layer.prototype.setUnits = function(u) {
-      if (u === 'IN') {
+      if (u === 'in') {
         return this.units = 'in';
-      } else if (u === 'MM') {
+      } else if (u === 'mm') {
         return this.units = 'mm';
       }
     };
 
     Layer.prototype.getSize = function() {
       return [this.minX, this.maxX, this.minY, this.maxY];
+    };
+
+    Layer.prototype.addTrace = function(tool, startX, startY, c) {
+      var i, m, t, _i, _len, _ref, _results;
+      if (!(tool.shape === 'C' || tool.shape === 'R')) {
+        throw "cannot create trace with " + tool.shape + " (tool " + tool.code + ")";
+      }
+      if (tool.holeX != null) {
+        throw "cannot create trace with a holed tool (tool " + tool.code + ")";
+      }
+      t = new Trace(tool, startX, startY, c);
+      this.layerObjects.push(t);
+      _ref = t.getRange();
+      _results = [];
+      for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
+        m = _ref[i];
+        if (i % 2 === 0) {
+          if ((this.minX == null) || (m < this.minX)) {
+            _results.push(this.minX = m);
+          } else if ((this.maxX == null) || (m > this.maxX)) {
+            _results.push(this.maxX = m);
+          } else {
+            _results.push(void 0);
+          }
+        } else {
+          if ((this.minY == null) || (m < this.minY)) {
+            _results.push(this.minY = m);
+          } else if ((this.maxY == null) || (m > this.maxY)) {
+            _results.push(this.maxY = m);
+          } else {
+            _results.push(void 0);
+          }
+        }
+      }
+      return _results;
+    };
+
+    Layer.prototype.addPad = function(tool, x, y) {
+      var i, m, p, _i, _len, _ref, _results;
+      p = new Pad(tool, x, y);
+      this.layerObjects.push(p);
+      _ref = p.getRange();
+      _results = [];
+      for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
+        m = _ref[i];
+        if (i % 2 === 0) {
+          if ((this.minX == null) || (m < this.minX)) {
+            _results.push(this.minX = m);
+          } else if ((this.maxX == null) || (m > this.maxX)) {
+            _results.push(this.maxX = m);
+          } else {
+            _results.push(void 0);
+          }
+        } else {
+          if ((this.minY == null) || (m < this.minY)) {
+            _results.push(this.minY = m);
+          } else if ((this.maxY == null) || (m > this.maxY)) {
+            _results.push(this.maxY = m);
+          } else {
+            _results.push(void 0);
+          }
+        }
+      }
+      return _results;
     };
 
     Layer.prototype.addObject = function(action, tool, params) {
@@ -260,15 +275,24 @@
     };
 
     Layer.prototype.draw = function(id) {
-      var o, svg, _i, _len, _ref, _results;
+      var canvas, o, origin, svg, _i, _len, _ref, _results;
       console.log("drawing layer origin at " + this.minX + ", " + this.minY);
       console.log("objects to draw: " + this.layerObjects.length);
-      svg = SVG(id).size("" + (0.5 + (this.maxX - this.minX)) + this.units, "" + (0.5 + (this.maxY - this.minY)) + this.units);
+      origin = {
+        x: this.minX,
+        y: this.minY
+      };
+      canvas = {
+        width: this.maxX - this.minX,
+        height: this.maxY - this.minY,
+        margin: 0.5
+      };
+      svg = SVG(id).size("" + (2 * canvas.margin + canvas.width) + this.units, "" + (2 * canvas.margin + canvas.height) + this.units);
       _ref = this.layerObjects;
       _results = [];
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         o = _ref[_i];
-        _results.push(o.draw(svg, [this.minX - 0.25, this.minY - 0.25], this.units));
+        _results.push(o.draw(svg, origin, canvas, this.units));
       }
       return _results;
     };

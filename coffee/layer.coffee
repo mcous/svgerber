@@ -9,62 +9,48 @@ root = exports ? this
 # layer object (pad or trace)
 class LayerObject
   # constructor takes in the tool shape, start position, parameters
-  constructor: (tool, params) ->
-    @parseTool(tool)
-    @parseParams(params)
-
-  parseTool: (t) ->
-    @shape = t.shape
-    p = t.params
-    switch @shape
-      when 'C'
-        unless p[0]? then throw "BadCircleParamsError"
-        @dia = p[0]
-      when 'R'
-        unless p.length > 1 then throw "BadRectParamsError"
-        @size = p[0..1]
-
-  parseParams: (p) ->
-    if p < 2 then throw 'NotEnoughToolParamsError'
-    @x = p[0]
-    @y = p[1]
-
+  constructor: (@tool, @x, @y, @coord = null) ->
+    @print()
 
 # pad class for Layer
 class Pad extends LayerObject
-  # parse the parameters into something useful
-  parseTool: (t) ->
-    p = t.params
-    switch t.shape
-      when 'C'
-        @holeX = if p[1]? then p[1] else null
-        @holeY = if p[2]? then p[2] else null
-      when 'R', 'O'
-        @holeX = if p[2]? then p[2] else null
-        @holeY = if p[3]? then p[3] else null
-    super t
-
-  # parseParams: (p) ->
-  #   super p
+  print: ->
+    console.log "#{@tool.shape} pad created at #{@x}, #{@y}"
 
   getRange: ->
     [@x, @y]
 
   # draw to SVG
-  draw: (drawing, origin, units) ->
+  # parameters are the drawing object,
+  # an origin object with keys x and y
+  # a canvas object with keys width, height, and margin
+  # the units for the drawing
+  draw: (drawing, origin, canvas, units) ->
     pad = null
-    switch @shape
+
+    # adjust for origin and margin in x
+    x = @x - origin.x + canvas.margin
+    # add the units
+    x = "#{x}#{units}"
+
+    # adjust for origin, margin, and mirror in y
+    y = canvas.height - (@y - origin.y) + canvas.margin
+    # add the units
+    y = "#{y}#{units}"
+
+    switch @tool.shape
       when'C'
-        console.log "drawing circular pad at #{@x}, #{@y}"
-        pad = drawing.circle("#{@dia}#{units}")
-        pad.center("#{@x-origin[0]}#{units}", "#{@y-origin[1]}#{units}")
+        console.log "drawing circular pad at #{@x}, #{@y} with dia #{@tool.params.dia}"
+        pad = drawing.circle("#{@tool.params.dia}#{units}")
+        pad.center(x, y)
 
       when 'R'
-        console.log "rectangular pad at #{@x}, #{@y}"
-        pad = drawing.rect("#{@size[0]}#{units}", "#{@size[1]}#{units}")
-        #pad.center("#{@x-origin[0]}#{units}", "#{@y-origin[1]}#{units}")
-        moveX = "#{@x-@size[0]/2 - origin[0]}#{units}"
-        moveY = "#{@y-@size[1]/2 - origin[1]}#{units}"
+        console.log "drawing rectangular pad at #{@x}, #{@y} with size #{@tool.params.sizeX}, #{@tool.params.sizeY}"
+        pad = drawing.rect("#{@tool.params.sizeX}#{units}", "#{@tool.params.sizeY}#{units}")
+        # center doesn't work with units, so adapt
+        moveX = "#{parseFloat(x) - @tool.params.sizeX/2}#{units}"
+        moveY = "#{parseFloat(y) - @tool.params.sizeY/2}#{units}"
+        # move
         pad.move(moveX,moveY)
       when 'O'
         console.log "obround pad"
@@ -73,16 +59,16 @@ class Pad extends LayerObject
       else
         console.log "unrecognized shape"
 
-    if @holeX?
+    if @tool.params.holeX?
       # positve mask for the pad itself
       p = pad.clone().fill {color: '#fff'}
       # negative mask for the hole
       h = null
       # rectangle or circle
-      if @holeY?
-        h = drawing.rect(@holeX, @holeY)
+      if @tool.params.holeY?
+        h = drawing.rect(@tool.params.holeX, @tool.params.holeY)
       else
-        h = drawing.circle(@holeX)
+        h = drawing.circle(@tool.params.holeX)
       # center the hole and fill properly
       h.center(pad.cx(), pad.cy()).fill {color: '#000'}
       # mask the hole out
@@ -91,45 +77,47 @@ class Pad extends LayerObject
 
 # trace class for Layer
 class Trace extends LayerObject
-  # parse the tool for errors
-  parseTool: (t) ->
-    p = t.params
-    switch t.shape
-      when 'C'
-        if p.length isnt 1 then throw "BadCircleTraceError"
-      when 'R'
-        if p.length isnt 2 then throw "BadRectTraceError"
-      else
-        console.log "shape #{@shape}, params length: #{p.length}"
-        throw "InvalidTraceToolError"
-    super t
-
-  # parse the params for the end point
-  parseParams: (p) ->
-    if p.length isnt 4 then throw 'NotEnoughParamsForTraceError'
-    @xEnd = p[2]
-    @yEnd = p[3]
-    super p
+  print: ->
+    console.log "trace created from #{@x}, #{@y} to #{@coord.x}, #{@coord.y}"
 
   getRange: ->
-    [@x, @y, @xEnd, @yEnd]
+    [@x, @y, @coord.x, @coord.y]
 
   # draw to SVG
-  draw: (drawing, origin, units) ->
+  # parameters are the drawing object,
+  # an origin object with keys x and y
+  # a canvas object with keys width, height, and margin
+  # the units for the drawing
+  draw: (drawing, origin, canvas, units) ->
     trace = null
+
+    # adjust for origin and margin in x
+    x1 = @x - origin.x + canvas.margin
+    x2 = @coord.x - origin.x + canvas.margin
+    # add the units
+    x1 = "#{x1}#{units}"
+    x2 = "#{x2}#{units}"
+
+    # adjust for origin and margin in y
+    y1 = canvas.height - (@y - origin.y) + canvas.margin
+    y2 = canvas.height - (@coord.y - origin.y) + canvas.margin
+    # add the units
+    y1 = "#{y1}#{units}"
+    y2 = "#{y2}#{units}"
+
     # if the tool shape is a circle, then we do a line with rounded caps
-    if @shape is 'C'
+    if @tool.shape is 'C'
       trace = drawing.line()
       # first param is circle dia
       trace.stroke {
-        width: "#{@dia}#{units}"
+        width: "#{@tool.params.dia}#{units}"
         linecap: 'round'
       }
       # plot the stroke to the end
-      trace.plot "#{@x-origin[0]}#{units}", "#{@y-origin[1]}#{units}", "#{@xEnd-origin[0]}#{units}", "#{@yEnd-origin[1]}#{units}"
+      trace.plot x1, y1, x2, y2
 
     # if the tool shape is a rect, then we gotta get fancy
-    else if @shape is 'R'
+    else if @tool.shape is 'R'
       console.log "fancy trace"
 
 # fill class
@@ -145,11 +133,47 @@ class root.Layer
     @maxY = null
 
   setUnits: (u) ->
-    if u is 'IN' then @units = 'in' else if u is 'MM' then @units = 'mm'
-
+    if u is 'in' then @units = 'in' else if u is 'mm' then @units = 'mm'
 
   getSize: ->
     [@minX, @maxX, @minY, @maxY]
+
+  # add a trace given a tool, start points, and the trace coordinates
+  addTrace: (tool, startX, startY, c) ->
+    # tool has to be a circle or a rectangle without a hole
+    unless tool.shape is 'C' or tool.shape is 'R' then throw "cannot create trace with #{tool.shape} (tool #{tool.code})"
+    if tool.holeX? then throw "cannot create trace with a holed tool (tool #{tool.code})"
+
+    # for now let's just stick to lines
+    t = new Trace tool, startX, startY, c
+    @layerObjects.push t
+    for m, i in t.getRange()
+      if i%2 is 0
+        if (not @minX?) or (m < @minX)
+          @minX = m
+        else if (not @maxX?) or (m > @maxX)
+          @maxX = m
+      else
+        if (not @minY?) or (m < @minY)
+          @minY = m
+        else if (not @maxY?) or (m > @maxY)
+          @maxY = m
+
+  addPad: (tool, x, y) ->
+    # create the pad
+    p = new Pad tool, x, y
+    @layerObjects.push p
+    for m, i in p.getRange()
+      if i%2 is 0
+        if (not @minX?) or (m < @minX)
+          @minX = m
+        else if (not @maxX?) or (m > @maxX)
+          @maxX = m
+      else
+        if (not @minY?) or (m < @minY)
+          @minY = m
+        else if (not @maxY?) or (m > @maxY)
+          @maxY = m
 
   # add a pad, trace, or fill(?)
   addObject: (action, tool, params) ->
@@ -193,11 +217,18 @@ class root.Layer
   draw: (id) ->
     console.log "drawing layer origin at #{@minX}, #{@minY}"
     console.log "objects to draw: #{@layerObjects.length}"
+
+    origin = {
+      x: @minX
+      y: @minY
+    }
+    canvas = {
+      width: @maxX - @minX
+      height: @maxY - @minY
+      margin: 0.5
+    }
     # create an SVG object
-    svg = SVG(id).size("#{0.5+(@maxX-@minX)}#{@units}", "#{0.5+(@maxY-@minY)}#{@units}",)
-    # draw a rectanle
-    # rect = drawing.rect(100, 100).attr({ fill: '#f06' })
-    # return the div
-    #drawDiv
+    svg = SVG(id).size("#{2*canvas.margin+canvas.width}#{@units}", "#{2*canvas.margin+canvas.height}#{@units}")
+
     # draw all the objects
-    o.draw(svg, [@minX-0.25, @minY-0.25], @units) for o in @layerObjects
+    o.draw(svg, origin, canvas, @units) for o in @layerObjects

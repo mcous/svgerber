@@ -9,33 +9,267 @@
       this.gerber = gerber;
       this.name = name;
       this.index = 0;
-      this.line = 0;
+      this.line = 1;
       this.end = false;
       this.format = {
-        set: false
+        set: false,
+        zero: null,
+        notation: null,
+        int: null,
+        dec: null
+      };
+      this.units = null;
+      this.tools = {};
+      this.polarity = 'D';
+      this.tool = null;
+      this.position = {
+        x: 0,
+        y: 0
       };
       this.mode = {
-        set: false
+        int: null,
+        quad: null
       };
-      this.tools = {};
+      this.region = {
+        state: false,
+        current: null
+      };
     }
 
     Plotter.prototype.plot = function() {
       var block, layer, next;
       layer = new Layer(this.name);
-      while (this.end !== 10) {
+      while (!(this.end || this.index >= this.gerber.length)) {
         next = this.gerber[this.index];
         if (next === '%') {
-          console.log("parameter command found at line " + this.line);
           this.readParameter();
         } else {
           console.log("data block found at line " + this.line);
           block = this.readBlock();
           console.log("block found: " + block);
+          while (block.length > 0) {
+            if (block.match(/^M0?2$/)) {
+              console.log("end of file at line " + (this.line - 1));
+              this.end = true;
+              block = '';
+            } else if (block.match(/^G[01234579][0-7]?/)) {
+              console.log("state command at line " + (this.line - 1));
+              block = this.processState(block);
+            } else if (block.match(/D[0-9]\d*$/)) {
+              console.log("operation command at line " + (this.line - 1));
+              block = this.operate(layer, block);
+            } else {
+              console.log("don't know what to do with " + block + " at line " + (this.line - 1));
+              block = '';
+            }
+          }
         }
-        this.end++;
       }
+      layer.setUnits(this.units);
       return layer;
+    };
+
+    Plotter.prototype.processState = function(command) {
+      var g;
+      console.log("changing plotter state given " + command);
+      g = command.match(/^G[01234579][0-7]?/);
+      if (g != null) {
+        g = g[0];
+      } else {
+        throw "error: " + command + " is not a valid state command";
+      }
+      switch (g) {
+        case 'G1':
+        case 'G01':
+          this.mode.int = 1;
+          console.log("interpolation mode set to linear");
+          break;
+        case 'G2':
+        case 'G02':
+          this.mode.int = 2;
+          console.log("interpolation mode set to clockwise arc");
+          break;
+        case 'G3':
+        case 'G03':
+          this.mode.int = 3;
+          console.log("interpolation mode set to counter clockwise arc");
+          break;
+        case 'G4':
+        case 'G04':
+          console.log("comment; ignoring");
+          command = '';
+          break;
+        case 'G36':
+          this.region.state = true;
+          console.log("region mode on");
+          break;
+        case 'G37':
+          this.region.state = false;
+          console.log("region mode off");
+          break;
+        case 'G74':
+          this.mode.quad = 74;
+          console.log("quadrant mode set to single");
+          break;
+        case 'G75':
+          this.mode.quad = 75;
+          console.log("quadrant mode set to multiple");
+          break;
+        case 'G54':
+        case 'G55':
+        case 'G70':
+        case 'G71':
+        case 'G90':
+        case 'G91':
+          console.log("deprecated command " + g + "; ignoring");
+          break;
+        default:
+          throw "error at " + this.line + ": " + g + " is unrecognized";
+      }
+      if (command.length > g.length) {
+        return command.slice(g.length);
+      } else {
+        return '';
+      }
+    };
+
+    Plotter.prototype.operate = function(layer, command) {
+      var d;
+      console.log("operating the plotter given " + command);
+      d = command.match(/D[0-9]\d*$/);
+      if (d != null) {
+        d = d[0];
+      } else {
+        throw "error: " + command + " is not a valid operation command";
+      }
+      switch (d) {
+        case 'D1':
+        case 'D01':
+          console.log('interpolate operation found');
+          this.interpolate(layer, this.getCoordinates(command));
+          break;
+        case 'D2':
+        case 'D02':
+          console.log('move operation found');
+          this.move(layer, this.getCoordinates(command));
+          break;
+        case 'D3':
+        case 'D03':
+          console.log('flash operation found');
+          this.flash(layer, this.getCoordinates(command));
+          break;
+        default:
+          console.log('change tool command found');
+          this.changeTool(d);
+      }
+      return '';
+    };
+
+    Plotter.prototype.getCoordinates = function(command) {
+      var c;
+      c = {};
+      c.x = command.match(/X[+-]?\d+/);
+      if (c.x != null) {
+        c.x = this.parseCoordinate(c.x[0].slice(1));
+      } else {
+        c.x = this.position.x;
+      }
+      c.y = command.match(/Y[+-]?\d+/);
+      if (c.y != null) {
+        c.y = this.parseCoordinate(c.y[0].slice(1));
+      } else {
+        c.y = this.position.y;
+      }
+      c.i = command.match(/I[+-]?\d+/);
+      if (c.i != null) {
+        c.i = this.parseCoordinate(c.i[0].slice(1));
+      } else if (this.mode.int !== 1) {
+        c.i = 0;
+      }
+      c.j = command.match(/J[+-]?\d+/);
+      if (c.j != null) {
+        c.j = this.parseCoordinate(c.j[0].slice(1));
+      } else if (this.mode.int !== 1) {
+        c.j = 0;
+      }
+      return c;
+    };
+
+    Plotter.prototype.parseCoordinate = function(coord) {
+      var negative;
+      negative = false;
+      if (coord[0] === '-') {
+        negative = true;
+        coord = coord.slice(1);
+      }
+      if (coord[0] === '+') {
+        coord = coord.slice(1);
+      }
+      if (this.format.zero === 'L') {
+        coord = coord.slice(0, -this.format.dec) + '.' + coord.slice(-this.format.dec);
+      } else if (this.format.zero === 'T') {
+        coord = coord.slice(0, this.format.int) + '.' + coord.slice(this.format.int);
+      }
+      coord = parseFloat(coord);
+      if (negative) {
+        coord *= -1;
+      }
+      return coord;
+    };
+
+    Plotter.prototype.interpolate = function(layer, c) {
+      var _ref;
+      if (!((1 <= (_ref = this.mode.int) && _ref <= 3))) {
+        throw "error at " + line + ": " + this.mode.int + " is not a valid mode for interpolation";
+      }
+      if (this.region.state === true) {
+        console.log("region mode is on; interpolating");
+        if (this.region.current == null) {
+          console.log('starting new region');
+        }
+        if (this.mode.int === 1) {
+          console.log('adding line to region');
+        } else if (this.mode.int === 2) {
+          console.log('adding cw arc to region');
+        } else if (this.mode.int === 3) {
+          console.log('adding ccw arc to region');
+        }
+      } else {
+        if (this.mode.int === 1) {
+          console.log("creating straight trace");
+          layer.addTrace(this.tool, this.position.x, this.position.y, c);
+        } else if (this.mode.int === 2) {
+          console.log("creating cw arc trace");
+        } else if (this.mode.int === 3) {
+          console.log("creating ccw arc trace");
+        }
+      }
+      return this.moveTo(c);
+    };
+
+    Plotter.prototype.move = function(layer, c) {
+      if (this.region.state === true && (this.region.current != null)) {
+        return console.log("closing region at line " + this.line);
+      } else {
+        return this.moveTo(c);
+      }
+    };
+
+    Plotter.prototype.moveTo = function(c) {
+      this.position.x = c.x;
+      this.position.y = c.y;
+      return console.log("moved to " + c.x + ", " + c.y);
+    };
+
+    Plotter.prototype.flash = function(layer, c) {
+      if (this.region.state === true) {
+        throw "error at " + this.line + ": cannot flash (D03) in region mode";
+      }
+      if (this.tool == null) {
+        throw "error at " + this.line + ": no tool selected for flash";
+      }
+      layer.addPad(this.tool, c.x, c.y);
+      return this.moveTo(c);
     };
 
     Plotter.prototype.readBlock = function() {
@@ -67,25 +301,26 @@
         command = block.slice(3);
         switch (param) {
           case 'FS':
-            console.log("it's a format command: " + block);
+            console.log("format command at line " + this.line + ": " + block);
             this.setFormat(command);
             break;
           case 'MO':
-            console.log("it's a mode command: " + block);
-            this.setMode(command);
+            console.log("unit mode command at line " + this.line + ": " + block);
+            this.setUnitMode(command);
             break;
           case 'AD':
-            console.log("it's a aperture definition: " + block);
+            console.log("aperture definition at line " + this.line + ": " + block);
             this.createTool(command);
             break;
           case 'AM':
-            console.log("it's a aperture macro: " + block);
+            console.log("aperture macro at line " + this.line + ": " + block);
             break;
           case 'SR':
-            console.log("it's a step repeat command: " + block);
+            console.log("step repeat command at line " + this.line + ": " + block);
             break;
           case 'LP':
-            console.log("it's a level polarity: " + block);
+            console.log("level polarity at line " + this.line + ": " + block);
+            this.setPolarity;
         }
         c = this.gerber[this.index];
       }
@@ -109,13 +344,13 @@
       if (zero === 'L' || zero === 'T') {
         this.format.zero = zero;
       } else {
-        throw "" + zero + " at line " + this.line + " is invalid zero omission value";
+        throw "" + zero + " at line " + this.line + " is invalid zero omission value (L or T)";
       }
       notation = command[1];
       if (notation === 'A' || notation === 'I') {
         this.format.notation = notation;
       } else {
-        throw "" + notation + " at line " + this.line + " is invalid notation value";
+        throw "" + notation + " at line " + this.line + " is invalid notation value (A or I)";
       }
       xFormat = command.slice(2, 5);
       yFormat = command.slice(5, 8);
@@ -136,24 +371,42 @@
       if (this.format.dec > 7) {
         throw "error at " + line + ": " + this.format.dec + " exceeds max decimal places of 7";
       }
-      console.log("zero omission set to: " + this.format.zero + ", coordinate notation set to: " + this.format.notation + ", interger places set to " + this.format.int + ", decimal places set to " + this.format.dec);
+      console.log("zero omission set to: " + this.format.zero + ", coordinate notation set to: " + this.format.notation + ", integer places set to " + this.format.int + ", decimal places set to " + this.format.dec);
       return this.format.set = true;
     };
 
-    Plotter.prototype.setMode = function(command) {
+    Plotter.prototype.setUnitMode = function(command) {
       console.log("setting unit mode according to " + command);
-      if (this.mode.set) {
-        throw "error at " + this.line + ": mode has already been set";
+      if (this.units != null) {
+        throw "error at " + this.line + ": unit mode has already been set";
       }
       if (command === 'IN') {
-        this.mode.units = 'in';
+        this.units = 'in';
       } else if (command === 'MM') {
-        this.mode.units = 'mm';
+        this.units = 'mm';
       } else {
-        throw "#error at {@line}: " + command + " is not a valid unit mode";
+        throw "#error at " + this.line + ": " + command + " is not a valid unit mode (IN or MM)";
       }
-      console.log("unit mode set to: " + this.mode.units);
-      return this.mode.set = true;
+      return console.log("unit mode set to: " + this.units);
+    };
+
+    Plotter.prototype.setPolarity = function(command) {
+      console.log("setting polarity according to " + command);
+      if (command === 'C' || command === 'D') {
+        this.polarity = command;
+        this.position.x = null;
+        return this.position.y = null;
+      } else {
+        throw "error at " + this.line + ": " + command + " is not a valid polarity (C or D)";
+      }
+    };
+
+    Plotter.prototype.changeTool = function(code) {
+      if (this.tools[code] == null) {
+        throw "error at " + this.line + ": tool " + code + " does not exist";
+      }
+      this.tool = this.tools[code];
+      return console.log("tool changed to " + code);
     };
 
     Plotter.prototype.createTool = function(command) {
@@ -185,7 +438,8 @@
           console.lot("tool " + toolCode + " might be a macro");
       }
       tool = new Aperture(toolCode, toolShape[0], toolParams);
-      return this.tools[toolCode] = tool;
+      this.tools[toolCode] = tool;
+      return this.changeTool(toolCode);
     };
 
     Plotter.prototype.getCircleToolParams = function(command) {
@@ -282,7 +536,7 @@
 
     Plotter.prototype.gatherToolParams = function(command) {
       var i, n, numbers, _i, _len;
-      numbers = command.match(/[\+-]?[\d\.]+/g);
+      numbers = command.match(/[\+-]?[\d\.]+(?=X|$)/g);
       for (i = _i = 0, _len = numbers.length; _i < _len; i = ++_i) {
         n = numbers[i];
         if (!n.match(/^[\+-]?((\d+\.?\d*)|(\d*\.?\d+))$/)) {
