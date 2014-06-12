@@ -5,14 +5,6 @@
 
 # convert a file to an svg
 fileToSVG = (file, filename) ->
-  # lines = file.split "\n"
-  # lines = getGerberFormat lines
-  # lines = getGerberUnits lines
-  #
-  # lines = getGerberApertures lines
-  #
-  # console.log lines
-  # console.log aps
   console.log 'converting to svg'
   p = new Plotter(file, filename[-3..])
 
@@ -22,20 +14,10 @@ fileToSVG = (file, filename) ->
 # read a file to a div
 readFileToDiv = (event, filename) ->
   if event.target.readyState is FileReader.DONE
-    # textDiv = document.createElement 'p'
-    # textDiv.innerHTML = fileToSVG event.target.result
 
     # plot something
     layer = fileToSVG event.target.result, filename
 
-    # # make a new layer to draw on
-    # layer = new Layer 'testlayer'
-    # # make a pad and add it to the layer
-    # pad = new Pad 'C', '1in', '1in', ['0.5in']
-    # trace = new Trace 'C', '0.01in', '1in', ['0.005in', '3in', '1in']
-    # layer.layerObjects.push pad
-    # layer.layerObjects.push trace
-    #
     # create a div for the drawing to live in
     drawDiv = document.createElement('div')
     drawDiv.id = "layer-#{layer.name}"
@@ -43,8 +25,6 @@ readFileToDiv = (event, filename) ->
     document.getElementById('layers').insertBefore(drawDiv, null)
 
     layer.draw(drawDiv.id)
-
-
 
 # take care of a file event
 handleFileSelect = (event) ->
