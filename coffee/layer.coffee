@@ -40,12 +40,12 @@ class Pad extends LayerObject
 
     switch @tool.shape
       when'C'
-        console.log "drawing circular pad at #{@x}, #{@y} with dia #{@tool.params.dia}"
+        #console.log "drawing circular pad at #{@x}, #{@y} with dia #{@tool.params.dia}"
         pad = drawing.circle("#{@tool.params.dia}#{units}")
         pad.center(x, y)
 
       when 'R'
-        console.log "drawing rectangular pad at #{@x}, #{@y} with size #{@tool.params.sizeX}, #{@tool.params.sizeY}"
+        #console.log "drawing rectangular pad at #{@x}, #{@y} with size #{@tool.params.sizeX}, #{@tool.params.sizeY}"
         pad = drawing.rect("#{@tool.params.sizeX}#{units}", "#{@tool.params.sizeY}#{units}")
         # center doesn't work with units, so adapt
         moveX = "#{parseFloat(x) - @tool.params.sizeX/2}#{units}"
@@ -122,6 +122,67 @@ class Trace extends LayerObject
 
 # fill class
 class Fill extends LayerObject
+  # overload the constructor because a fill is different
+  constructor: (@path) ->
+
+  # draw will get interesting
+  draw: (drawing, origin, canvas, units) ->
+    console.log 'drawing fill'
+    # path string to pass to SVG
+    drawPath = ''
+    # process coordinates for origin, margin, and mirror
+    index = 0
+    while index < @path.length
+      # move to command
+      if @path[index] is 'M'
+        drawPath += 'M'
+        index++
+        # two coordinates will follow: x and y
+        # x (origin and margin)
+        drawPath += "#{@path[index] - origin.x + canvas.margin} "
+        index++
+        # y (origin, margin, and mirror)
+        drawPath += "#{canvas.height - (@path[index] - origin.y) + canvas.margin}"
+        index++
+      # line to command
+      else if @path[index] is 'L'
+        drawPath += 'L'
+        index++
+        # two coordinates will follow: x and y
+        # x (origin and margin)
+        drawPath += "#{@path[index] - origin.x + canvas.margin} "
+        index++
+        # y (origin, margin, and mirror)
+        drawPath += "#{canvas.height - (@path[index] - origin.y) + canvas.margin}"
+        index++
+      # arc to command
+      else if @path[index] is 'A'
+        # first five items parameters are A, rx, ry, xAxisRot, largeArcFlag, and sweepFlag
+        # push them without modification
+        for p in @path[index...index+5]
+          drawPath += "#{p} "
+        index += 5
+        # next two are the x end and the y end... transform accordingly
+        # x (origin and margin)
+        drawPath += "#{@path[index] - origin.x + canvas.margin} "
+        index++
+        # y (origin, margin, and mirror)
+        drawPath += "#{canvas.height - (@path[index] - origin.y) + canvas.margin}"
+        index++
+      # close region command
+      else if @path[index] is 'Z'
+        drawPath += 'Z'
+        index++
+      # else we are confused
+      else
+        throw "unrecognized path command #{@path[index]}"
+
+    # create a path with the processed string
+    path = drawing.path drawPath
+    path.fill {color: '#000'}
+    path.stroke {width: 0}
+
+
 
 # layer class
 class root.Layer
@@ -174,6 +235,11 @@ class root.Layer
           @minY = m
         else if (not @maxY?) or (m > @maxY)
           @maxY = m
+
+  addFill: (path) ->
+    # create the fill
+    f = new Fill path
+    @layerObjects.push f
 
   # add a pad, trace, or fill(?)
   addObject: (action, tool, params) ->

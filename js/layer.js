@@ -43,12 +43,10 @@
       y = "" + y + units;
       switch (this.tool.shape) {
         case 'C':
-          console.log("drawing circular pad at " + this.x + ", " + this.y + " with dia " + this.tool.params.dia);
           pad = drawing.circle("" + this.tool.params.dia + units);
           pad.center(x, y);
           break;
         case 'R':
-          console.log("drawing rectangular pad at " + this.x + ", " + this.y + " with size " + this.tool.params.sizeX + ", " + this.tool.params.sizeY);
           pad = drawing.rect("" + this.tool.params.sizeX + units, "" + this.tool.params.sizeY + units);
           moveX = "" + (parseFloat(x) - this.tool.params.sizeX / 2) + units;
           moveY = "" + (parseFloat(y) - this.tool.params.sizeY / 2) + units;
@@ -130,9 +128,56 @@
   Fill = (function(_super) {
     __extends(Fill, _super);
 
-    function Fill() {
-      return Fill.__super__.constructor.apply(this, arguments);
+    function Fill(path) {
+      this.path = path;
     }
+
+    Fill.prototype.draw = function(drawing, origin, canvas, units) {
+      var drawPath, index, p, path, _i, _len, _ref;
+      console.log('drawing fill');
+      drawPath = '';
+      index = 0;
+      while (index < this.path.length) {
+        if (this.path[index] === 'M') {
+          drawPath += 'M';
+          index++;
+          drawPath += "" + (this.path[index] - origin.x + canvas.margin) + " ";
+          index++;
+          drawPath += "" + (canvas.height - (this.path[index] - origin.y) + canvas.margin);
+          index++;
+        } else if (this.path[index] === 'L') {
+          drawPath += 'L';
+          index++;
+          drawPath += "" + (this.path[index] - origin.x + canvas.margin) + " ";
+          index++;
+          drawPath += "" + (canvas.height - (this.path[index] - origin.y) + canvas.margin);
+          index++;
+        } else if (this.path[index] === 'A') {
+          _ref = this.path.slice(index, index + 5);
+          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+            p = _ref[_i];
+            drawPath += "" + p + " ";
+          }
+          index += 5;
+          drawPath += "" + (this.path[index] - origin.x + canvas.margin) + " ";
+          index++;
+          drawPath += "" + (canvas.height - (this.path[index] - origin.y) + canvas.margin);
+          index++;
+        } else if (this.path[index] === 'Z') {
+          drawPath += 'Z';
+          index++;
+        } else {
+          throw "unrecognized path command " + this.path[index];
+        }
+      }
+      path = drawing.path(drawPath);
+      path.fill({
+        color: '#000'
+      });
+      return path.stroke({
+        width: 0
+      });
+    };
 
     return Fill;
 
@@ -222,6 +267,12 @@
         }
       }
       return _results;
+    };
+
+    Layer.prototype.addFill = function(path) {
+      var f;
+      f = new Fill(path);
+      return this.layerObjects.push(f);
     };
 
     Layer.prototype.addObject = function(action, tool, params) {

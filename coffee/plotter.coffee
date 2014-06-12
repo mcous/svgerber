@@ -18,6 +18,9 @@ class root.Plotter
     # file end flag
     @end = false
 
+    # create a new layer
+    @layer = new Layer @name
+
     # plotter parameters
     # set the format set flag to false and the rest to null
     @format = {
@@ -52,14 +55,12 @@ class root.Plotter
     @region = {
       state: off
       current: null
+      startX: null
+      startY: null
     }
-
 
   # plot the layer by reading the gerber file
   plot: ->
-    # create a new layer
-    layer = new Layer @name
-
     # loop until the file ends
     until @end or @index >= @gerber.length
       # peak at the next character in the file
@@ -89,7 +90,7 @@ class root.Plotter
           # check for a operation code (D code)
           else if block.match /D[0-9]\d*$/
             console.log "operation command at line #{@line-1}"
-            block = @operate layer, block
+            block = @operate block
 
           # check for a state command
           else
@@ -97,9 +98,9 @@ class root.Plotter
             block = ''
 
     # set the layer units
-    layer.setUnits @units
+    @layer.setUnits @units
     # return the layer
-    layer
+    @layer
 
   # process the plotter state given a line with a G code in it
   processState: (command) ->
@@ -127,12 +128,18 @@ class root.Plotter
         command = ''
       # region mode on
       when 'G36'
-        @region.state = on
-        console.log "region mode on"
+        if @region.state is off
+          @region.state = on
+          @region.current = null
+          @region.startX = null
+          @region.startY = null
+          console.log "region mode on"
       # region mode off
       when 'G37'
-        @region.state = off
-        console.log "region mode off"
+        if @region.state is on
+          @region.state = off
+          if @region.current? then @finishRegion()
+          console.log "region mode off"
       # single quadrant mode
       when 'G74'
         @mode.quad = 74
@@ -154,7 +161,7 @@ class root.Plotter
       ''
 
   # operate the plotter given a block with a D code in it
-  operate: (layer, command) ->
+  operate: (command) ->
     console.log "operating the plotter given #{command}"
     # get the d code
     d = command.match /D[0-9]\d*$/
@@ -163,13 +170,13 @@ class root.Plotter
     switch d
       when 'D1', 'D01'
         console.log 'interpolate operation found'
-        @interpolate layer, @getCoordinates(command)
+        @interpolate @getCoordinates(command)
       when 'D2', 'D02'
         console.log 'move operation found'
-        @move layer, @getCoordinates(command)
+        @move @getCoordinates(command)
       when 'D3', 'D03'
         console.log 'flash operation found'
-        @flash layer, @getCoordinates(command)
+        @flash @getCoordinates(command)
       else
         console.log 'change tool command found'
         @changeTool d
@@ -197,6 +204,7 @@ class root.Plotter
     # return c
     c
 
+  # parse a number according to the format spec of the file
   parseCoordinate: (coord) ->
     # remove any signs and set a negative flag if necessary
     negative = false
@@ -218,8 +226,21 @@ class root.Plotter
     # return c
     coord
 
+  # finish the current region
+  finishRegion: ->
+    console.log "closing region at line #{@line}"
+    if @position.x is @region.startX and @position.y is @region.startY
+      # end path
+      @region.current.push 'Z'
+      # create the region
+      @layer.addFill @region.current
+      # empty out the region
+      @region.current = null
+    else
+      throw error "error at #{@line}: region close command on open contour"
+
   # interpolate to the given coordinates
-  interpolate: (layer, c) ->
+  interpolate: (c) ->
     # check for a valid mode
     unless 1 <= @mode.int <= 3 then throw "error at #{line}: #{@mode.int} is not a valid mode for interpolation"
 
@@ -229,21 +250,45 @@ class root.Plotter
       # create a new region if it hasn't been created
       unless @region.current?
         console.log 'starting new region'
+        @region.current = ['M', @position.x, @position.y]
+        @region.startX = @position.x
+        @region.startY = @position.y
       # line mode
       if @mode.int is 1
         console.log 'adding line to region'
+        @region.current.push 'L', c.x, c.y
       # arc mode
-      else if @mode.int is 2
-        console.log 'adding cw arc to region'
-      else if @mode.int is 3
-        console.log 'adding ccw arc to region'
+      else if @mode.int is 2 or @mode.int is 3
+        console.log 'adding arc to region'
+        r = null
+        xAxisRot = 0
+        # large arc flag is true (1) if quad mode is multi (G75)
+        largeArcFlag = @mode.quad - 74
+        # sweep flag is true (1) if direction is CCW
+        sweepFlag = 3 - @mode.int
+
+        # find the radius by checking which offset signs work
+        # in multi quadrant mode, signs are specified, so if it's a good arc
+        # it will break the loop after the first iteration
+        for n in [ [1,1], [1,-1], [-1,1], [-1,-1] ]
+          # distance squared from the test center to the start
+          rs2 = (@position.x - n[0] * c.i)**2 + (@position.y - n[1] * c.j)**2
+          # same for the end
+          re2 = (c.x - n[0] * c.i)**2 + (c.y - n[1] * c.j)**2
+          # if they equal(ish), we've found the radius
+          if rs2 - re2 < 0.00001
+            r = Math.sqrt(rs2)
+            break
+
+          # push the path
+          @region.current.push 'A', r, r, xAxisRot, largeArcFlag, sweepFlag, c.x, c.y
 
     # else we're just creating traces like a normal person
     else
       # straight trace
       if @mode.int is 1
         console.log "creating straight trace"
-        layer.addTrace @tool, @position.x, @position.y, c
+        @layer.addTrace @tool, @position.x, @position.y, c
       else if @mode.int is 2
         console.log "creating cw arc trace"
       else if @mode.int is 3
@@ -253,13 +298,12 @@ class root.Plotter
     @moveTo c
 
   # execute a move operation to the given coordinates
-  move: (layer, c) ->
+  move: (c) ->
     # if we're in region mode and a region is active, we need to get a little fancy
     if @region.state is on and @region.current?
-      console.log "closing region at line #{@line}"
-    # other wise we can just move to the new coordinates
-    else
-      @moveTo c
+      @finishRegion()
+    # finally, move to the new coordinates
+    @moveTo c
 
   # simply move the current position to the coordinates
   moveTo: (c) ->
@@ -268,11 +312,11 @@ class root.Plotter
     console.log "moved to #{c.x}, #{c.y}"
 
   # flash at the given coordinates
-  flash: (layer, c) ->
+  flash: (c) ->
     # flash command should only happen if we're not in region mode
     if @region.state is on then throw "error at #{@line}: cannot flash (D03) in region mode"
     unless @tool? then throw "error at #{@line}: no tool selected for flash"
-    layer.addPad @tool, c.x, c.y
+    @layer.addPad @tool, c.x, c.y
     # move the plotter position
     @moveTo c
 
@@ -397,7 +441,11 @@ class root.Plotter
 
   # change tool to the code passed
   changeTool: (code) ->
+    # tool change command should only happen if we're not in region mode
+    if @region.state is on then throw "error at #{@line}: cannot change tool (Dnn) in region mode"
+    # make sure tool cod exists
     unless @tools[code]? then throw "error at #{@line}: tool #{code} does not exist"
+    # change the tool
     @tool = @tools[code]
     console.log "tool changed to #{code}"
 

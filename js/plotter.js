@@ -11,6 +11,7 @@
       this.index = 0;
       this.line = 1;
       this.end = false;
+      this.layer = new Layer(this.name);
       this.format = {
         set: false,
         zero: null,
@@ -32,13 +33,14 @@
       };
       this.region = {
         state: false,
-        current: null
+        current: null,
+        startX: null,
+        startY: null
       };
     }
 
     Plotter.prototype.plot = function() {
-      var block, layer, next;
-      layer = new Layer(this.name);
+      var block, next;
       while (!(this.end || this.index >= this.gerber.length)) {
         next = this.gerber[this.index];
         if (next === '%') {
@@ -57,7 +59,7 @@
               block = this.processState(block);
             } else if (block.match(/D[0-9]\d*$/)) {
               console.log("operation command at line " + (this.line - 1));
-              block = this.operate(layer, block);
+              block = this.operate(block);
             } else {
               console.log("don't know what to do with " + block + " at line " + (this.line - 1));
               block = '';
@@ -65,8 +67,8 @@
           }
         }
       }
-      layer.setUnits(this.units);
-      return layer;
+      this.layer.setUnits(this.units);
+      return this.layer;
     };
 
     Plotter.prototype.processState = function(command) {
@@ -100,12 +102,22 @@
           command = '';
           break;
         case 'G36':
-          this.region.state = true;
-          console.log("region mode on");
+          if (this.region.state === false) {
+            this.region.state = true;
+            this.region.current = null;
+            this.region.startX = null;
+            this.region.startY = null;
+            console.log("region mode on");
+          }
           break;
         case 'G37':
-          this.region.state = false;
-          console.log("region mode off");
+          if (this.region.state === true) {
+            this.region.state = false;
+            if (this.region.current != null) {
+              this.finishRegion();
+            }
+            console.log("region mode off");
+          }
           break;
         case 'G74':
           this.mode.quad = 74;
@@ -133,7 +145,7 @@
       }
     };
 
-    Plotter.prototype.operate = function(layer, command) {
+    Plotter.prototype.operate = function(command) {
       var d;
       console.log("operating the plotter given " + command);
       d = command.match(/D[0-9]\d*$/);
@@ -146,17 +158,17 @@
         case 'D1':
         case 'D01':
           console.log('interpolate operation found');
-          this.interpolate(layer, this.getCoordinates(command));
+          this.interpolate(this.getCoordinates(command));
           break;
         case 'D2':
         case 'D02':
           console.log('move operation found');
-          this.move(layer, this.getCoordinates(command));
+          this.move(this.getCoordinates(command));
           break;
         case 'D3':
         case 'D03':
           console.log('flash operation found');
-          this.flash(layer, this.getCoordinates(command));
+          this.flash(this.getCoordinates(command));
           break;
         default:
           console.log('change tool command found');
@@ -217,8 +229,19 @@
       return coord;
     };
 
-    Plotter.prototype.interpolate = function(layer, c) {
-      var _ref;
+    Plotter.prototype.finishRegion = function() {
+      console.log("closing region at line " + this.line);
+      if (this.position.x === this.region.startX && this.position.y === this.region.startY) {
+        this.region.current.push('Z');
+        this.layer.addFill(this.region.current);
+        return this.region.current = null;
+      } else {
+        throw error("error at " + this.line + ": region close command on open contour");
+      }
+    };
+
+    Plotter.prototype.interpolate = function(c) {
+      var largeArcFlag, n, r, re2, rs2, sweepFlag, xAxisRot, _i, _len, _ref, _ref1;
       if (!((1 <= (_ref = this.mode.int) && _ref <= 3))) {
         throw "error at " + line + ": " + this.mode.int + " is not a valid mode for interpolation";
       }
@@ -226,18 +249,35 @@
         console.log("region mode is on; interpolating");
         if (this.region.current == null) {
           console.log('starting new region');
+          this.region.current = ['M', this.position.x, this.position.y];
+          this.region.startX = this.position.x;
+          this.region.startY = this.position.y;
         }
         if (this.mode.int === 1) {
           console.log('adding line to region');
-        } else if (this.mode.int === 2) {
-          console.log('adding cw arc to region');
-        } else if (this.mode.int === 3) {
-          console.log('adding ccw arc to region');
+          this.region.current.push('L', c.x, c.y);
+        } else if (this.mode.int === 2 || this.mode.int === 3) {
+          console.log('adding arc to region');
+          r = null;
+          xAxisRot = 0;
+          largeArcFlag = this.mode.quad - 74;
+          sweepFlag = 3 - this.mode.int;
+          _ref1 = [[1, 1], [1, -1], [-1, 1], [-1, -1]];
+          for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+            n = _ref1[_i];
+            rs2 = Math.pow(this.position.x - n[0] * c.i, 2) + Math.pow(this.position.y - n[1] * c.j, 2);
+            re2 = Math.pow(c.x - n[0] * c.i, 2) + Math.pow(c.y - n[1] * c.j, 2);
+            if (rs2 - re2 < 0.00001) {
+              r = Math.sqrt(rs2);
+              break;
+            }
+            this.region.current.push('A', r, r, xAxisRot, largeArcFlag, sweepFlag, c.x, c.y);
+          }
         }
       } else {
         if (this.mode.int === 1) {
           console.log("creating straight trace");
-          layer.addTrace(this.tool, this.position.x, this.position.y, c);
+          this.layer.addTrace(this.tool, this.position.x, this.position.y, c);
         } else if (this.mode.int === 2) {
           console.log("creating cw arc trace");
         } else if (this.mode.int === 3) {
@@ -247,12 +287,11 @@
       return this.moveTo(c);
     };
 
-    Plotter.prototype.move = function(layer, c) {
+    Plotter.prototype.move = function(c) {
       if (this.region.state === true && (this.region.current != null)) {
-        return console.log("closing region at line " + this.line);
-      } else {
-        return this.moveTo(c);
+        this.finishRegion();
       }
+      return this.moveTo(c);
     };
 
     Plotter.prototype.moveTo = function(c) {
@@ -261,14 +300,14 @@
       return console.log("moved to " + c.x + ", " + c.y);
     };
 
-    Plotter.prototype.flash = function(layer, c) {
+    Plotter.prototype.flash = function(c) {
       if (this.region.state === true) {
         throw "error at " + this.line + ": cannot flash (D03) in region mode";
       }
       if (this.tool == null) {
         throw "error at " + this.line + ": no tool selected for flash";
       }
-      layer.addPad(this.tool, c.x, c.y);
+      this.layer.addPad(this.tool, c.x, c.y);
       return this.moveTo(c);
     };
 
@@ -402,6 +441,9 @@
     };
 
     Plotter.prototype.changeTool = function(code) {
+      if (this.region.state === true) {
+        throw "error at " + this.line + ": cannot change tool (Dnn) in region mode";
+      }
       if (this.tools[code] == null) {
         throw "error at " + this.line + ": tool " + code + " does not exist";
       }
