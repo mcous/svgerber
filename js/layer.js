@@ -38,18 +38,16 @@
       var h, m, moveX, moveY, p, pad, x, y;
       pad = null;
       x = this.x - origin.x + canvas.margin;
-      x = "" + x + units;
       y = canvas.height - (this.y - origin.y) + canvas.margin;
-      y = "" + y + units;
       switch (this.tool.shape) {
         case 'C':
-          pad = drawing.circle("" + this.tool.params.dia + units);
+          pad = drawing.circle("" + this.tool.params.dia);
           pad.center(x, y);
           break;
         case 'R':
-          pad = drawing.rect("" + this.tool.params.sizeX + units, "" + this.tool.params.sizeY + units);
-          moveX = "" + (parseFloat(x) - this.tool.params.sizeX / 2) + units;
-          moveY = "" + (parseFloat(y) - this.tool.params.sizeY / 2) + units;
+          pad = drawing.rect("" + this.tool.params.sizeX, "" + this.tool.params.sizeY);
+          moveX = "" + (parseFloat(x) - this.tool.params.sizeX / 2);
+          moveY = "" + (parseFloat(y) - this.tool.params.sizeY / 2);
           pad.move(moveX, moveY);
           break;
         case 'O':
@@ -103,16 +101,12 @@
       trace = null;
       x1 = this.x - origin.x + canvas.margin;
       x2 = this.coord.x - origin.x + canvas.margin;
-      x1 = "" + x1 + units;
-      x2 = "" + x2 + units;
       y1 = canvas.height - (this.y - origin.y) + canvas.margin;
       y2 = canvas.height - (this.coord.y - origin.y) + canvas.margin;
-      y1 = "" + y1 + units;
-      y2 = "" + y2 + units;
       if (this.tool.shape === 'C') {
         trace = drawing.line();
         trace.stroke({
-          width: "" + this.tool.params.dia + units,
+          width: "" + this.tool.params.dia,
           linecap: 'round'
         });
         return trace.plot(x1, y1, x2, y2);

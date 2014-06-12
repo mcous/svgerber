@@ -31,25 +31,25 @@ class Pad extends LayerObject
     # adjust for origin and margin in x
     x = @x - origin.x + canvas.margin
     # add the units
-    x = "#{x}#{units}"
+    #x = "#{x}#{units}"
 
     # adjust for origin, margin, and mirror in y
     y = canvas.height - (@y - origin.y) + canvas.margin
     # add the units
-    y = "#{y}#{units}"
+    #y = "#{y}#{units}"
 
     switch @tool.shape
       when'C'
         #console.log "drawing circular pad at #{@x}, #{@y} with dia #{@tool.params.dia}"
-        pad = drawing.circle("#{@tool.params.dia}#{units}")
+        pad = drawing.circle("#{@tool.params.dia}")
         pad.center(x, y)
 
       when 'R'
         #console.log "drawing rectangular pad at #{@x}, #{@y} with size #{@tool.params.sizeX}, #{@tool.params.sizeY}"
-        pad = drawing.rect("#{@tool.params.sizeX}#{units}", "#{@tool.params.sizeY}#{units}")
+        pad = drawing.rect("#{@tool.params.sizeX}", "#{@tool.params.sizeY}")
         # center doesn't work with units, so adapt
-        moveX = "#{parseFloat(x) - @tool.params.sizeX/2}#{units}"
-        moveY = "#{parseFloat(y) - @tool.params.sizeY/2}#{units}"
+        moveX = "#{parseFloat(x) - @tool.params.sizeX/2}"
+        moveY = "#{parseFloat(y) - @tool.params.sizeY/2}"
         # move
         pad.move(moveX,moveY)
       when 'O'
@@ -95,22 +95,22 @@ class Trace extends LayerObject
     x1 = @x - origin.x + canvas.margin
     x2 = @coord.x - origin.x + canvas.margin
     # add the units
-    x1 = "#{x1}#{units}"
-    x2 = "#{x2}#{units}"
+    #x1 = "#{x1}#{units}"
+    #x2 = "#{x2}#{units}"
 
     # adjust for origin and margin in y
     y1 = canvas.height - (@y - origin.y) + canvas.margin
     y2 = canvas.height - (@coord.y - origin.y) + canvas.margin
     # add the units
-    y1 = "#{y1}#{units}"
-    y2 = "#{y2}#{units}"
+    #y1 = "#{y1}#{units}"
+    #y2 = "#{y2}#{units}"
 
     # if the tool shape is a circle, then we do a line with rounded caps
     if @tool.shape is 'C'
       trace = drawing.line()
       # first param is circle dia
       trace.stroke {
-        width: "#{@tool.params.dia}#{units}"
+        width: "#{@tool.params.dia}"
         linecap: 'round'
       }
       # plot the stroke to the end
