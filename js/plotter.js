@@ -322,7 +322,7 @@
         }
         this.index++;
       }
-      while (this.gerber[this.index] === '*' || this.gerber[this.index] === '\n') {
+      while (this.gerber[this.index] === '*' || this.gerber[this.index] === '\n' || this.gerber[this.index] === '\r') {
         if (this.gerber[this.index] === '\n') {
           this.line++;
         }
@@ -366,8 +366,10 @@
       console.log("done with parameter block");
       this.index++;
       _results = [];
-      while (this.gerber[this.index] === '\n') {
-        this.line++;
+      while (this.gerber[this.index] === '\n' || this.gerber[this.index] === '\r') {
+        if (this.gerber[this.index] === '\n') {
+          this.line++;
+        }
         _results.push(this.index++);
       }
       return _results;

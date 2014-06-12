@@ -329,7 +329,7 @@ class root.Plotter
         block += @gerber[@index]
       @index++
     # skip past the end of block character and any new lines
-    while @gerber[@index] is '*' or @gerber[@index] is '\n'
+    while @gerber[@index] is '*' or @gerber[@index] is '\n' or @gerber[@index] is '\r'
       if @gerber[@index] is '\n' then @line++
       @index++
 
@@ -371,8 +371,8 @@ class root.Plotter
     console.log "done with parameter block"
     # push past the trailing % and any newlines
     @index++
-    while @gerber[@index] is '\n'
-      @line++
+    while @gerber[@index] is '\n' or @gerber[@index] is '\r'
+      if @gerber[@index] is '\n' then @line++
       @index++
 
   # set the format according to the passed command
