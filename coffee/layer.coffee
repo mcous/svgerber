@@ -300,3 +300,6 @@ class root.Layer
 
     # draw all the objects
     o.draw(svg, origin, canvas, @units) for o in @layerObjects
+
+    # return the id of the svg object
+    svg

@@ -19,12 +19,18 @@ readFileToDiv = (event, filename) ->
     layer = fileToSVG event.target.result, filename
 
     # create a div for the drawing to live in
-    drawDiv = document.createElement('div')
+    drawDiv = document.createElement 'div'
+    drawDiv.innerHTML = "<h3>#{filename}</h3>"
     drawDiv.id = "layer-#{layer.name}"
     drawDiv.class = 'layer-div'
     document.getElementById('layers').insertBefore(drawDiv, null)
+    # draw the layer to the div
+    svg = layer.draw drawDiv.id
+    svg64 = btoa svg.node.outerHTML
 
-    layer.draw(drawDiv.id)
+    # append the download link
+    imgsrc = "data:image/svg+xml;base64,#{svg64}"
+    drawDiv.innerHTML += "<a download='filename' href-lang='image/svg+xml' href='#{imgsrc}'>download svg</a>"
 
 # take care of a file event
 handleFileSelect = (event) ->

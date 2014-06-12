@@ -5,8 +5,20 @@
     <title>svgerber</title>
   </head>
   <body>
-    <h1>svgerbeR</h1>
-    <p>let's do this thing</p>
+    <h1>svgerber (alpha!)</h1>
+    <p>source available at <a href='http://github.com/mcous/svgerber'>github</a></p>
+    <h2>Let's do this thing</h2>
+    <p>But before we do, be aware that a lot of stuff doesn't work:</p>
+    <ul>
+      <li>incremental (instead of absolute) coordinates don't work</li>
+      <li>trailing zero suppression is untested</li>
+      <li>level polarity is ignored</li>
+      <li>old files with deprecated gerber commands could confuse it</li>
+      <li>arcs that aren't part of a region definition won't render properly</li>
+      <li>the UI doesn't exist</li>
+      <li>you can't download the svg</li>
+      <li>anything else that's broken won't work</li>
+    </ul>
     <!-- multiple files-->
     <input type="file" name="files[]" multiple id="files">
     <output id="list"></output>

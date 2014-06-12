@@ -6,8 +6,19 @@ html(lang="en")
     title svgerber
 
   body
-    h1 svgerbeR
-    p let's do this thing
+    h1 svgerber (alpha!)
+    p source available at <a href='http://github.com/mcous/svgerber'>github</a>
+    h2 Let's do this thing
+    p But before we do, be aware that a lot of stuff doesn't work:
+    ul
+      li incremental (instead of absolute) coordinates don't work
+      li trailing zero suppression is untested
+      li level polarity is ignored
+      li old files with deprecated gerber commands could confuse it
+      li arcs that aren't part of a region definition won't render properly
+      li the UI doesn't exist
+      li you can't download the svg
+      li anything else that's broken won't work
 
     // multiple files
     input(type='file' name='files[]' multiple)#files

@@ -10,14 +10,18 @@
   };
 
   readFileToDiv = function(event, filename) {
-    var drawDiv, layer;
+    var drawDiv, imgsrc, layer, svg, svg64;
     if (event.target.readyState === FileReader.DONE) {
       layer = fileToSVG(event.target.result, filename);
       drawDiv = document.createElement('div');
+      drawDiv.innerHTML = "<h3>" + filename + "</h3>";
       drawDiv.id = "layer-" + layer.name;
       drawDiv["class"] = 'layer-div';
       document.getElementById('layers').insertBefore(drawDiv, null);
-      return layer.draw(drawDiv.id);
+      svg = layer.draw(drawDiv.id);
+      svg64 = btoa(svg.node.outerHTML);
+      imgsrc = "data:image/svg+xml;base64," + svg64;
+      return drawDiv.innerHTML += "<a download='filename' href-lang='image/svg+xml' href='" + imgsrc + "'>download svg</a>";
     }
   };
 
