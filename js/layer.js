@@ -326,7 +326,7 @@
     };
 
     Layer.prototype.draw = function(id) {
-      var canvas, o, origin, svg, _i, _len, _ref, _results;
+      var canvas, o, origin, svg, totH, totW, _i, _len, _ref, _results;
       console.log("drawing layer origin at " + this.minX + ", " + this.minY);
       console.log("objects to draw: " + this.layerObjects.length);
       origin = {
@@ -338,7 +338,9 @@
         height: this.maxY - this.minY,
         margin: 0.5
       };
-      svg = SVG(id).size("" + (2 * canvas.margin + canvas.width) + this.units, "" + (2 * canvas.margin + canvas.height) + this.units);
+      totW = 2 * canvas.margin + canvas.width;
+      totH = 2 * canvas.margin + canvas.height;
+      svg = SVG(id).size("" + totW + this.units, "" + totH + this.units).viewbox(0, 0, totW, totH);
       _ref = this.layerObjects;
       _results = [];
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {

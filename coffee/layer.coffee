@@ -294,7 +294,9 @@ class root.Layer
       margin: 0.5
     }
     # create an SVG object
-    svg = SVG(id).size("#{2*canvas.margin+canvas.width}#{@units}", "#{2*canvas.margin+canvas.height}#{@units}")
+    totW = 2*canvas.margin+canvas.width
+    totH = 2*canvas.margin+canvas.height
+    svg = SVG(id).size("#{totW}#{@units}", "#{totH}#{@units}").viewbox(0,0,totW,totH)
 
     # draw all the objects
     o.draw(svg, origin, canvas, @units) for o in @layerObjects
