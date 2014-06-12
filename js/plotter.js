@@ -5,340 +5,546 @@
   root = typeof exports !== "undefined" && exports !== null ? exports : this;
 
   root.Plotter = (function() {
-    function Plotter(gerberFile, name) {
+    function Plotter(gerber, name) {
+      this.gerber = gerber;
       this.name = name;
-      this.zeroOmit = null;
-      this.notation = null;
-      this.leadDigits = null;
-      this.trailDigits = null;
+      this.index = 0;
+      this.line = 1;
+      this.end = false;
+      this.format = {
+        set: false,
+        zero: null,
+        notation: null,
+        int: null,
+        dec: null
+      };
       this.units = null;
-      this.apertures = [];
+      this.tools = {};
+      this.polarity = 'D';
       this.tool = null;
-      this.iMode = null;
-      this.aMode = null;
-      this.xPos = 0;
-      this.yPos = 0;
-      this.gerber = gerberFile.split('\n');
-      console.log("Plotter for " + this.name + " created");
+      this.position = {
+        x: 0,
+        y: 0
+      };
+      this.mode = {
+        int: null,
+        quad: null
+      };
+      this.region = {
+        state: false,
+        current: null
+      };
     }
 
-    Plotter.prototype.parseFormatSpec = function(fS) {
-      var formatMatch, notationMatch, xDataMatch, xFormat, yDataMatch, yFormat, zeroMatch, _ref, _ref1;
-      formatMatch = /^%FS.*\*%$/;
-      zeroMatch = /[LT]/;
-      notationMatch = /[AI]/;
-      xDataMatch = /X+?\d{2}/;
-      yDataMatch = /Y+?\d{2}/;
-      if (!fS.match(formatMatch)) {
-        throw "InputTo_parseFormatSpec_NotAFormatSpecError";
-      }
-      this.zeroOmit = fS.match(zeroMatch);
-      if (this.zeroOmit != null) {
-        this.zeroOmit = this.zeroOmit[0][0];
-        console.log("zero omission set to: " + this.zeroOmit);
-      } else {
-        throw "NoZeroSuppressionInFormatSpecError";
-      }
-      this.notation = fS.match(notationMatch);
-      if (this.notation != null) {
-        this.notation = this.notation[0][0];
-        console.log("notation set to: " + this.notation);
-      } else {
-        throw "NoCoordinateNotationInFormatSpecError";
-      }
-      xFormat = fS.match(xDataMatch);
-      yFormat = fS.match(yDataMatch);
-      if (xFormat != null) {
-        xFormat = xFormat[0].slice(-2);
-      } else {
-        throw "MissingCoordinateFormatInFormatSpecError";
-      }
-      if (yFormat != null) {
-        yFormat = yFormat[0].slice(-2);
-      } else {
-        throw "MissingCoordinateFormatInFormatSpecError";
-      }
-      if (xFormat === yFormat) {
-        this.leadDigits = parseInt(xFormat[0], 10);
-        this.trailDigits = parseInt(xFormat[1], 10);
-      } else {
-        throw "CoordinateFormatMismatchInFormatSpecError";
-      }
-      if (!(((0 < (_ref = this.leadDigits) && _ref < 8)) && ((0 < (_ref1 = this.trailDigits) && _ref1 < 8)))) {
-        throw "InvalidCoordinateFormatInFormatSpecError";
-      } else {
-        return console.log("coordinate format set to: " + this.leadDigits + ", " + this.trailDigits);
-      }
-    };
-
-    Plotter.prototype.parseUnits = function(u) {
-      var unitMatch;
-      unitMatch = /^%MO((MM)|(IN))\*%/;
-      if (u.match(unitMatch)) {
-        return this.units = u.slice(3, 5);
-      } else {
-        throw "NoValidUnitsGivenError";
-      }
-    };
-
-    Plotter.prototype.parseAperture = function(a) {
-      var apertureMatch, code, params, shape;
-      apertureMatch = /^%AD.*$/;
-      if (!a.match(apertureMatch)) {
-        throw "InputTo_parseAperture_NotAnApertureError";
-      }
-      code = a.match(/D[1-9]\d+/);
-      if (code != null) {
-        code = parseInt(code[0].slice(1), 10);
-      } else {
-        throw "InvalidApertureToolCodeError";
-      }
-      shape = a.match(/[CROP].*(?=\*%$)/);
-      if (shape != null) {
-        shape = shape[0];
-        params = ((function() {
-          switch (shape[0]) {
-            case "C":
-            case "R":
-            case "O":
-              return this.parseBasicAperture(shape);
-            case "P":
-              throw "UnimplementedApertureError";
+    Plotter.prototype.plot = function() {
+      var block, layer, next;
+      layer = new Layer(this.name);
+      while (!(this.end || this.index >= this.gerber.length)) {
+        next = this.gerber[this.index];
+        if (next === '%') {
+          this.readParameter();
+        } else {
+          console.log("data block found at line " + this.line);
+          block = this.readBlock();
+          console.log("block found: " + block);
+          while (block.length > 0) {
+            if (block.match(/^M0?2$/)) {
+              console.log("end of file at line " + (this.line - 1));
+              this.end = true;
+              block = '';
+            } else if (block.match(/^G[01234579][0-7]?/)) {
+              console.log("state command at line " + (this.line - 1));
+              block = this.processState(block);
+            } else if (block.match(/D[0-9]\d*$/)) {
+              console.log("operation command at line " + (this.line - 1));
+              block = this.operate(layer, block);
+            } else {
+              console.log("don't know what to do with " + block + " at line " + (this.line - 1));
+              block = '';
+            }
           }
-        }).call(this));
-        shape = shape[0];
-      } else {
-        throw "NoApertureShapeError";
+        }
       }
-      return a = new Aperture(code, shape, params);
+      layer.setUnits(this.units);
+      return layer;
     };
 
-    Plotter.prototype.parseBasicAperture = function(string) {
-      var badInput, circle, circleMatch, i, obround, obroundMatch, p, params, rect, rectangleMatch, _i, _len;
-      circleMatch = /^C,[\d\.]+(X[\d\.]+){0,2}$/;
-      rectangleMatch = /^R,[\d\.]+X[\d\.]+(X[\d\.]+){0,2}$/;
-      obroundMatch = /^O,[\d\.]+X[\d\.]+(X[\d\.]+){0,2}$/;
-      badInput = true;
-      if (((circle = string[0][0] === 'C') && string.match(circleMatch)) || ((rect = string[0][0] === 'R') && string.match(rectangleMatch)) || ((obround = string[0][0] === 'O') && string.match(obroundMatch))) {
-        params = string.match(/[\d\.]+/g);
-        for (i = _i = 0, _len = params.length; _i < _len; i = ++_i) {
-          p = params[i];
-          if (p.match(/^((\d+\.?\d*)|(\d*\.?\d+))$/)) {
-            params[i] = parseFloat(p);
-            badInput = false;
-          } else {
-            badInput = true;
+    Plotter.prototype.processState = function(command) {
+      var g;
+      console.log("changing plotter state given " + command);
+      g = command.match(/^G[01234579][0-7]?/);
+      if (g != null) {
+        g = g[0];
+      } else {
+        throw "error: " + command + " is not a valid state command";
+      }
+      switch (g) {
+        case 'G1':
+        case 'G01':
+          this.mode.int = 1;
+          console.log("interpolation mode set to linear");
+          break;
+        case 'G2':
+        case 'G02':
+          this.mode.int = 2;
+          console.log("interpolation mode set to clockwise arc");
+          break;
+        case 'G3':
+        case 'G03':
+          this.mode.int = 3;
+          console.log("interpolation mode set to counter clockwise arc");
+          break;
+        case 'G4':
+        case 'G04':
+          console.log("comment; ignoring");
+          command = '';
+          break;
+        case 'G36':
+          this.region.state = true;
+          console.log("region mode on");
+          break;
+        case 'G37':
+          this.region.state = false;
+          console.log("region mode off");
+          break;
+        case 'G74':
+          this.mode.quad = 74;
+          console.log("quadrant mode set to single");
+          break;
+        case 'G75':
+          this.mode.quad = 75;
+          console.log("quadrant mode set to multiple");
+          break;
+        case 'G54':
+        case 'G55':
+        case 'G70':
+        case 'G71':
+        case 'G90':
+        case 'G91':
+          console.log("deprecated command " + g + "; ignoring");
+          break;
+        default:
+          throw "error at " + this.line + ": " + g + " is unrecognized";
+      }
+      if (command.length > g.length) {
+        return command.slice(g.length);
+      } else {
+        return '';
+      }
+    };
+
+    Plotter.prototype.operate = function(layer, command) {
+      var d;
+      console.log("operating the plotter given " + command);
+      d = command.match(/D[0-9]\d*$/);
+      if (d != null) {
+        d = d[0];
+      } else {
+        throw "error: " + command + " is not a valid operation command";
+      }
+      switch (d) {
+        case 'D1':
+        case 'D01':
+          console.log('interpolate operation found');
+          this.interpolate(layer, this.getCoordinates(command));
+          break;
+        case 'D2':
+        case 'D02':
+          console.log('move operation found');
+          this.move(layer, this.getCoordinates(command));
+          break;
+        case 'D3':
+        case 'D03':
+          console.log('flash operation found');
+          this.flash(layer, this.getCoordinates(command));
+          break;
+        default:
+          console.log('change tool command found');
+          this.changeTool(d);
+      }
+      return '';
+    };
+
+    Plotter.prototype.getCoordinates = function(command) {
+      var c;
+      c = {};
+      c.x = command.match(/X[+-]?\d+/);
+      if (c.x != null) {
+        c.x = this.parseCoordinate(c.x[0].slice(1));
+      } else {
+        c.x = this.position.x;
+      }
+      c.y = command.match(/Y[+-]?\d+/);
+      if (c.y != null) {
+        c.y = this.parseCoordinate(c.y[0].slice(1));
+      } else {
+        c.y = this.position.y;
+      }
+      c.i = command.match(/I[+-]?\d+/);
+      if (c.i != null) {
+        c.i = this.parseCoordinate(c.i[0].slice(1));
+      } else if (this.mode.int !== 1) {
+        c.i = 0;
+      }
+      c.j = command.match(/J[+-]?\d+/);
+      if (c.j != null) {
+        c.j = this.parseCoordinate(c.j[0].slice(1));
+      } else if (this.mode.int !== 1) {
+        c.j = 0;
+      }
+      return c;
+    };
+
+    Plotter.prototype.parseCoordinate = function(coord) {
+      var negative;
+      negative = false;
+      if (coord[0] === '-') {
+        negative = true;
+        coord = coord.slice(1);
+      }
+      if (coord[0] === '+') {
+        coord = coord.slice(1);
+      }
+      if (this.format.zero === 'L') {
+        coord = coord.slice(0, -this.format.dec) + '.' + coord.slice(-this.format.dec);
+      } else if (this.format.zero === 'T') {
+        coord = coord.slice(0, this.format.int) + '.' + coord.slice(this.format.int);
+      }
+      coord = parseFloat(coord);
+      if (negative) {
+        coord *= -1;
+      }
+      return coord;
+    };
+
+    Plotter.prototype.interpolate = function(layer, c) {
+      var _ref;
+      if (!((1 <= (_ref = this.mode.int) && _ref <= 3))) {
+        throw "error at " + line + ": " + this.mode.int + " is not a valid mode for interpolation";
+      }
+      if (this.region.state === true) {
+        console.log("region mode is on; interpolating");
+        if (this.region.current == null) {
+          console.log('starting new region');
+        }
+        if (this.mode.int === 1) {
+          console.log('adding line to region');
+        } else if (this.mode.int === 2) {
+          console.log('adding cw arc to region');
+        } else if (this.mode.int === 3) {
+          console.log('adding ccw arc to region');
+        }
+      } else {
+        if (this.mode.int === 1) {
+          console.log("creating straight trace");
+          layer.addTrace(this.tool, this.position.x, this.position.y, c);
+        } else if (this.mode.int === 2) {
+          console.log("creating cw arc trace");
+        } else if (this.mode.int === 3) {
+          console.log("creating ccw arc trace");
+        }
+      }
+      return this.moveTo(c);
+    };
+
+    Plotter.prototype.move = function(layer, c) {
+      if (this.region.state === true && (this.region.current != null)) {
+        return console.log("closing region at line " + this.line);
+      } else {
+        return this.moveTo(c);
+      }
+    };
+
+    Plotter.prototype.moveTo = function(c) {
+      this.position.x = c.x;
+      this.position.y = c.y;
+      return console.log("moved to " + c.x + ", " + c.y);
+    };
+
+    Plotter.prototype.flash = function(layer, c) {
+      if (this.region.state === true) {
+        throw "error at " + this.line + ": cannot flash (D03) in region mode";
+      }
+      if (this.tool == null) {
+        throw "error at " + this.line + ": no tool selected for flash";
+      }
+      layer.addPad(this.tool, c.x, c.y);
+      return this.moveTo(c);
+    };
+
+    Plotter.prototype.readBlock = function() {
+      var block;
+      block = '';
+      while (this.gerber[this.index] !== '*') {
+        if (this.gerber[this.index] === '\n') {
+          this.line++;
+        } else {
+          block += this.gerber[this.index];
+        }
+        this.index++;
+      }
+      while (this.gerber[this.index] === '*' || this.gerber[this.index] === '\n') {
+        if (this.gerber[this.index] === '\n') {
+          this.line++;
+        }
+        this.index++;
+      }
+      return block;
+    };
+
+    Plotter.prototype.readParameter = function() {
+      var block, c, command, param, _results;
+      c = '';
+      while (c !== '%') {
+        block = this.readBlock();
+        param = block.slice(1, 3);
+        command = block.slice(3);
+        switch (param) {
+          case 'FS':
+            console.log("format command at line " + this.line + ": " + block);
+            this.setFormat(command);
             break;
-          }
+          case 'MO':
+            console.log("unit mode command at line " + this.line + ": " + block);
+            this.setUnitMode(command);
+            break;
+          case 'AD':
+            console.log("aperture definition at line " + this.line + ": " + block);
+            this.createTool(command);
+            break;
+          case 'AM':
+            console.log("aperture macro at line " + this.line + ": " + block);
+            break;
+          case 'SR':
+            console.log("step repeat command at line " + this.line + ": " + block);
+            break;
+          case 'LP':
+            console.log("level polarity at line " + this.line + ": " + block);
+            this.setPolarity;
         }
+        c = this.gerber[this.index];
       }
-      if (badInput) {
-        if (circle) {
-          throw "BadCircleApertureError";
-        } else if (rect) {
-          throw "BadRectangleApertureError";
-        } else if (obround) {
-          throw "BadObroundApertureError";
+      console.log("done with parameter block");
+      this.index++;
+      _results = [];
+      while (this.gerber[this.index] === '\n') {
+        this.line++;
+        _results.push(this.index++);
+      }
+      return _results;
+    };
+
+    Plotter.prototype.setFormat = function(command) {
+      var notation, xFormat, yFormat, zero;
+      console.log("setting format according to " + command);
+      if (this.format.set) {
+        throw "error at " + line + ": format has already been set";
+      }
+      zero = command[0];
+      if (zero === 'L' || zero === 'T') {
+        this.format.zero = zero;
+      } else {
+        throw "" + zero + " at line " + this.line + " is invalid zero omission value (L or T)";
+      }
+      notation = command[1];
+      if (notation === 'A' || notation === 'I') {
+        this.format.notation = notation;
+      } else {
+        throw "" + notation + " at line " + this.line + " is invalid notation value (A or I)";
+      }
+      xFormat = command.slice(2, 5);
+      yFormat = command.slice(5, 8);
+      if (xFormat[0] !== 'X') {
+        throw "error at " + line + ": " + xFormat[0] + " is not a valid coordinate";
+      }
+      if (yFormat[0] !== 'Y') {
+        throw "error at " + line + ": " + yFormat[0] + " is not a valid coordinate";
+      }
+      if (xFormat.slice(1) !== yFormat.slice(1)) {
+        throw "error at " + line + ": x format and y format don't match";
+      }
+      this.format.int = parseInt(xFormat[1], 10);
+      this.format.dec = parseInt(xFormat[2], 10);
+      if (this.format.int > 7) {
+        throw "error at " + line + ": " + this.format.int + " exceeds max interger places of 7";
+      }
+      if (this.format.dec > 7) {
+        throw "error at " + line + ": " + this.format.dec + " exceeds max decimal places of 7";
+      }
+      console.log("zero omission set to: " + this.format.zero + ", coordinate notation set to: " + this.format.notation + ", integer places set to " + this.format.int + ", decimal places set to " + this.format.dec);
+      return this.format.set = true;
+    };
+
+    Plotter.prototype.setUnitMode = function(command) {
+      console.log("setting unit mode according to " + command);
+      if (this.units != null) {
+        throw "error at " + this.line + ": unit mode has already been set";
+      }
+      if (command === 'IN') {
+        this.units = 'in';
+      } else if (command === 'MM') {
+        this.units = 'mm';
+      } else {
+        throw "#error at " + this.line + ": " + command + " is not a valid unit mode (IN or MM)";
+      }
+      return console.log("unit mode set to: " + this.units);
+    };
+
+    Plotter.prototype.setPolarity = function(command) {
+      console.log("setting polarity according to " + command);
+      if (command === 'C' || command === 'D') {
+        this.polarity = command;
+        this.position.x = null;
+        return this.position.y = null;
+      } else {
+        throw "error at " + this.line + ": " + command + " is not a valid polarity (C or D)";
+      }
+    };
+
+    Plotter.prototype.changeTool = function(code) {
+      if (this.tools[code] == null) {
+        throw "error at " + this.line + ": tool " + code + " does not exist";
+      }
+      this.tool = this.tools[code];
+      return console.log("tool changed to " + code);
+    };
+
+    Plotter.prototype.createTool = function(command) {
+      var tool, toolCode, toolParams, toolShape;
+      console.log("creating a aperture according to " + command);
+      toolCode = command.slice(0, 3);
+      if (!toolCode.match(/D[1-9]\d+/)) {
+        throw "error at " + this.line + ": " + toolCode + " is not a valid tool number";
+      }
+      if (this.tools[toolCode] != null) {
+        throw "error at " + this.line + ": " + toolCode + " already exists";
+      }
+      toolShape = command.slice(3, 5);
+      toolParams = command.slice(5);
+      switch (toolShape) {
+        case 'C,':
+          toolParams = this.getCircleToolParams(toolParams);
+          break;
+        case 'R,':
+          toolParams = this.getRectToolParams(toolParams);
+          break;
+        case 'O,':
+          toolParams = this.getRectToolParams(toolParams);
+          break;
+        case 'P,':
+          toolParams = this.getPolyToolParams(toolParams);
+          break;
+        default:
+          console.lot("tool " + toolCode + " might be a macro");
+      }
+      tool = new Aperture(toolCode, toolShape[0], toolParams);
+      this.tools[toolCode] = tool;
+      return this.changeTool(toolCode);
+    };
+
+    Plotter.prototype.getCircleToolParams = function(command) {
+      var numbers, params, _ref;
+      numbers = this.gatherToolParams(command);
+      if (!((1 <= (_ref = numbers.length) && _ref <= 3))) {
+        throw "error at " + line + ": circle aperture must have between 1 and 3 params";
+      }
+      if (!(numbers[0] >= 0)) {
+        throw "error at " + line + ": circle dia must be greater than or equal to 0";
+      }
+      params = {
+        dia: numbers[0]
+      };
+      if (numbers[1] != null) {
+        if (!(numbers[1] >= 0)) {
+          throw "error at " + line + ": hole x size must be greater than or equal to 0";
         }
+        params.holeX = numbers[1];
+      }
+      if (numbers[2] != null) {
+        if (!(numbers[2] >= 0)) {
+          throw "error at " + line + ": hole y size must be greater than or equal to 0";
+        }
+        params.holeY = numbers[2];
       }
       return params;
     };
 
-    Plotter.prototype.parseGCode = function(s) {
-      var code, match;
-      match = s.match(/^G\d{1,2}(?=\D)/);
-      if (!match) {
-        throw "InputTo_parseGCode_NotAGCodeError";
-      } else {
-        match = match[0];
+    Plotter.prototype.getRectToolParams = function(command) {
+      var numbers, params, _ref;
+      numbers = this.gatherToolParams(command);
+      if (!((2 <= (_ref = numbers.length) && _ref <= 4))) {
+        throw "error at " + line + ": rect/obround aperture must have between 2 and 4 params";
       }
-      code = parseInt(match.slice(1), 10);
-      switch (code) {
-        case 1:
-        case 2:
-        case 3:
-          this.iMode = code;
-          break;
-        case 4:
-          console.log("found a comment");
-          return "";
-        case 74:
-        case 75:
-          this.aMode = code;
-          break;
-        case 54:
-        case 55:
-          console.log("deprecated G" + code + " found");
-          break;
-        case 70:
-          if (this.units == null) {
-            console.log("warning: deprecated G70 command used to set units to in");
-            this.units = 'IN';
-          }
-          break;
-        case 71:
-          if (this.units == null) {
-            console.log("warning: deprecated G71 command used to set units to mm");
-            this.units = 'MM';
-          }
-          break;
-        case 90:
-          if (this.notation == null) {
-            console.log("warning: deprecated G90 command used to set notation to abs");
-            this.notation = 'A';
-          }
-          break;
-        case 91:
-          if (this.notation == null) {
-            console.log("warning: deprecated G91 command used to set notation to inc");
-            this.notation = 'I';
-          }
-          break;
-        default:
-          throw "G" + code + "IsUnimplementedGCodeError";
+      if (!(numbers[0] > 0)) {
+        throw "error at " + line + ": rect/obround x size must be greater than 0";
       }
-      return s.slice(match.length);
-    };
-
-    Plotter.prototype.parseCoordinate = function(coord) {
-      var c;
-      console.log("parsing coordinates");
-      coord = coord.slice(1);
-      if (this.zeroOmit === 'L') {
-        console.log("coord is " + coord);
-        c = coord.slice(0, +(-(this.trailDigits + 1)) + 1 || 9e9) + '.' + coord.slice(-this.trailDigits);
-        console.log("c is " + c);
-        return parseFloat(c);
-      } else if (this.zeroOmit === 'T') {
-        c = coord.slice(0, +this.leadDigits + 1 || 9e9) + '.' + coord.slice(this.leadDigits);
-        return parseFloat(coord.slice(0, +this.leadDigits + 1 || 9e9) + '.' + coord.slice(this.leadDigits));
+      if (!(numbers[1] > 0)) {
+        throw "error at " + line + ": rect/obround y size must be greater than 0";
       }
-    };
-
-    Plotter.prototype.parseMove = function(line, layer) {
-      var command, x, y;
-      x = line.match(/X[+-]?[\d]+/);
-      if (x != null) {
-        x = this.parseCoordinate(x[0]);
-      }
-      y = line.match(/Y[+-]?[\d]+/);
-      if (y != null) {
-        y = this.parseCoordinate(y[0]);
-      }
-      command = line.match(/D0?[123](?=\*$)/);
-      if (command != null) {
-        command = command[0].slice(-1);
-      }
-      return this.move(x, y, command, layer);
-    };
-
-    Plotter.prototype.move = function(x, y, command, layer) {
-      console.log(command);
-      if (command === '1') {
-        console.log("making line with aperture " + this.tool.code);
-        layer.addObject('T', this.tool, [this.xPos, this.yPos, x, y]);
-      } else if (command === '2') {
-        console.log("moving");
-      } else if (command === '3') {
-        console.log("making pad");
-        layer.addObject('P', this.tool, [x, y]);
-      } else {
-        throw 'BadOperationCodeError';
-      }
-      console.log("moving to " + x + ", " + y);
-      this.xPos = x;
-      return this.yPos = y;
-    };
-
-    Plotter.prototype.stroke = function(x, y) {
-      var t;
-      return t = new Trace(this.tool, this.xPos, this.yPos, [x, y]);
-    };
-
-    Plotter.prototype.flash = function(x, y) {
-      return console.log;
-    };
-
-    Plotter.prototype.parseToolChange = function(line) {
-      var tool;
-      if (!line.match(/^D[1-9]\d+\*$/)) {
-        throw "BadToolLineError";
-      }
-      tool = parseInt(line.slice(1, -1), 10);
-      return this.changeTool(tool);
-    };
-
-    Plotter.prototype.changeTool = function(tool) {
-      if (tool < 10) {
-        throw "Tool_" + tool + "_IsOutOfRangeError";
-      }
-      return this.tool = this.apertures[tool - 10];
-    };
-
-    Plotter.prototype.plot = function() {
-      var ap, apertureMatch, endMatch, fileEnd, formatMatch, gMatch, gotFormat, gotUnits, i, interpolationMode, layer, line, moveMatch, quadrantMode, toolMatch, unitMatch, _i, _len, _ref;
-      gotFormat = false;
-      gotUnits = false;
-      fileEnd = false;
-      interpolationMode = null;
-      quadrantMode = null;
-      formatMatch = /^%FS.*\*%$/;
-      unitMatch = /^%MO((MM)|(IN))\*%$/;
-      apertureMatch = /^%AD.*\*%$/;
-      gMatch = /^G.*\*$/;
-      endMatch = /^M0?2\*$/;
-      toolMatch = /^D[1-9]\d+\*$/;
-      moveMatch = /^(X[+-]?\d+)?(Y[+-]?\d+)?D0?[123]\*$/;
-      layer = new Layer(this.name);
-      _ref = this.gerber;
-      for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
-        line = _ref[i];
-        if (line.match(endMatch)) {
-          console.log("" + line + " indicates end of file at line: " + i);
-          fileEnd = true;
-          break;
+      params = {
+        sizeX: numbers[0],
+        sizeY: numbers[1]
+      };
+      if (numbers[2] != null) {
+        if (!(numbers[2] >= 0)) {
+          throw "error at " + line + ": hole x size must be greater than or equal to 0";
         }
-        if ((!gotFormat) || (!gotUnits)) {
-          if (line.match(formatMatch)) {
-            this.parseFormatSpec(line);
-            gotFormat = true;
-          } else if (line.match(unitMatch)) {
-            this.parseUnits(line);
-            gotUnits = true;
-            layer.setUnits(this.units);
-          }
-        } else {
-          if (line.match(gMatch)) {
-            line = this.parseGCode(line);
-          }
-          if (line.match(apertureMatch)) {
-            ap = this.parseAperture(line);
-            if (this.apertures[ap.code - 10] == null) {
-              this.apertures[ap.code - 10] = ap;
-            } else {
-              throw "ApertureAlreadyExistsError";
-            }
-          } else if (line.match(toolMatch)) {
-            console.log("changing tool to " + line);
-            this.parseToolChange(line);
-            console.log("current tool " + this.tool.code + " is a " + this.tool.shape);
-          } else if (line.match(moveMatch)) {
-            this.parseMove(line, layer);
-          } else {
-            console.log("don't know what " + line + " means");
-          }
+        params.holeX = numbers[2];
+      }
+      if (numbers[3] != null) {
+        if (!(numbers[3] >= 0)) {
+          throw "error at " + line + ": hole y size must be greater than or equal to 0";
         }
+        params.holeY = numbers[3];
       }
-      if (!gotFormat) {
-        throw "NoFormatSpecGivenError";
+      return params;
+    };
+
+    Plotter.prototype.getPolyToolParams = function(command) {
+      var numbers, params, _ref, _ref1;
+      numbers = gatherToolParams(command);
+      if (!((2 <= (_ref = numbers.length) && _ref <= 5))) {
+        throw "error at " + line + ": polygon aperture must have between 2 and 4 params";
       }
-      if (!gotUnits) {
-        throw "NoValidUnitsGivenError";
+      if (!(numbers[0] > 0)) {
+        throw "error at " + line + ": polygon diameter must be greater than 0";
       }
-      if (!fileEnd) {
-        throw "NoM02CommandBeforeEndError";
+      if (!((3 <= (_ref1 = numbers[1]) && _ref1 <= 12))) {
+        throw "error at " + line + ": polygon must have 3 to 12 points";
       }
-      return layer;
+      params = {
+        dia: numbers[0],
+        points: numbers[1]
+      };
+      if (numbers[2] != null) {
+        params.rotation = numbers[2];
+      }
+      if (numbers[3] != null) {
+        if (!(numbers[3] >= 0)) {
+          throw "error at " + line + ": hole x size must be greater than or equal to 0";
+        }
+        params.holeY = numbers[3];
+      }
+      if (numbers[4] != null) {
+        if (!(numbers[4] >= 0)) {
+          throw "error at " + line + ": hole y size must be greater than or equal to 0";
+        }
+        params.holeY = numbers[4];
+      }
+      return params;
+    };
+
+    Plotter.prototype.gatherToolParams = function(command) {
+      var i, n, numbers, _i, _len;
+      numbers = command.match(/[\+-]?[\d\.]+(?=X|$)/g);
+      for (i = _i = 0, _len = numbers.length; _i < _len; i = ++_i) {
+        n = numbers[i];
+        if (!n.match(/^[\+-]?((\d+\.?\d*)|(\d*\.?\d+))$/)) {
+          throw "error at " + line + ": " + n + " is not a valid number";
+        }
+        numbers[i] = parseFloat(n);
+      }
+      return numbers;
     };
 
     return Plotter;

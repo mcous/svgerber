@@ -1,7 +1,7 @@
 # simple file reader for svGerber
 
 # app dependencies
-#require 'newplotter'
+#require 'plotter'
 
 # convert a file to an svg
 fileToSVG = (file, filename) ->

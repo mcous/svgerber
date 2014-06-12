@@ -7,358 +7,520 @@
 # export the Plotter
 root = exports ? this
 
-# plotter class is exported
 class root.Plotter
-  # constructor takes in gerber file as string
-  constructor: (gerberFile, @name) ->
-    # stuff we'll be using
-    # formatting
-    @zeroOmit = null
-    @notation = null
-    @leadDigits = null
-    @trailDigits = null
-    # units
+  # constructor takes the filestring and the name of the layer
+  constructor: (@gerber, @name) ->
+    # gerber file reading variables
+    # also set the current file index to 0
+    @index = 0
+    # keep a line counter for convenience
+    @line = 1
+    # file end flag
+    @end = false
+
+    # plotter parameters
+    # set the format set flag to false and the rest to null
+    @format = {
+      set: false
+      zero: null
+      notation: null
+      int: null
+      dec: null
+    }
+    # set the units to null
     @units = null
-    # aperture list and current tool
-    @apertures = []
+    # tool list
+    @tools = {}
+    # polarity
+    @polarity = 'D'
+
+    # plotter operation
     @tool = null
-    # interpolation and arc mode
-    @iMode = null
-    @aMode = null
-    # current position
-    @xPos = 0
-    @yPos = 0
+    # plotter position
+    @position = {
+      x: 0
+      y: 0
+    }
 
-    # parse the monolithic string into an array of lines
-    @gerber = gerberFile.split '\n'
-    # notify those concerned
-    console.log "Plotter for #{@name} created"
+    # plotter state
+    # line / arc mode
+    @mode = {
+      int: null
+      quad: null
+    }
+    # region mode
+    @region = {
+      state: off
+      current: null
+    }
 
-  parseFormatSpec: (fS) ->
-    formatMatch = /^%FS.*\*%$/  # file spec regex
-    zeroMatch = /[LT]/          # leading or trailing zeros omitted
-    notationMatch = /[AI]/      # Absolute or incremental notation
-    xDataMatch = /X+?\d{2}/  # x data format
-    yDataMatch = /Y+?\d{2}/  # y data format
 
-    # throw an error if whatever comes in isn't a format spec
-    if not fS.match formatMatch
-      throw "InputTo_parseFormatSpec_NotAFormatSpecError"
+  # plot the layer by reading the gerber file
+  plot: ->
+    # create a new layer
+    layer = new Layer @name
 
-    # check for and parse zero omission
-    @zeroOmit = fS.match zeroMatch
-    if @zeroOmit?
-      @zeroOmit = @zeroOmit[0][0]
-      console.log "zero omission set to: " + @zeroOmit
+    # loop until the file ends
+    until @end or @index >= @gerber.length
+      # peak at the next character in the file
+      next = @gerber[@index]
+      # let's figure out what we're doing
+      # if the next character is a %, then we're dealing with a parameter command
+      if next is '%'
+        @readParameter()
+      # else, it's a normal, everyday data block
+      else
+        console.log "data block found at line #{@line}"
+        block = @readBlock()
+        console.log "block found: #{block}"
+
+        while block.length > 0
+          # check for an end of file
+          if block.match /^M0?2$/
+            console.log "end of file at line #{@line-1}"
+            @end = true
+            block = ''
+
+          # check for a state command (G code)
+          else if block.match /^G[01234579][0-7]?/
+            console.log "state command at line #{@line-1}"
+            block = @processState block
+
+          # check for a operation code (D code)
+          else if block.match /D[0-9]\d*$/
+            console.log "operation command at line #{@line-1}"
+            block = @operate layer, block
+
+          # check for a state command
+          else
+            console.log "don't know what to do with #{block} at line #{@line-1}"
+            block = ''
+
+    # set the layer units
+    layer.setUnits @units
+    # return the layer
+    layer
+
+  # process the plotter state given a line with a G code in it
+  processState: (command) ->
+    console.log "changing plotter state given #{command}"
+    # get the g command
+    g = command.match /^G[01234579][0-7]?/
+    if g? then g = g[0] else throw "error: #{command} is not a valid state command"
+    # act accordgingly
+    switch g
+      # linear interpolation mode
+      when 'G1', 'G01'
+        @mode.int = 1
+        console.log "interpolation mode set to linear"
+      # arc interpolation
+      when 'G2', 'G02'
+        @mode.int = 2
+        console.log "interpolation mode set to clockwise arc"
+      when 'G3', 'G03'
+        @mode.int = 3
+        console.log "interpolation mode set to counter clockwise arc"
+      # comment mode
+      when 'G4', 'G04'
+        console.log "comment; ignoring"
+        # set the command to empty
+        command = ''
+      # region mode on
+      when 'G36'
+        @region.state = on
+        console.log "region mode on"
+      # region mode off
+      when 'G37'
+        @region.state = off
+        console.log "region mode off"
+      # single quadrant mode
+      when 'G74'
+        @mode.quad = 74
+        console.log "quadrant mode set to single"
+      # multi quadrant mode
+      when 'G75'
+        @mode.quad = 75
+        console.log "quadrant mode set to multiple"
+      # deprecated commands
+      when 'G54', 'G55', 'G70', 'G71', 'G90', 'G91'
+        console.log "deprecated command #{g}; ignoring"
+      # else unrecognized g code
+      else
+        throw "error at #{@line}: #{g} is unrecognized"
+    # return the command with the G code stripped out
+    if command.length > g.length
+      command[g.length..]
     else
-      throw "NoZeroSuppressionInFormatSpecError"
+      ''
 
-    # check for and parse coordinate notation
-    @notation = fS.match notationMatch
-    if @notation?
-      @notation = @notation[0][0]
-      console.log "notation set to: " + @notation
+  # operate the plotter given a block with a D code in it
+  operate: (layer, command) ->
+    console.log "operating the plotter given #{command}"
+    # get the d code
+    d = command.match /D[0-9]\d*$/
+    if d? then d = d[0] else throw "error: #{command} is not a valid operation command"
+    # act acordingly
+    switch d
+      when 'D1', 'D01'
+        console.log 'interpolate operation found'
+        @interpolate layer, @getCoordinates(command)
+      when 'D2', 'D02'
+        console.log 'move operation found'
+        @move layer, @getCoordinates(command)
+      when 'D3', 'D03'
+        console.log 'flash operation found'
+        @flash layer, @getCoordinates(command)
+      else
+        console.log 'change tool command found'
+        @changeTool d
+    # return an empty string
+    ''
+
+  # get coordinates given a command block
+  getCoordinates: (command) ->
+    c = {}
+    # x coordinate
+    c.x = command.match /X[+-]?\d+/
+    if c.x? then c.x = @parseCoordinate c.x[0][1..] else c.x = @position.x
+    # y
+    c.y = command.match /Y[+-]?\d+/
+    if c.y? then c.y = @parseCoordinate c.y[0][1..] else c.y = @position.y
+    # i
+    c.i = command.match /I[+-]?\d+/
+    if c.i? then c.i = @parseCoordinate c.i[0][1..]
+    else if @mode.int isnt 1 then c.i = 0
+    # j
+    c.j = command.match /J[+-]?\d+/
+    if c.j? then c.j = @parseCoordinate c.j[0][1..]
+    else if @mode.int isnt 1 then c.j = 0
+
+    # return c
+    c
+
+  parseCoordinate: (coord) ->
+    # remove any signs and set a negative flag if necessary
+    negative = false
+    if coord[0] is '-'
+      negative = true
+      coord = coord[1..]
+    if coord[0] is '+'
+      coord = coord[1..]
+
+    # if leading zero omission
+    if @format.zero is 'L'
+      coord = coord[0...-@format.dec] + '.' + coord[-@format.dec..]
+    else if @format.zero is 'T'
+      coord = coord[0...@format.int] + '.' + coord[@format.int..]
+
+    # turn c into a number (negative if necessary)
+    coord = parseFloat coord
+    if negative then coord *= -1
+    # return c
+    coord
+
+  # interpolate to the given coordinates
+  interpolate: (layer, c) ->
+    # check for a valid mode
+    unless 1 <= @mode.int <= 3 then throw "error at #{line}: #{@mode.int} is not a valid mode for interpolation"
+
+    # if we're in region mode, we're gonna be doing some region things
+    if @region.state is on
+      console.log "region mode is on; interpolating"
+      # create a new region if it hasn't been created
+      unless @region.current?
+        console.log 'starting new region'
+      # line mode
+      if @mode.int is 1
+        console.log 'adding line to region'
+      # arc mode
+      else if @mode.int is 2
+        console.log 'adding cw arc to region'
+      else if @mode.int is 3
+        console.log 'adding ccw arc to region'
+
+    # else we're just creating traces like a normal person
     else
-      throw "NoCoordinateNotationInFormatSpecError"
+      # straight trace
+      if @mode.int is 1
+        console.log "creating straight trace"
+        layer.addTrace @tool, @position.x, @position.y, c
+      else if @mode.int is 2
+        console.log "creating cw arc trace"
+      else if @mode.int is 3
+        console.log "creating ccw arc trace"
 
-    # check for and parse coordinate format
-    xFormat = fS.match xDataMatch
-    yFormat = fS.match yDataMatch
-    # check for existence
-    if xFormat?
-      xFormat = xFormat[0][-2..]
+    # move the plotter to the new position
+    @moveTo c
+
+  # execute a move operation to the given coordinates
+  move: (layer, c) ->
+    # if we're in region mode and a region is active, we need to get a little fancy
+    if @region.state is on and @region.current?
+      console.log "closing region at line #{@line}"
+    # other wise we can just move to the new coordinates
     else
-      throw "MissingCoordinateFormatInFormatSpecError"
-    if yFormat?
-      yFormat = yFormat[0][-2..]
+      @moveTo c
+
+  # simply move the current position to the coordinates
+  moveTo: (c) ->
+    @position.x = c.x
+    @position.y = c.y
+    console.log "moved to #{c.x}, #{c.y}"
+
+  # flash at the given coordinates
+  flash: (layer, c) ->
+    # flash command should only happen if we're not in region mode
+    if @region.state is on then throw "error at #{@line}: cannot flash (D03) in region mode"
+    unless @tool? then throw "error at #{@line}: no tool selected for flash"
+    layer.addPad @tool, c.x, c.y
+    # move the plotter position
+    @moveTo c
+
+  # read from the current index (inclusive) to the next end of block
+  readBlock: ->
+    block = ''
+    while @gerber[@index] isnt '*'
+      if @gerber[@index] is '\n' then @line++
+      else
+        block += @gerber[@index]
+      @index++
+    # skip past the end of block character and any new lines
+    while @gerber[@index] is '*' or @gerber[@index] is '\n'
+      if @gerber[@index] is '\n' then @line++
+      @index++
+
+    # return the block
+    block
+
+  # read a parameter command
+  readParameter: ->
+    # character checker
+    c = ''
+    # loop
+    until c is '%'
+      # get the data block
+      block = @readBlock()
+      # switch through the possible parameter commands
+      param = block[1..2]
+      command = block[3..]
+      switch param
+        when 'FS'
+          console.log "format command at line #{@line}: #{block}"
+          @setFormat command
+        when 'MO'
+          console.log "unit mode command at line #{@line}: #{block}"
+          @setUnitMode command
+        when 'AD'
+          console.log "aperture definition at line #{@line}: #{block}"
+          @createTool command
+        when 'AM'
+          console.log "aperture macro at line #{@line}: #{block}"
+        when 'SR'
+          console.log "step repeat command at line #{@line}: #{block}"
+        when 'LP'
+          console.log "level polarity at line #{@line}: #{block}"
+          @setPolarity
+      # get the check character
+      c = @gerber[@index]
+
+    # done with parameter block
+    console.log "done with parameter block"
+    # push past the trailing % and any newlines
+    @index++
+    while @gerber[@index] is '\n'
+      @line++
+      @index++
+
+  # set the format according to the passed command
+  setFormat: (command) ->
+    console.log "setting format according to #{command}"
+
+    # throw an error if format has already been set
+    if @format.set then throw "error at #{line}: format has already been set"
+
+    # leading or trailing omission
+    zero = command[0]
+    if zero is 'L' or zero is 'T' then @format.zero = zero
+    else throw "#{zero} at line #{@line} is invalid zero omission value (L or T)"
+
+    # coordinate values
+    notation = command[1]
+    if notation is 'A' or notation is 'I' then @format.notation = notation
+    else throw "#{notation} at line #{@line} is invalid notation value (A or I)"
+
+    # coordinate format
+    xFormat = command[2..4]
+    yFormat = command[5..7]
+    # throw errors if there's not an X and Y
+    if xFormat[0] isnt 'X' then throw "error at #{line}: #{xFormat[0]} is not a valid coordinate"
+    if yFormat[0] isnt 'Y' then throw "error at #{line}: #{yFormat[0]} is not a valid coordinate"
+    # throw an error if the formats don't match
+    if xFormat[1..] isnt yFormat[1..] then throw "error at #{line}: x format and y format don't match"
+    # parse and throw appropriate errors
+    @format.int = parseInt(xFormat[1], 10)
+    @format.dec = parseInt(xFormat[2], 10)
+    if @format.int > 7 then throw "error at #{line}: #{@format.int} exceeds max interger places of 7"
+    if @format.dec > 7 then throw "error at #{line}: #{@format.dec} exceeds max decimal places of 7"
+
+    # if we reach here without throwing any errors, format has been properly set
+    console.log "zero omission set to: #{@format.zero}, coordinate notation set to: #{@format.notation}, integer places set to #{@format.int}, decimal places set to #{@format.dec}"
+    @format.set = true
+
+  # set the unit mode according to the passed command
+  setUnitMode: (command) ->
+    console.log "setting unit mode according to #{command}"
+
+    # throw an error if mode has already been set
+    if @units? then throw "error at #{@line}: unit mode has already been set"
+
+    # set the units
+    if command is 'IN'
+      @units = 'in'
+    else if command is 'MM'
+      @units = 'mm'
     else
-      throw "MissingCoordinateFormatInFormatSpecError"
-    # check for match
-    if xFormat is yFormat
-      @leadDigits = parseInt(xFormat[0], 10)
-      @trailDigits = parseInt(xFormat[1], 10)
-    else
-      throw "CoordinateFormatMismatchInFormatSpecError"
+      throw "#error at #{@line}: #{command} is not a valid unit mode (IN or MM)"
 
-    # check to make sure values are in range
-    if not ((0 < @leadDigits < 8) and (0 < @trailDigits < 8))
-      throw "InvalidCoordinateFormatInFormatSpecError"
-    else
-      console.log "coordinate format set to: " + @leadDigits + ", " + @trailDigits
+    # if we get here without throwing an error, we're good
+    console.log "unit mode set to: #{@units}"
 
-  parseUnits: (u) ->
-    unitMatch = /^%MO((MM)|(IN))\*%/
-    if u.match unitMatch
-      @units = u[3..4]
-    else
-      throw "NoValidUnitsGivenError"
+  # set the level polarity according to the passed command
+  setPolarity: (command) ->
+    console.log "setting polarity according to #{command}"
 
-  parseAperture: (a) ->
-    # first, check that input was at least a little good
-    apertureMatch = /^%AD.*$/
-    if not a.match apertureMatch
-      throw "InputTo_parseAperture_NotAnApertureError"
+    # if it's a good command, set the polarity and set the position to undefined
+    if command is 'C' or command is 'D'
+      @polarity = command
+      @position.x = null
+      @position.y = null
+    else throw "error at #{@line}: #{command} is not a valid polarity (C or D)"
 
-    # get tool code
-    code = a.match /D[1-9]\d+/
-    if code?
-      code = parseInt(code[0][1..], 10)
-    else
-      throw "InvalidApertureToolCodeError"
+  # change tool to the code passed
+  changeTool: (code) ->
+    unless @tools[code]? then throw "error at #{@line}: tool #{code} does not exist"
+    @tool = @tools[code]
+    console.log "tool changed to #{code}"
 
-    # get shape and parse accordingly
-    shape = a.match /[CROP].*(?=\*%$)/
-    if shape?
-      shape = shape[0]
-      params = (
-        switch shape[0]
-          when "C", "R", "O"
-            @parseBasicAperture shape
-          when "P"
-            throw "UnimplementedApertureError"
+  # create a new aperture and add it to the tools list
+  createTool: (command) ->
+    console.log "creating a aperture according to #{command}"
 
-      )
-      shape = shape[0]
-    else
-      throw "NoApertureShapeError"
+    toolCode = command[0..2]
+    # throw an error if the tool number is bad
+    # valid tool numbers: D10..
+    unless toolCode.match /D[1-9]\d+/ then throw "error at #{@line}: #{toolCode} is not a valid tool number"
+    # also throw an error if it already exists
+    if @tools[toolCode]? then throw "error at #{@line}: #{toolCode} already exists"
 
-    # return the aperture
-    a = new Aperture(code, shape, params)
+    # get the shape
+    toolShape = command[3..4]
+    toolParams = command[5..]
+    switch toolShape
+      when 'C,'
+        toolParams = @getCircleToolParams toolParams
+      when 'R,'
+        toolParams = @getRectToolParams toolParams
+      when 'O,'
+        toolParams = @getRectToolParams toolParams
+      when 'P,'
+        toolParams = @getPolyToolParams toolParams
 
-  # basic (circle, rectangle, obround) aperture parsing
-  parseBasicAperture: (string) ->
-    circleMatch = /// ^
-      C,[\d\.]+         # circle with diameter definition
-      (X[\d\.]+){0,2}   # up to two optional parameters for hole
-      $                 # end of the string
-    ///
+      else
+        console.lot "tool #{toolCode} might be a macro"
 
-    rectangleMatch = /// ^
-      R,[\d\.]+X[\d\.]+ # rectangle with x and y definition
-      (X[\d\.]+){0,2}   # up to two optional parameters for hole
-      $                 # end of string
-    ///
+    # create the actual aperture and add it to the tools object
+    tool = new Aperture(toolCode, toolShape[0], toolParams)
+    @tools[toolCode] = tool
+    # create aperture sets the current tool to the one just defined
+    @changeTool toolCode
 
-    obroundMatch = /// ^
-      O,[\d\.]+X[\d\.]+ # obround with x and y definition
-      (X[\d\.]+){0,2}   # up to two optional parameters for hole
-      $                 # end of string
-    ///
+  # get the parameters for a circle aperture
+  getCircleToolParams: (command) ->
+    numbers = @gatherToolParams command
+    # there must be between 1 and 3 numbers
+    unless 1 <= numbers.length <= 3 then throw "error at #{line}: circle aperture must have between 1 and 3 params"
 
-    badInput = true
-    if (
-      # figure out what shape tha aperture is and check format
-      ((circle = (string[0][0] is 'C')) and string.match circleMatch) or
-      ((rect = (string[0][0] is 'R')) and string.match rectangleMatch) or
-      ((obround = (string[0][0] is 'O')) and string.match obroundMatch)
-    )
-      # if it passes that test, parse the floats
-      params = string.match /[\d\.]+/g
-      for p, i in params
-        # check for a valid decimal number with
-        if p.match /^((\d+\.?\d*)|(\d*\.?\d+))$/
-          params[i] = parseFloat p
-          badInput = false
-        else
-          badInput = true
-          break
+    # throw error if dia is not a whole number
+    unless numbers[0] >= 0 then throw "error at #{line}: circle dia must be greater than or equal to 0"
 
-    # else throw an error
-    if badInput
-      if circle
-        throw "BadCircleApertureError"
-      else if rect
-        throw "BadRectangleApertureError"
-      else if obround
-        throw "BadObroundApertureError"
-    # return the parameters
+    # create the params object with the diameter
+    params = {
+      dia: numbers[0]
+    }
+    # hole stuff if it exists
+    if numbers[1]?
+      unless numbers[1] >= 0 then throw "error at #{line}: hole x size must be greater than or equal to 0"
+      params.holeX = numbers[1]
+    if numbers[2]?
+      unless numbers[2] >= 0 then throw "error at #{line}: hole y size must be greater than or equal to 0"
+      params.holeY = numbers[2]
+
+    # return the params object
     params
 
-  parseGCode: (s) ->
-    # throw an error if the input isn't a G-code
-    match = (s.match /^G\d{1,2}(?=\D)/)
-    if not match
-      throw "InputTo_parseGCode_NotAGCodeError"
-    else match = match[0]
+  # get the parameters for a rectangle or obround aperture
+  getRectToolParams: (command) ->
+    numbers = @gatherToolParams command
+    # there must be between 2 and 4 numbers
+    unless 2 <= numbers.length <= 4 then throw "error at #{line}: rect/obround aperture must have between 2 and 4 params"
 
-    # get the actual code
-    code = parseInt(match[1..], 10)
-    # act accordingly
-    switch code
-      # codes 1, 2, and 3 are interpolation modes
-      when 1, 2, 3
-        @iMode = code
-      # code 4 is a comment
-      when 4
-        console.log "found a comment"
-        return ""
-      # 74 and 75 determine the arc mode
-      when 74, 75
-        @aMode = code
-      # 54 and 55 are deprecated and don't do anything
-      when 54, 55
-        console.log "deprecated G#{code} found"
-      # 70 is a deprecated command to set the units to inches
-      when 70
-        if not @units?
-          console.log "warning: deprecated G70 command used to set units to in"
-          @units = 'IN'
-      # 71 is a deprecated command to set the units to mm
-      when 71
-        if not @units?
-          console.log "warning: deprecated G71 command used to set units to mm"
-          @units = 'MM'
-      # 90 is a deprecated command to set absolute notation
-      when 90
-        if not @notation?
-          console.log "warning: deprecated G90 command used to set notation to abs"
-          @notation = 'A'
-      # 91 is a deprecated command to set incremental notation
-      when 91
-        if not @notation?
-          console.log "warning: deprecated G91 command used to set notation to inc"
-          @notation = 'I'
-      else
-        throw "G#{code}IsUnimplementedGCodeError"
+    # throw an error if size params aren't greater than zero
+    unless numbers[0] > 0 then throw "error at #{line}: rect/obround x size must be greater than 0"
+    unless numbers[1] > 0 then throw "error at #{line}: rect/obround y size must be greater than 0"
 
-    # return the rest of the string
-    s[match.length..]
+    # create the params object with the diameter
+    params = {
+      sizeX: numbers[0]
+      sizeY: numbers[1]
+    }
+    # hole stuff if it exists
+    if numbers[2]?
+      unless numbers[2] >= 0 then throw "error at #{line}: hole x size must be greater than or equal to 0"
+      params.holeX = numbers[2]
+    if numbers[3]?
+      unless numbers[3] >= 0 then throw "error at #{line}: hole y size must be greater than or equal to 0"
+      params.holeY = numbers[3]
 
-  # takes a coordinate in the form of [XY]nnnnnnn
-  # returns a dec
-  parseCoordinate: (coord) ->
-    console.log "parsing coordinates"
-    coord = coord[1..]
-    if @zeroOmit is 'L'
-      console.log "coord is #{coord}"
-      c = coord[0..-(@trailDigits+1)] + '.' + coord[-@trailDigits..]
-      console.log "c is #{c}"
-      parseFloat c
-    else if @zeroOmit is 'T'
-      c = coord[0..@leadDigits] + '.' + coord[@leadDigits..]
-      parseFloat coord[0..@leadDigits] + '.' + coord[@leadDigits..]
+    # return the params object
+    params
 
-  parseMove: (line, layer) ->
-    # get the x coordinate if there is one
-    x = line.match /X[+-]?[\d]+/
-    if x? then x = @parseCoordinate x[0]
-    # do the same with y
-    y = line.match /Y[+-]?[\d]+/
-    if y? then y = @parseCoordinate y[0]
+  # get the parameters for a polygon aperture
+  getPolyToolParams: (command) ->
+    numbers = gatherToolParams command
+    # there must be between 2 and 5 numbers
+    unless 2 <= numbers.length <= 5 then throw "error at #{line}: polygon aperture must have between 2 and 4 params"
 
-    command = line.match /D0?[123](?=\*$)/
-    if command? then command = command[0][-1..]
+    # circumscribed circle dia must be greater than 0
+    unless numbers[0] > 0 then throw "error at #{line}: polygon diameter must be greater than 0"
+    # number of polygon points must be between 3 and 12
+    unless 3 <= numbers[1] <= 12 then throw "error at #{line}: polygon must have 3 to 12 points"
 
-    @move x, y, command, layer
+    params = {
+      dia: numbers[0]
+      points: numbers[1]
+    }
 
-  move: (x, y, command, layer) ->
-    console.log command
-    # if stroke command
-    if command is '1'
-      console.log "making line with aperture #{@tool.code}"
-      layer.addObject('T', @tool, [@xPos, @yPos, x, y])
-    else if command is '2'
-      console.log "moving"
-    else if command is '3'
-      console.log "making pad"
-      layer.addObject('P', @tool, [x, y])
-    else
-      throw 'BadOperationCodeError'
-    console.log "moving to #{x}, #{y}"
-    @xPos = x
-    @yPos = y
+    # other stuff if it exists
+    # rotation (negative or positive allowed)
+    if numbers[2]? then params.rotation = numbers[2]
+    if numbers[3]?
+      unless numbers[3] >= 0 then throw "error at #{line}: hole x size must be greater than or equal to 0"
+      params.holeY = numbers[3]
+    if numbers[4]?
+      unless numbers[4] >= 0 then throw "error at #{line}: hole y size must be greater than or equal to 0"
+      params.holeY = numbers[4]
 
-  stroke: (x, y) ->
-    t = new Trace(@tool, @xPos, @yPos, [x, y])
+    # return the params object
+    params
 
-  flash: (x, y) ->
-    console.log
-
-  parseToolChange: (line) ->
-    unless line.match /^D[1-9]\d+\*$/ then throw "BadToolLineError"
-    tool = parseInt(line[1..-2], 10)
-    @changeTool tool
-
-  changeTool: (tool) ->
-    if tool < 10 then throw "Tool_#{tool}_IsOutOfRangeError"
-    @tool = @apertures[tool-10]
-
-  plot: ->
-    # flags for specs
-    gotFormat = false
-    gotUnits = false
-    fileEnd = false
-
-    # operating modes
-    interpolationMode = null
-    quadrantMode = null
-
-    # different types of lines (all others ignored)
-    formatMatch   = /^%FS.*\*%$/           # file spec
-    unitMatch     = /^%MO((MM)|(IN))\*%$/  # unit spec
-    apertureMatch = /^%AD.*\*%$/           # aperture definition
-    gMatch        = /^G.*\*$/              # G command code
-    endMatch      = /^M0?2\*$/             # end of file command code
-    toolMatch     = /^D[1-9]\d+\*$/            # tool select command
-    moveMatch     = /^(X[+-]?\d+)?(Y[+-]?\d+)?D0?[123]\*$/ # move command
-
-    # create a new layer object
-    layer = new Layer(@name)
-
-    # loop through the lines of the gerber
-    for line, i in @gerber
-      # make sure the file hasn't ended
-      if line.match endMatch
-        console.log "#{line} indicates end of file at line: #{i}"
-        fileEnd = true
-        break
-
-      # if we haven't got format and units yet, we'll need them
-      if (not gotFormat) or (not gotUnits)
-        if line.match formatMatch
-          @parseFormatSpec line
-          gotFormat = true
-        else if line.match unitMatch
-          @parseUnits line
-          gotUnits = true
-          layer.setUnits(@units)
-
-      # once we've got those things, we can read the rest of the file
-      else
-        # take care of any commands
-        if line.match gMatch
-          line = @parseGCode line
-
-        # line will now be stripped of any g commands
-        # check for an aperture definition
-        if line.match apertureMatch
-          ap = @parseAperture line
-          if not @apertures[ap.code-10]?
-            @apertures[ap.code-10] = ap
-          else
-            throw "ApertureAlreadyExistsError"
-        # check for a tool select command
-        else if line.match toolMatch
-          console.log "changing tool to #{line}"
-          @parseToolChange line
-          console.log "current tool #{@tool.code} is a #{@tool.shape}"
-        # check for a move command
-        else if line.match moveMatch
-          # console.log "moving according to #{line}"
-          @parseMove line, layer
-
-
-        else
-          console.log "don't know what #{line} means"
-
-    # once we leave the read loop
-    # problem if we never saw a format
-    if not gotFormat
-      throw "NoFormatSpecGivenError"
-    if not gotUnits
-      throw "NoValidUnitsGivenError"
-    if not fileEnd
-      throw "NoM02CommandBeforeEndError"
-
-    # return the layer that was plotted
-    layer
+  # generic method to gather all the numbers in a basic aperture definition
+  gatherToolParams: (command) ->
+    # look for numbers in the proper format
+    # ___X___X___
+    numbers = command.match /[\+-]?[\d\.]+(?=X|$)/g
+    # check that the numbers are actually numbers
+    for n, i in numbers
+      unless n.match /^[\+-]?((\d+\.?\d*)|(\d*\.?\d+))$/ then throw "error at #{line}: #{n} is not a valid number"
+      numbers[i] = parseFloat n
+    # return the array
+    numbers
