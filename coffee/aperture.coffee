@@ -3,25 +3,26 @@ root = exports ? this
 
 # aperture class used by the plotter and board classes
 class root.Aperture
-  constructor: (@code, @shape, @params) ->
+  constructor: (params) ->
+    @["#{key}"] = value for key, value of params
     @print()
 
   print: ->
     p = "aperture #{@code} is a #{@shape} with "
     switch @shape
       when 'C'
-        p += "dia: #{@params.dia}"
+        p += "dia: #{@dia}"
       when 'R', 'O'
-        p += "x size: #{@params.sizeX}, y size: #{@params.sizeY}"
+        p += "x size: #{@sizeX}, y size: #{@sizeY}"
       when 'P'
-        p += "circumscribed dia: #{@params.dia}, points: #{@params.points}"
-        if @params.rotation?
-          p+= ", rotation: #{@params.rotation}"
+        p += "circumscribed dia: #{@dia}, points: #{@points}"
+        if @rotation?
+          p+= ", rotation: #{@rotation}"
       else
         p += 'macro stuff'
-    if @params.holeX?
-      unless @params.holeY?
-        p += ", hole dia: #{@params.holeX}"
+    if @holeX?
+      unless @holeY?
+        p += ", hole dia: #{@holeX}"
       else
-        p += ", hole x size: #{@params.holeX}, hole y size #{@params.holeY}"
+        p += ", hole x size: #{@holeX}, hole y size #{@holeY}"
     console.log p

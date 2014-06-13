@@ -12,49 +12,50 @@ class LayerObject
   constructor: (params = {}) ->
     @["#{key}"] = value for key, value of params
 
+  adjustX: (x, origin, canvas) ->
+    # return an adjusted x value
+    x - origin.x + canvas.margin
+
+  adjustY: (y, origin, canvas) ->
+    # return an adjusted y value
+    canvas.height - (@y - origin.y) + canvas.margin
+
   print: ->
     console.log "#{key}: #{value}" for key, value of params
+
+  draw: (svgItem) ->
+    # return the bounding box
+    #console.log "returning bounding box"
+    svgItem.bbox()
 
 # pad class for Layer
 class Pad extends LayerObject
   print: ->
     console.log "#{@tool.shape} pad created at #{@x}, #{@y}"
 
-  getRange: ->
-    [@x, @y]
-
   # draw to SVG
   # parameters are the drawing object,
   # an origin object with keys x and y
   # a canvas object with keys width, height, and margin
   # the units for the drawing
-  draw: (drawing, origin, canvas, units) ->
+  draw: (drawing) ->
     pad = null
 
     # adjust for origin and margin in x
-    x = @x - origin.x + canvas.margin
-    # add the units
-    #x = "#{x}#{units}"
-
+    #x = @x - origin.x + canvas.margin
     # adjust for origin, margin, and mirror in y
-    y = canvas.height - (@y - origin.y) + canvas.margin
-    # add the units
-    #y = "#{y}#{units}"
+    #y = canvas.height - (@y - origin.y) + canvas.margin
 
     switch @tool.shape
       when'C'
-        #console.log "drawing circular pad at #{@x}, #{@y} with dia #{@tool.params.dia}"
-        pad = drawing.circle("#{@tool.params.dia}")
-        pad.center(x, y)
+        #console.log "drawing circular pad at #{@x}, #{@y} with dia #{@tool.dia}"
+        pad = drawing.circle(@tool.dia)
+        pad.center(@x, @y)
 
       when 'R'
-        #console.log "drawing rectangular pad at #{@x}, #{@y} with size #{@tool.params.sizeX}, #{@tool.params.sizeY}"
-        pad = drawing.rect("#{@tool.params.sizeX}", "#{@tool.params.sizeY}")
-        # center doesn't work with units, so adapt
-        moveX = "#{parseFloat(x) - @tool.params.sizeX/2}"
-        moveY = "#{parseFloat(y) - @tool.params.sizeY/2}"
-        # move
-        pad.move(moveX,moveY)
+        #console.log "drawing rectangular pad at #{@x}, #{@y} with size #{@tool.sizeX}, #{@tool.sizeY}"
+        pad = drawing.rect(@tool.sizeX, @tool.sizeY)
+        pad.center @x, @y
       when 'O'
         console.log "obround pad"
       when 'P'
@@ -62,74 +63,78 @@ class Pad extends LayerObject
       else
         console.log "unrecognized shape"
 
-    if @tool.params.holeX?
+    if @tool.holeX?
       # positve mask for the pad itself
       p = pad.clone().fill {color: '#fff'}
       # negative mask for the hole
       h = null
       # rectangle or circle
-      if @tool.params.holeY?
-        h = drawing.rect(@tool.params.holeX, @tool.params.holeY)
+      if @tool.holeY?
+        h = drawing.rect(@tool.holeX, @tool.holeY)
       else
-        h = drawing.circle(@tool.params.holeX)
+        h = drawing.circle(@tool.holeX)
       # center the hole and fill properly
       h.center(pad.cx(), pad.cy()).fill {color: '#000'}
       # mask the hole out
       m = drawing.mask().add(p).add(h)
       pad.maskWith m
 
+    # call the parent draw method
+    super pad
+
 # path based LayerObjects
 class PathObject extends LayerObject
   # convert a pathArray into a string with coordinates fixed
-  pathArrayToString: (pathArray, origin, canvas) ->
-    # path string to pass to SVG
-    pathString = ''
-    # process coordinates for origin, margin, and mirror
-    index = 0
-    while index < @pathArray.length
-      # move to command
-      if @pathArray[index] is 'M'
-        pathString += 'M'
-        index++
-        # two coordinates will follow: x and y
-        # x (origin and margin)
-        pathString += "#{@pathArray[index] - origin.x + canvas.margin} "
-        index++
-        # y (origin, margin, and mirror)
-        pathString += "#{canvas.height - (@pathArray[index] - origin.y) + canvas.margin}"
-        index++
-      # line to command
-      else if @pathArray[index] is 'L'
-        pathString += 'L'
-        index++
-        # two coordinates will follow: x and y
-        # x (origin and margin)
-        pathString += "#{@pathArray[index] - origin.x + canvas.margin} "
-        index++
-        # y (origin, margin, and mirror)
-        pathString += "#{canvas.height - (@pathArray[index] - origin.y) + canvas.margin}"
-        index++
-      # arc to command
-      else if @pathArray[index] is 'A'
-        # first five items parameters are A, rx, ry, xAxisRot, largeArcFlag, and sweepFlag
-        # push them without modification
-        for p in @pathArray[index...index+5]
-          pathString += "#{p} "
-        index += 5
-        # next two are the x end and the y end... transform accordingly
-        # x (origin and margin)
-        pathString += "#{@pathArray[index] - origin.x + canvas.margin} "
-        index++
-        # y (origin, margin, and mirror)
-        pathString += "#{canvas.height - (@pathArray[index] - origin.y) + canvas.margin}"
-        index++
-      # close region command
-      else if @pathArray[index] is 'Z'
-        pathString += 'Z'
-        index++
-      # else we are confused
-      else
-        throw "unrecognized path command #{@path[index]}"
+  pathArrayToString: (pathArray) ->
+    pathString = pathArray.join ' '
+    # # path string to pass to SVG
+    # pathString = ''
+    # # process coordinates for origin, margin, and mirror
+    # index = 0
+    # while index < @pathArray.length
+      # # move to command
+      # if @pathArray[index] is 'M'
+      #   pathString += 'M'
+      #   index++
+      #   # two coordinates will follow: x and y
+      #   # x (origin and margin)
+      #   pathString += "#{@pathArray[index] - origin.x + canvas.margin} "
+      #   index++
+      #   # y (origin, margin, and mirror)
+      #   pathString += "#{canvas.height - (@pathArray[index] - origin.y) + canvas.margin}"
+      #   index++
+      # # line to command
+      # else if @pathArray[index] is 'L'
+      #   pathString += 'L'
+      #   index++
+      #   # two coordinates will follow: x and y
+      #   # x (origin and margin)
+      #   pathString += "#{@pathArray[index] - origin.x + canvas.margin} "
+      #   index++
+      #   # y (origin, margin, and mirror)
+      #   pathString += "#{canvas.height - (@pathArray[index] - origin.y) + canvas.margin}"
+      #   index++
+      # # arc to command
+      # else if @pathArray[index] is 'A'
+      #   # first five items parameters are A, rx, ry, xAxisRot, largeArcFlag, and sweepFlag
+      #   # push them without modification
+      #   for p in @pathArray[index...index+5]
+      #     pathString += "#{p} "
+      #   index += 5
+      #   # next two are the x end and the y end... transform accordingly
+      #   # x (origin and margin)
+      #   pathString += "#{@pathArray[index] - origin.x + canvas.margin} "
+      #   index++
+      #   # y (origin, margin, and mirror)
+      #   pathString += "#{canvas.height - (@pathArray[index] - origin.y) + canvas.margin}"
+      #   index++
+      # # close region command
+      # else if @pathArray[index] is 'Z'
+      #   pathString += 'Z'
+      #   index++
+      # # else we are confused
+      # else
+      #   throw "unrecognized path command #{@path[index]}"
     # return the string
     pathString
 
@@ -138,19 +143,20 @@ class Trace extends PathObject
   print: ->
     console.log "trace created from #{@x}, #{@y} to #{@coord.x}, #{@coord.y}"
 
-  getRange: ->
-    [@x, @y, @coord.x, @coord.y]
-
   # draw the path and fill it in
-  draw: (drawing, origin, canvas) ->
+  draw: (drawing) ->
     console.log 'drawing path'
     # path string to pass to SVG
-    path = pathArrayToString @pathArray, origin, canvas
+    path = @pathArrayToString @pathArray
 
     # create a path with the processed string
+    console.log path
     path = drawing.path path
-    if @tool.params.dia? then path.stroke {width: @tool.params.dia, linecap: 'round'}
+    if @tool.dia? then path.stroke {width: @tool.dia, linecap: 'round'}
     else throw "rectangular trace apertures unimplimented in this reader"
+
+    # call the parent draw
+    super path
 
   # draw to SVG
   # parameters are the drawing object,
@@ -179,7 +185,7 @@ class Trace extends PathObject
       trace = drawing.line()
       # first param is circle dia
       trace.stroke {
-        width: "#{@tool.params.dia}"
+        width: "#{@tool.dia}"
         linecap: 'round'
       }
       # plot the stroke to the end
@@ -192,14 +198,17 @@ class Trace extends PathObject
 # fill class
 class Fill extends PathObject
   # draw the path and fill it in
-  draw: (drawing, origin, canvas) ->
+  draw: (drawing) ->
     console.log 'drawing fill'
     # path string to pass to SVG
-    path = pathArrayToString @pathArray, origin, canvas
+    path = @pathArrayToString @pathArray
 
     # create a path with the processed string
     path = drawing.path path
     path.fill({color: '#000'}).stroke {width: 0}
+
+    # call the parent
+    super path
 
 # layer class
 class root.Layer
@@ -217,106 +226,119 @@ class root.Layer
     [@minX, @maxX, @minY, @maxY]
 
   # add a trace given a tool, start points, and the trace coordinates
-  addTrace: (tool, startX, startY, c) ->
+  addTrace: (params) ->
     # tool has to be a circle or a rectangle without a hole
-    unless tool.shape is 'C' or tool.shape is 'R' then throw "cannot create trace with #{tool.shape} (tool #{tool.code})"
-    if tool.holeX? then throw "cannot create trace with a holed tool (tool #{tool.code})"
+    unless params.tool.shape is 'C' or params.tool.shape is 'R' then throw "cannot create trace with #{tool.shape} (tool #{tool.code})"
+    if params.tool.holeX? then throw "cannot create trace with a holed tool (tool #{tool.code})"
 
     # for now let's just stick to lines
-    t = new Trace tool, startX, startY, c
+    t = new Trace params
     @layerObjects.push t
-    for m, i in t.getRange()
-      if i%2 is 0
-        if (not @minX?) or (m < @minX)
-          @minX = m
-        else if (not @maxX?) or (m > @maxX)
-          @maxX = m
-      else
-        if (not @minY?) or (m < @minY)
-          @minY = m
-        else if (not @maxY?) or (m > @maxY)
-          @maxY = m
+    # for m, i in t.getRange()
+    #   if i%2 is 0
+    #     if (not @minX?) or (m < @minX)
+    #       @minX = m
+    #     else if (not @maxX?) or (m > @maxX)
+    #       @maxX = m
+    #   else
+    #     if (not @minY?) or (m < @minY)
+    #       @minY = m
+    #     else if (not @maxY?) or (m > @maxY)
+    #       @maxY = m
 
-  addPad: (tool, x, y) ->
+  addPad: (params) ->
     # create the pad
-    p = new Pad tool, x, y
+    p = new Pad params
     @layerObjects.push p
-    for m, i in p.getRange()
-      if i%2 is 0
-        if (not @minX?) or (m < @minX)
-          @minX = m
-        else if (not @maxX?) or (m > @maxX)
-          @maxX = m
-      else
-        if (not @minY?) or (m < @minY)
-          @minY = m
-        else if (not @maxY?) or (m > @maxY)
-          @maxY = m
+    # for m, i in p.getRange()
+    #   if i%2 is 0
+    #     if (not @minX?) or (m < @minX)
+    #       @minX = m
+    #     else if (not @maxX?) or (m > @maxX)
+    #       @maxX = m
+    #   else
+    #     if (not @minY?) or (m < @minY)
+    #       @minY = m
+    #     else if (not @maxY?) or (m > @maxY)
+    #       @maxY = m
 
-  addFill: (path) ->
+  addFill: (params) ->
     # create the fill
-    f = new Fill path
+    f = new Fill params
     @layerObjects.push f
 
   # add a pad, trace, or fill(?)
-  addObject: (action, tool, params) ->
-    switch action
-      # draw a trace
-      when 'T'
-        t = new Trace(tool, params)
-        for m, i in t.getRange()
-          if i%2 is 0
-            if (not @minX?) or (m < @minX)
-              @minX = m
-            else if (not @maxX?) or (m > @maxX)
-              @maxX = m
-          else
-            if (not @minY?) or (m < @minY)
-              @minY = m
-            else if (not @maxY?) or (m > @maxY)
-              @maxY = m
-        @layerObjects.push t
-      # flash a pad
-      when 'P'
-        p = new Pad(tool, params)
-        for m, i in p.getRange()
-          if i%2 is 0
-            if (not @minX?) or (m < @minX)
-              @minX = m
-            else if (not @maxX?) or (m > @maxX)
-              @maxX = m
-          else
-            if (not @minY?) or (m < @minY)
-              @minY = m
-            else if (not @maxY?) or (m > @maxY)
-              @maxY = m
-        @layerObjects.push p
-      # create a region fill
-      when 'F'
-        console.log "create a fill or something"
-      else
-        throw "#{action}_IsInvalidInputTo_Layer::addObject_Error"
+  # addObject: (action, tool, params) ->
+  #   switch action
+  #     # draw a trace
+  #     when 'T'
+  #       t = new Trace(tool, params)
+  #       for m, i in t.getRange()
+  #         if i%2 is 0
+  #           if (not @minX?) or (m < @minX)
+  #             @minX = m
+  #           else if (not @maxX?) or (m > @maxX)
+  #             @maxX = m
+  #         else
+  #           if (not @minY?) or (m < @minY)
+  #             @minY = m
+  #           else if (not @maxY?) or (m > @maxY)
+  #             @maxY = m
+  #       @layerObjects.push t
+  #     # flash a pad
+  #     when 'P'
+  #       p = new Pad(tool, params)
+  #       for m, i in p.getRange()
+  #         if i%2 is 0
+  #           if (not @minX?) or (m < @minX)
+  #             @minX = m
+  #           else if (not @maxX?) or (m > @maxX)
+  #             @maxX = m
+  #         else
+  #           if (not @minY?) or (m < @minY)
+  #             @minY = m
+  #           else if (not @maxY?) or (m > @maxY)
+  #             @maxY = m
+  #       @layerObjects.push p
+  #     # create a region fill
+  #     when 'F'
+  #       console.log "create a fill or something"
+  #     else
+  #       throw "#{action}_IsInvalidInputTo_Layer::addObject_Error"
 
   draw: (id) ->
-    console.log "drawing layer origin at #{@minX}, #{@minY}"
+    # console.log "drawing layer origin at #{@minX}, #{@minY}"
     console.log "objects to draw: #{@layerObjects.length}"
 
-    origin = {
-      x: @minX
-      y: @minY
-    }
-    canvas = {
-      width: @maxX - @minX
-      height: @maxY - @minY
-      margin: 0.5
-    }
+    # origin = {
+    #   x: @minX
+    #   y: @minY
+    # }
+    # canvas = {
+    #   width: @maxX - @minX
+    #   height: @maxY - @minY
+    #   margin: 0.5
+    # }
     # create an SVG object
-    totW = 2*canvas.margin+canvas.width
-    totH = 2*canvas.margin+canvas.height
-    svg = SVG(id).size("#{totW}#{@units}", "#{totH}#{@units}").viewbox(0,0,totW,totH)
+    # totW = 2*canvas.margin+canvas.width
+    # totH = 2*canvas.margin+canvas.height
+    # svg = SVG(id).size("#{totW}#{@units}", "#{totH}#{@units}").viewbox(0,0,totW,totH)
+    svg = SVG id
+    group = svg.group()
 
-    # draw all the objects
-    o.draw(svg, origin, canvas, @units) for o in @layerObjects
+    # draw all the objects and get the bounding box
+    o.draw group for o in @layerObjects
+    box = group.bbox()
+    console.log box
 
-    # return the id of the svg object
+    # resize the svg
+    svg.size("#{box.width}#{@units}", "#{box.height}#{@units}").viewbox 0,0,box.width, box.height
+    # transform the items to fit in the svg and mirror the y
+    group.transform {
+      x: -box.x
+      y: box.y2
+      scaleY: -1
+    }
+
+    # return the svg object
     svg

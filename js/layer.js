@@ -18,6 +18,14 @@
       }
     }
 
+    LayerObject.prototype.adjustX = function(x, origin, canvas) {
+      return x - origin.x + canvas.margin;
+    };
+
+    LayerObject.prototype.adjustY = function(y, origin, canvas) {
+      return canvas.height - (this.y - origin.y) + canvas.margin;
+    };
+
     LayerObject.prototype.print = function() {
       var key, value, _results;
       _results = [];
@@ -26,6 +34,10 @@
         _results.push(console.log("" + key + ": " + value));
       }
       return _results;
+    };
+
+    LayerObject.prototype.draw = function(svgItem) {
+      return svgItem.bbox();
     };
 
     return LayerObject;
@@ -43,25 +55,17 @@
       return console.log("" + this.tool.shape + " pad created at " + this.x + ", " + this.y);
     };
 
-    Pad.prototype.getRange = function() {
-      return [this.x, this.y];
-    };
-
-    Pad.prototype.draw = function(drawing, origin, canvas, units) {
-      var h, m, moveX, moveY, p, pad, x, y;
+    Pad.prototype.draw = function(drawing) {
+      var h, m, p, pad;
       pad = null;
-      x = this.x - origin.x + canvas.margin;
-      y = canvas.height - (this.y - origin.y) + canvas.margin;
       switch (this.tool.shape) {
         case 'C':
-          pad = drawing.circle("" + this.tool.params.dia);
-          pad.center(x, y);
+          pad = drawing.circle(this.tool.dia);
+          pad.center(this.x, this.y);
           break;
         case 'R':
-          pad = drawing.rect("" + this.tool.params.sizeX, "" + this.tool.params.sizeY);
-          moveX = "" + (parseFloat(x) - this.tool.params.sizeX / 2);
-          moveY = "" + (parseFloat(y) - this.tool.params.sizeY / 2);
-          pad.move(moveX, moveY);
+          pad = drawing.rect(this.tool.sizeX, this.tool.sizeY);
+          pad.center(this.x, this.y);
           break;
         case 'O':
           console.log("obround pad");
@@ -72,22 +76,23 @@
         default:
           console.log("unrecognized shape");
       }
-      if (this.tool.params.holeX != null) {
+      if (this.tool.holeX != null) {
         p = pad.clone().fill({
           color: '#fff'
         });
         h = null;
-        if (this.tool.params.holeY != null) {
-          h = drawing.rect(this.tool.params.holeX, this.tool.params.holeY);
+        if (this.tool.holeY != null) {
+          h = drawing.rect(this.tool.holeX, this.tool.holeY);
         } else {
-          h = drawing.circle(this.tool.params.holeX);
+          h = drawing.circle(this.tool.holeX);
         }
         h.center(pad.cx(), pad.cy()).fill({
           color: '#000'
         });
         m = drawing.mask().add(p).add(h);
-        return pad.maskWith(m);
+        pad.maskWith(m);
       }
+      return Pad.__super__.draw.call(this, pad);
     };
 
     return Pad;
@@ -101,43 +106,9 @@
       return PathObject.__super__.constructor.apply(this, arguments);
     }
 
-    PathObject.prototype.pathArrayToString = function(pathArray, origin, canvas) {
-      var index, p, pathString, _i, _len, _ref;
-      pathString = '';
-      index = 0;
-      while (index < this.pathArray.length) {
-        if (this.pathArray[index] === 'M') {
-          pathString += 'M';
-          index++;
-          pathString += "" + (this.pathArray[index] - origin.x + canvas.margin) + " ";
-          index++;
-          pathString += "" + (canvas.height - (this.pathArray[index] - origin.y) + canvas.margin);
-          index++;
-        } else if (this.pathArray[index] === 'L') {
-          pathString += 'L';
-          index++;
-          pathString += "" + (this.pathArray[index] - origin.x + canvas.margin) + " ";
-          index++;
-          pathString += "" + (canvas.height - (this.pathArray[index] - origin.y) + canvas.margin);
-          index++;
-        } else if (this.pathArray[index] === 'A') {
-          _ref = this.pathArray.slice(index, index + 5);
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            p = _ref[_i];
-            pathString += "" + p + " ";
-          }
-          index += 5;
-          pathString += "" + (this.pathArray[index] - origin.x + canvas.margin) + " ";
-          index++;
-          pathString += "" + (canvas.height - (this.pathArray[index] - origin.y) + canvas.margin);
-          index++;
-        } else if (this.pathArray[index] === 'Z') {
-          pathString += 'Z';
-          index++;
-        } else {
-          throw "unrecognized path command " + this.path[index];
-        }
-      }
+    PathObject.prototype.pathArrayToString = function(pathArray) {
+      var pathString;
+      pathString = pathArray.join(' ');
       return pathString;
     };
 
@@ -156,23 +127,21 @@
       return console.log("trace created from " + this.x + ", " + this.y + " to " + this.coord.x + ", " + this.coord.y);
     };
 
-    Trace.prototype.getRange = function() {
-      return [this.x, this.y, this.coord.x, this.coord.y];
-    };
-
-    Trace.prototype.draw = function(drawing, origin, canvas) {
+    Trace.prototype.draw = function(drawing) {
       var path;
       console.log('drawing path');
-      path = pathArrayToString(this.pathArray, origin, canvas);
+      path = this.pathArrayToString(this.pathArray);
+      console.log(path);
       path = drawing.path(path);
-      if (this.tool.params.dia != null) {
-        return path.stroke({
-          width: this.tool.params.dia,
+      if (this.tool.dia != null) {
+        path.stroke({
+          width: this.tool.dia,
           linecap: 'round'
         });
       } else {
         throw "rectangular trace apertures unimplimented in this reader";
       }
+      return Trace.__super__.draw.call(this, path);
     };
 
     Trace.prototype.draw2 = function(drawing, origin, canvas, units) {
@@ -185,7 +154,7 @@
       if (this.tool.shape === 'C') {
         trace = drawing.line();
         trace.stroke({
-          width: "" + this.tool.params.dia,
+          width: "" + this.tool.dia,
           linecap: 'round'
         });
         return trace.plot(x1, y1, x2, y2);
@@ -205,16 +174,17 @@
       return Fill.__super__.constructor.apply(this, arguments);
     }
 
-    Fill.prototype.draw = function(drawing, origin, canvas) {
+    Fill.prototype.draw = function(drawing) {
       var path;
       console.log('drawing fill');
-      path = pathArrayToString(this.pathArray, origin, canvas);
+      path = this.pathArrayToString(this.pathArray);
       path = drawing.path(path);
-      return path.fill({
+      path.fill({
         color: '#000'
       }).stroke({
         width: 0
       });
+      return Fill.__super__.draw.call(this, path);
     };
 
     return Fill;
@@ -243,147 +213,48 @@
       return [this.minX, this.maxX, this.minY, this.maxY];
     };
 
-    Layer.prototype.addTrace = function(tool, startX, startY, c) {
-      var i, m, t, _i, _len, _ref, _results;
-      if (!(tool.shape === 'C' || tool.shape === 'R')) {
+    Layer.prototype.addTrace = function(params) {
+      var t;
+      if (!(params.tool.shape === 'C' || params.tool.shape === 'R')) {
         throw "cannot create trace with " + tool.shape + " (tool " + tool.code + ")";
       }
-      if (tool.holeX != null) {
+      if (params.tool.holeX != null) {
         throw "cannot create trace with a holed tool (tool " + tool.code + ")";
       }
-      t = new Trace(tool, startX, startY, c);
-      this.layerObjects.push(t);
-      _ref = t.getRange();
-      _results = [];
-      for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
-        m = _ref[i];
-        if (i % 2 === 0) {
-          if ((this.minX == null) || (m < this.minX)) {
-            _results.push(this.minX = m);
-          } else if ((this.maxX == null) || (m > this.maxX)) {
-            _results.push(this.maxX = m);
-          } else {
-            _results.push(void 0);
-          }
-        } else {
-          if ((this.minY == null) || (m < this.minY)) {
-            _results.push(this.minY = m);
-          } else if ((this.maxY == null) || (m > this.maxY)) {
-            _results.push(this.maxY = m);
-          } else {
-            _results.push(void 0);
-          }
-        }
-      }
-      return _results;
+      t = new Trace(params);
+      return this.layerObjects.push(t);
     };
 
-    Layer.prototype.addPad = function(tool, x, y) {
-      var i, m, p, _i, _len, _ref, _results;
-      p = new Pad(tool, x, y);
-      this.layerObjects.push(p);
-      _ref = p.getRange();
-      _results = [];
-      for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
-        m = _ref[i];
-        if (i % 2 === 0) {
-          if ((this.minX == null) || (m < this.minX)) {
-            _results.push(this.minX = m);
-          } else if ((this.maxX == null) || (m > this.maxX)) {
-            _results.push(this.maxX = m);
-          } else {
-            _results.push(void 0);
-          }
-        } else {
-          if ((this.minY == null) || (m < this.minY)) {
-            _results.push(this.minY = m);
-          } else if ((this.maxY == null) || (m > this.maxY)) {
-            _results.push(this.maxY = m);
-          } else {
-            _results.push(void 0);
-          }
-        }
-      }
-      return _results;
+    Layer.prototype.addPad = function(params) {
+      var p;
+      p = new Pad(params);
+      return this.layerObjects.push(p);
     };
 
-    Layer.prototype.addFill = function(path) {
+    Layer.prototype.addFill = function(params) {
       var f;
-      f = new Fill(path);
+      f = new Fill(params);
       return this.layerObjects.push(f);
     };
 
-    Layer.prototype.addObject = function(action, tool, params) {
-      var i, m, p, t, _i, _j, _len, _len1, _ref, _ref1;
-      switch (action) {
-        case 'T':
-          t = new Trace(tool, params);
-          _ref = t.getRange();
-          for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
-            m = _ref[i];
-            if (i % 2 === 0) {
-              if ((this.minX == null) || (m < this.minX)) {
-                this.minX = m;
-              } else if ((this.maxX == null) || (m > this.maxX)) {
-                this.maxX = m;
-              }
-            } else {
-              if ((this.minY == null) || (m < this.minY)) {
-                this.minY = m;
-              } else if ((this.maxY == null) || (m > this.maxY)) {
-                this.maxY = m;
-              }
-            }
-          }
-          return this.layerObjects.push(t);
-        case 'P':
-          p = new Pad(tool, params);
-          _ref1 = p.getRange();
-          for (i = _j = 0, _len1 = _ref1.length; _j < _len1; i = ++_j) {
-            m = _ref1[i];
-            if (i % 2 === 0) {
-              if ((this.minX == null) || (m < this.minX)) {
-                this.minX = m;
-              } else if ((this.maxX == null) || (m > this.maxX)) {
-                this.maxX = m;
-              }
-            } else {
-              if ((this.minY == null) || (m < this.minY)) {
-                this.minY = m;
-              } else if ((this.maxY == null) || (m > this.maxY)) {
-                this.maxY = m;
-              }
-            }
-          }
-          return this.layerObjects.push(p);
-        case 'F':
-          return console.log("create a fill or something");
-        default:
-          throw "" + action + "_IsInvalidInputTo_Layer::addObject_Error";
-      }
-    };
-
     Layer.prototype.draw = function(id) {
-      var canvas, o, origin, svg, totH, totW, _i, _len, _ref;
-      console.log("drawing layer origin at " + this.minX + ", " + this.minY);
+      var box, group, o, svg, _i, _len, _ref;
       console.log("objects to draw: " + this.layerObjects.length);
-      origin = {
-        x: this.minX,
-        y: this.minY
-      };
-      canvas = {
-        width: this.maxX - this.minX,
-        height: this.maxY - this.minY,
-        margin: 0.5
-      };
-      totW = 2 * canvas.margin + canvas.width;
-      totH = 2 * canvas.margin + canvas.height;
-      svg = SVG(id).size("" + totW + this.units, "" + totH + this.units).viewbox(0, 0, totW, totH);
+      svg = SVG(id);
+      group = svg.group();
       _ref = this.layerObjects;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         o = _ref[_i];
-        o.draw(svg, origin, canvas, this.units);
+        o.draw(group);
       }
+      box = group.bbox();
+      console.log(box);
+      svg.size("" + box.width + this.units, "" + box.height + this.units).viewbox(0, 0, box.width, box.height);
+      group.transform({
+        x: -box.x,
+        y: box.y2,
+        scaleY: -1
+      });
       return svg;
     };
 

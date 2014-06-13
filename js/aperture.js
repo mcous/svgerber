@@ -5,10 +5,12 @@
   root = typeof exports !== "undefined" && exports !== null ? exports : this;
 
   root.Aperture = (function() {
-    function Aperture(code, shape, params) {
-      this.code = code;
-      this.shape = shape;
-      this.params = params;
+    function Aperture(params) {
+      var key, value;
+      for (key in params) {
+        value = params[key];
+        this["" + key] = value;
+      }
       this.print();
     }
 
@@ -17,26 +19,26 @@
       p = "aperture " + this.code + " is a " + this.shape + " with ";
       switch (this.shape) {
         case 'C':
-          p += "dia: " + this.params.dia;
+          p += "dia: " + this.dia;
           break;
         case 'R':
         case 'O':
-          p += "x size: " + this.params.sizeX + ", y size: " + this.params.sizeY;
+          p += "x size: " + this.sizeX + ", y size: " + this.sizeY;
           break;
         case 'P':
-          p += "circumscribed dia: " + this.params.dia + ", points: " + this.params.points;
-          if (this.params.rotation != null) {
-            p += ", rotation: " + this.params.rotation;
+          p += "circumscribed dia: " + this.dia + ", points: " + this.points;
+          if (this.rotation != null) {
+            p += ", rotation: " + this.rotation;
           }
           break;
         default:
           p += 'macro stuff';
       }
-      if (this.params.holeX != null) {
-        if (this.params.holeY == null) {
-          p += ", hole dia: " + this.params.holeX;
+      if (this.holeX != null) {
+        if (this.holeY == null) {
+          p += ", hole dia: " + this.holeX;
         } else {
-          p += ", hole x size: " + this.params.holeX + ", hole y size " + this.params.holeY;
+          p += ", hole x size: " + this.holeX + ", hole y size " + this.holeY;
         }
       }
       return console.log(p);

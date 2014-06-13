@@ -54,7 +54,6 @@ class root.Plotter
     }
     # trace mode (aka normal operation)
     @path = {
-      tool: null
       current: null
       startX: null
       startY: null
@@ -98,6 +97,8 @@ class root.Plotter
             console.log "don't know what to do with #{block} at line #{@line-1}"
             block = ''
 
+    # if there was a path in progress, finish it
+    @finishPath()
     # set the layer units
     @layer.setUnits @units
     # return the layer
@@ -226,11 +227,10 @@ class root.Plotter
 
   # checks if there's a path to finsh and finishes it accordingly
   finishPath: ->
-    if path.current?
+    if @path.current?
       # trace?
       if @mode.region is off
         @layer.addTrace {tool: @tool, pathArray: @path.current}
-        @trace.tool = null
       # or region?
       else if @position.x is @path.startX and @position.y is @path.startY
         # end path
@@ -242,7 +242,8 @@ class root.Plotter
         @path.startY = null
       else
         throw error "error at #{@line}: region close command on open contour"
-
+      # clear out the path
+      @path.current = null
 
   # interpolate to the given coordinates and create a path segment
   interpolate: (c) ->
@@ -253,11 +254,11 @@ class root.Plotter
       @path.startY = @position.y
 
     # add a line segment if in linear mode
-    if @mode.int is 1 then next.push 'L', c.x, c.y
+    if @mode.int is 1 then @path.current.push 'L', c.x, c.y
     # else add an arc (check for arc mode to be safe)
     else if @mode.int is 2 or @mode.int is 3
       # throw an error if the current tool is not a solid circle
-      unless @tool.params.dia? and not @tool.params.holeX?
+      unless @tool.shape is 'C' and not @tool.holeX?
         throw "error at #{@line}: arcs may only be drawn with a solid circular aperture"
       # else, get on with our merry business
       r = null
@@ -304,7 +305,7 @@ class root.Plotter
   # flash at the given coordinates
   flash: (c) ->
     # flash command should only happen if we're not in region mode
-    if @region.state is on then throw "error at #{@line}: cannot flash (D03) in region mode"
+    if @mode.region is on then throw "error at #{@line}: cannot flash (D03) in region mode"
     unless @tool? then throw "error at #{@line}: no tool selected for flash"
     @layer.addPad {tool: @tool, x: c.x, y: c.y}
     # move the plotter position
@@ -436,7 +437,7 @@ class root.Plotter
     # make sure tool code exists
     unless @tools[code]? then throw "error at #{@line}: tool #{code} does not exist"
     # finish any paths
-    @finishPaths()
+    @finishPath()
     # change the tool
     @tool = @tools[code]
     console.log "tool changed to #{code}"
@@ -464,12 +465,13 @@ class root.Plotter
         toolParams = @getRectToolParams toolParams
       when 'P,'
         toolParams = @getPolyToolParams toolParams
-
       else
         console.lot "tool #{toolCode} might be a macro"
 
     # create the actual aperture and add it to the tools object
-    tool = new Aperture(toolCode, toolShape[0], toolParams)
+    toolParams.code = toolCode
+    toolParams.shape = toolShape[0]
+    tool = new Aperture toolParams
     @tools[toolCode] = tool
     # create aperture sets the current tool to the one just defined
     @changeTool toolCode

@@ -33,7 +33,6 @@
         region: false
       };
       this.path = {
-        tool: null,
         current: null,
         startX: null,
         startY: null
@@ -68,6 +67,7 @@
           }
         }
       }
+      this.finishPath();
       this.layer.setUnits(this.units);
       return this.layer;
     };
@@ -222,23 +222,23 @@
     };
 
     Plotter.prototype.finishPath = function() {
-      if (path.current != null) {
+      if (this.path.current != null) {
         if (this.mode.region === false) {
           this.layer.addTrace({
             tool: this.tool,
             pathArray: this.path.current
           });
-          return this.trace.tool = null;
         } else if (this.position.x === this.path.startX && this.position.y === this.path.startY) {
           this.path.current.push('Z');
           this.layer.addFill({
             pathArray: this.path.current
           });
           this.path.startX = null;
-          return this.path.startY = null;
+          this.path.startY = null;
         } else {
           throw error("error at " + this.line + ": region close command on open contour");
         }
+        return this.path.current = null;
       }
     };
 
@@ -250,9 +250,9 @@
         this.path.startY = this.position.y;
       }
       if (this.mode.int === 1) {
-        next.push('L', c.x, c.y);
+        this.path.current.push('L', c.x, c.y);
       } else if (this.mode.int === 2 || this.mode.int === 3) {
-        if (!((this.tool.params.dia != null) && (this.tool.params.holeX == null))) {
+        if (!(this.tool.shape === 'C' && (this.tool.holeX == null))) {
           throw "error at " + this.line + ": arcs may only be drawn with a solid circular aperture";
         }
         r = null;
@@ -288,7 +288,7 @@
     };
 
     Plotter.prototype.flash = function(c) {
-      if (this.region.state === true) {
+      if (this.mode.region === true) {
         throw "error at " + this.line + ": cannot flash (D03) in region mode";
       }
       if (this.tool == null) {
@@ -440,7 +440,7 @@
       if (this.tools[code] == null) {
         throw "error at " + this.line + ": tool " + code + " does not exist";
       }
-      this.finishPaths();
+      this.finishPath();
       this.tool = this.tools[code];
       return console.log("tool changed to " + code);
     };
@@ -473,7 +473,9 @@
         default:
           console.lot("tool " + toolCode + " might be a macro");
       }
-      tool = new Aperture(toolCode, toolShape[0], toolParams);
+      toolParams.code = toolCode;
+      toolParams.shape = toolShape[0];
+      tool = new Aperture(toolParams);
       this.tools[toolCode] = tool;
       return this.changeTool(toolCode);
     };
