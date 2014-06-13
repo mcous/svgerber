@@ -50,10 +50,11 @@ class root.Plotter
     @mode = {
       int: null
       quad: null
+      region: off
     }
-    # region mode
-    @region = {
-      state: off
+    # trace mode (aka normal operation)
+    @path = {
+      tool: null
       current: null
       startX: null
       startY: null
@@ -128,18 +129,15 @@ class root.Plotter
         command = ''
       # region mode on
       when 'G36'
-        if @region.state is off
-          @region.state = on
-          @region.current = null
-          @region.startX = null
-          @region.startY = null
-          console.log "region mode on"
+        @mode.region = on
+        console.log "region mode on"
       # region mode off
       when 'G37'
-        if @region.state is on
-          @region.state = off
-          if @region.current? then @finishRegion()
-          console.log "region mode off"
+        # finsh any paths
+        @finishPath()
+        # turn off region mode
+        @mode.region = off
+        console.log "region mode off"
       # single quadrant mode
       when 'G74'
         @mode.quad = 74
@@ -226,82 +224,74 @@ class root.Plotter
     # return c
     coord
 
-  # finish the current region
-  finishRegion: ->
-    console.log "closing region at line #{@line}"
-    if @position.x is @region.startX and @position.y is @region.startY
-      # end path
-      @region.current.push 'Z'
-      # create the region
-      @layer.addFill @region.current
-      # empty out the region
-      @region.current = null
-    else
-      throw error "error at #{@line}: region close command on open contour"
+  # checks if there's a path to finsh and finishes it accordingly
+  finishPath: ->
+    if path.current?
+      # trace?
+      if @mode.region is off
+        @layer.addTrace {tool: @tool, pathArray: @path.current}
+        @trace.tool = null
+      # or region?
+      else if @position.x is @path.startX and @position.y is @path.startY
+        # end path
+        @path.current.push 'Z'
+        # create the region
+        @layer.addFill {pathArray: @path.current}
+        # empty out the region
+        @path.startX = null
+        @path.startY = null
+      else
+        throw error "error at #{@line}: region close command on open contour"
 
-  # interpolate to the given coordinates
+
+  # interpolate to the given coordinates and create a path segment
   interpolate: (c) ->
-    # check for a valid mode
-    unless 1 <= @mode.int <= 3 then throw "error at #{line}: #{@mode.int} is not a valid mode for interpolation"
+    # start a new path if needed
+    unless @path.current?
+      @path.current = ['M', @position.x,  @position.y]
+      @path.startX = @position.x
+      @path.startY = @position.y
 
-    # if we're in region mode, we're gonna be doing some region things
-    if @region.state is on
-      console.log "region mode is on; interpolating"
-      # create a new region if it hasn't been created
-      unless @region.current?
-        console.log 'starting new region'
-        @region.current = ['M', @position.x, @position.y]
-        @region.startX = @position.x
-        @region.startY = @position.y
-      # line mode
-      if @mode.int is 1
-        console.log 'adding line to region'
-        @region.current.push 'L', c.x, c.y
-      # arc mode
-      else if @mode.int is 2 or @mode.int is 3
-        console.log 'adding arc to region'
-        r = null
-        xAxisRot = 0
-        # large arc flag is true (1) if quad mode is multi (G75)
-        largeArcFlag = @mode.quad - 74
-        # sweep flag is true (1) if direction is CCW
-        sweepFlag = 3 - @mode.int
+    # add a line segment if in linear mode
+    if @mode.int is 1 then next.push 'L', c.x, c.y
+    # else add an arc (check for arc mode to be safe)
+    else if @mode.int is 2 or @mode.int is 3
+      # throw an error if the current tool is not a solid circle
+      unless @tool.params.dia? and not @tool.params.holeX?
+        throw "error at #{@line}: arcs may only be drawn with a solid circular aperture"
+      # else, get on with our merry business
+      r = null
+      xAxisRot = 0
+      # large arc flag is true (1) if quad mode is multi (G75)
+      largeArcFlag = @mode.quad - 74
+      # sweep flag is true (1) if direction is CCW
+      sweepFlag = 3 - @mode.int
 
-        # find the radius by checking which offset signs work
-        # in multi quadrant mode, signs are specified, so if it's a good arc
-        # it will break the loop after the first iteration
-        for n in [ [1,1], [1,-1], [-1,1], [-1,-1] ]
-          # distance squared from the test center to the start
-          rs2 = (@position.x - n[0] * c.i)**2 + (@position.y - n[1] * c.j)**2
-          # same for the end
-          re2 = (c.x - n[0] * c.i)**2 + (c.y - n[1] * c.j)**2
-          # if they equal(ish), we've found the radius
-          if rs2 - re2 < 0.00001
-            r = Math.sqrt(rs2)
-            break
-
-          # push the path
-          @region.current.push 'A', r, r, xAxisRot, largeArcFlag, sweepFlag, c.x, c.y
-
-    # else we're just creating traces like a normal person
-    else
-      # straight trace
-      if @mode.int is 1
-        console.log "creating straight trace"
-        @layer.addTrace @tool, @position.x, @position.y, c
-      else if @mode.int is 2
-        console.log "creating cw arc trace"
-      else if @mode.int is 3
-        console.log "creating ccw arc trace"
+      # find the radius by checking which offset signs work
+      # in multi quadrant mode, signs are specified, so if it's a good arc
+      # it will break the loop after the first iteration
+      for n in [ [1,1], [1,-1], [-1,1], [-1,-1] ]
+        # distance squared from the test center to the start
+        rs2 = (@position.x - n[0] * c.i)**2 + (@position.y - n[1] * c.j)**2
+        # same for the end
+        re2 = (c.x - n[0] * c.i)**2 + (c.y - n[1] * c.j)**2
+        # if they equal(ish), we've found the radius
+        if rs2 - re2 < 0.00001
+          r = Math.sqrt(rs2)
+          break
+      # add the arc segment
+      @path.current.push 'A', r, r, xAxisRot, largeArcFlag, sweepFlag, c.x, c.y
+    # else someone messed up
+    else throw "error at #@{line}: interpolation command without setting mode with G1/2/3"
 
     # move the plotter to the new position
     @moveTo c
 
-  # execute a move operation to the given coordinates
+  # execute a move operation to the given coordinates and finish the current path
   move: (c) ->
-    # if we're in region mode and a region is active, we need to get a little fancy
-    if @region.state is on and @region.current?
-      @finishRegion()
+    # finish any paths
+    @finishPath()
+
     # finally, move to the new coordinates
     @moveTo c
 
@@ -316,7 +306,7 @@ class root.Plotter
     # flash command should only happen if we're not in region mode
     if @region.state is on then throw "error at #{@line}: cannot flash (D03) in region mode"
     unless @tool? then throw "error at #{@line}: no tool selected for flash"
-    @layer.addPad @tool, c.x, c.y
+    @layer.addPad {tool: @tool, x: c.x, y: c.y}
     # move the plotter position
     @moveTo c
 
@@ -442,9 +432,11 @@ class root.Plotter
   # change tool to the code passed
   changeTool: (code) ->
     # tool change command should only happen if we're not in region mode
-    if @region.state is on then throw "error at #{@line}: cannot change tool (Dnn) in region mode"
-    # make sure tool cod exists
+    if @mode.region is on then throw "error at #{@line}: cannot change tool (Dnn) in region mode"
+    # make sure tool code exists
     unless @tools[code]? then throw "error at #{@line}: tool #{code} does not exist"
+    # finish any paths
+    @finishPaths()
     # change the tool
     @tool = @tools[code]
     console.log "tool changed to #{code}"

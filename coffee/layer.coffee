@@ -9,8 +9,11 @@ root = exports ? this
 # layer object (pad or trace)
 class LayerObject
   # constructor takes in the tool shape, start position, parameters
-  constructor: (@tool, @x, @y, @coord = null) ->
-    @print()
+  constructor: (params = {}) ->
+    @["#{key}"] = value for key, value of params
+
+  print: ->
+    console.log "#{key}: #{value}" for key, value of params
 
 # pad class for Layer
 class Pad extends LayerObject
@@ -75,20 +78,86 @@ class Pad extends LayerObject
       m = drawing.mask().add(p).add(h)
       pad.maskWith m
 
+# path based LayerObjects
+class PathObject extends LayerObject
+  # convert a pathArray into a string with coordinates fixed
+  pathArrayToString: (pathArray, origin, canvas) ->
+    # path string to pass to SVG
+    pathString = ''
+    # process coordinates for origin, margin, and mirror
+    index = 0
+    while index < @pathArray.length
+      # move to command
+      if @pathArray[index] is 'M'
+        pathString += 'M'
+        index++
+        # two coordinates will follow: x and y
+        # x (origin and margin)
+        pathString += "#{@pathArray[index] - origin.x + canvas.margin} "
+        index++
+        # y (origin, margin, and mirror)
+        pathString += "#{canvas.height - (@pathArray[index] - origin.y) + canvas.margin}"
+        index++
+      # line to command
+      else if @pathArray[index] is 'L'
+        pathString += 'L'
+        index++
+        # two coordinates will follow: x and y
+        # x (origin and margin)
+        pathString += "#{@pathArray[index] - origin.x + canvas.margin} "
+        index++
+        # y (origin, margin, and mirror)
+        pathString += "#{canvas.height - (@pathArray[index] - origin.y) + canvas.margin}"
+        index++
+      # arc to command
+      else if @pathArray[index] is 'A'
+        # first five items parameters are A, rx, ry, xAxisRot, largeArcFlag, and sweepFlag
+        # push them without modification
+        for p in @pathArray[index...index+5]
+          pathString += "#{p} "
+        index += 5
+        # next two are the x end and the y end... transform accordingly
+        # x (origin and margin)
+        pathString += "#{@pathArray[index] - origin.x + canvas.margin} "
+        index++
+        # y (origin, margin, and mirror)
+        pathString += "#{canvas.height - (@pathArray[index] - origin.y) + canvas.margin}"
+        index++
+      # close region command
+      else if @pathArray[index] is 'Z'
+        pathString += 'Z'
+        index++
+      # else we are confused
+      else
+        throw "unrecognized path command #{@path[index]}"
+    # return the string
+    pathString
+
 # trace class for Layer
-class Trace extends LayerObject
+class Trace extends PathObject
   print: ->
     console.log "trace created from #{@x}, #{@y} to #{@coord.x}, #{@coord.y}"
 
   getRange: ->
     [@x, @y, @coord.x, @coord.y]
 
+  # draw the path and fill it in
+  draw: (drawing, origin, canvas) ->
+    console.log 'drawing path'
+    # path string to pass to SVG
+    path = pathArrayToString @pathArray, origin, canvas
+
+    # create a path with the processed string
+    path = drawing.path path
+    if @tool.params.dia? then path.stroke {width: @tool.params.dia, linecap: 'round'}
+    else throw "rectangular trace apertures unimplimented in this reader"
+
   # draw to SVG
   # parameters are the drawing object,
   # an origin object with keys x and y
   # a canvas object with keys width, height, and margin
   # the units for the drawing
-  draw: (drawing, origin, canvas, units) ->
+  draw2: (drawing, origin, canvas, units) ->
     trace = null
 
     # adjust for origin and margin in x
@@ -121,68 +190,16 @@ class Trace extends LayerObject
       console.log "fancy trace"
 
 # fill class
-class Fill extends LayerObject
-  # overload the constructor because a fill is different
-  constructor: (@path) ->
-
-  # draw will get interesting
-  draw: (drawing, origin, canvas, units) ->
+class Fill extends PathObject
+  # draw the path and fill it in
+  draw: (drawing, origin, canvas) ->
     console.log 'drawing fill'
     # path string to pass to SVG
-    drawPath = ''
-    # process coordinates for origin, margin, and mirror
-    index = 0
-    while index < @path.length
-      # move to command
-      if @path[index] is 'M'
-        drawPath += 'M'
-        index++
-        # two coordinates will follow: x and y
-        # x (origin and margin)
-        drawPath += "#{@path[index] - origin.x + canvas.margin} "
-        index++
-        # y (origin, margin, and mirror)
-        drawPath += "#{canvas.height - (@path[index] - origin.y) + canvas.margin}"
-        index++
-      # line to command
-      else if @path[index] is 'L'
-        drawPath += 'L'
-        index++
-        # two coordinates will follow: x and y
-        # x (origin and margin)
-        drawPath += "#{@path[index] - origin.x + canvas.margin} "
-        index++
-        # y (origin, margin, and mirror)
-        drawPath += "#{canvas.height - (@path[index] - origin.y) + canvas.margin}"
-        index++
-      # arc to command
-      else if @path[index] is 'A'
-        # first five items parameters are A, rx, ry, xAxisRot, largeArcFlag, and sweepFlag
-        # push them without modification
-        for p in @path[index...index+5]
-          drawPath += "#{p} "
-        index += 5
-        # next two are the x end and the y end... transform accordingly
-        # x (origin and margin)
-        drawPath += "#{@path[index] - origin.x + canvas.margin} "
-        index++
-        # y (origin, margin, and mirror)
-        drawPath += "#{canvas.height - (@path[index] - origin.y) + canvas.margin}"
-        index++
-      # close region command
-      else if @path[index] is 'Z'
-        drawPath += 'Z'
-        index++
-      # else we are confused
-      else
-        throw "unrecognized path command #{@path[index]}"
+    path = pathArrayToString @pathArray, origin, canvas
 
     # create a path with the processed string
-    path = drawing.path drawPath
-    path.fill {color: '#000'}
-    path.stroke {width: 0}
-
-
+    path = drawing.path path
+    path.fill({color: '#000'}).stroke {width: 0}
 
 # layer class
 class root.Layer
