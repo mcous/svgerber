@@ -226,5 +226,3 @@
   })();
 
 }).call(this);
-
-//# sourceMappingURL=layer.map

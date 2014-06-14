@@ -568,5 +568,3 @@
   })();
 
 }).call(this);
-
-//# sourceMappingURL=plotter.map
