@@ -233,7 +233,7 @@ class root.Plotter
       if @mode.region is off
         @layer.addTrace {tool: @tool, pathArray: @path.current}
       # or region?
-      else if abs(@position.x - @path.startX) < 0.0000001 and abs(@position.y - @path.startY) < 0.0000001
+      else if Math.abs(@position.x - @path.startX) < 0.0000001 and Math.abs(@position.y - @path.startY) < 0.0000001
         # end path
         @path.current.push 'Z'
         # create the region
