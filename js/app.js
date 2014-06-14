@@ -52,5 +52,3 @@
   document.getElementById('files').addEventListener('change', handleFileSelect, false);
 
 }).call(this);
-
-//# sourceMappingURL=app.map

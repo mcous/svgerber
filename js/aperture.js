@@ -49,5 +49,3 @@
   })();
 
 }).call(this);
-
-//# sourceMappingURL=aperture.map
