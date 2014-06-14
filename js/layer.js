@@ -18,14 +18,6 @@
       }
     }
 
-    LayerObject.prototype.adjustX = function(x, origin, canvas) {
-      return x - origin.x + canvas.margin;
-    };
-
-    LayerObject.prototype.adjustY = function(y, origin, canvas) {
-      return canvas.height - (this.y - origin.y) + canvas.margin;
-    };
-
     LayerObject.prototype.print = function() {
       var key, value, _results;
       _results = [];
@@ -108,8 +100,7 @@
 
     PathObject.prototype.pathArrayToString = function(pathArray) {
       var pathString;
-      pathString = pathArray.join(' ');
-      return pathString;
+      return pathString = pathArray.join(' ');
     };
 
     return PathObject;
@@ -141,6 +132,9 @@
       } else {
         throw "rectangular trace apertures unimplimented in this reader";
       }
+      path.fill({
+        color: 'transparent'
+      });
       return Trace.__super__.draw.call(this, path);
     };
 

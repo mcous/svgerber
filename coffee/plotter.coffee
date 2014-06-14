@@ -207,23 +207,24 @@ class root.Plotter
   parseCoordinate: (coord) ->
     # remove any signs and set a negative flag if necessary
     negative = false
-    if coord[0] is '-'
-      negative = true
-      coord = coord[1..]
-    if coord[0] is '+'
+    sign = '+'
+    if coord[0] is '-' or coord[0] is '+'
+      sign = coord[0]
       coord = coord[1..]
 
     # if leading zero omission
     if @format.zero is 'L'
+      # pad the digits
+      coord = '0' + coord while coord.length <= @format.dec
+      # extract the number as a string
       coord = coord[0...-@format.dec] + '.' + coord[-@format.dec..]
     else if @format.zero is 'T'
+      # samsies
+      coord =+ '0' while coord.length <= @format.int + 1
       coord = coord[0...@format.int] + '.' + coord[@format.int..]
 
-    # turn c into a number (negative if necessary)
-    coord = parseFloat coord
-    if negative then coord *= -1
-    # return c
-    coord
+    # turn c into a number (negative if necessary) and return
+    coord = parseFloat sign + coord
 
   # checks if there's a path to finsh and finishes it accordingly
   finishPath: ->
@@ -232,7 +233,7 @@ class root.Plotter
       if @mode.region is off
         @layer.addTrace {tool: @tool, pathArray: @path.current}
       # or region?
-      else if @position.x - @path.startX < 0.0000001 and @position.y - @path.startY < 0.0000001
+      else if abs(@position.x - @path.startX) < 0.0000001 and abs(@position.y - @path.startY) < 0.0000001
         # end path
         @path.current.push 'Z'
         # create the region
@@ -261,26 +262,26 @@ class root.Plotter
       unless @tool.shape is 'C' and not @tool.holeX?
         throw "error at #{@line}: arcs may only be drawn with a solid circular aperture"
       # else, get on with our merry business
-      r = null
+      r = Math.sqrt c.i**2 + c.j**2
       xAxisRot = 0
-      # large arc flag is true (1) if quad mode is multi (G75)
-      largeArcFlag = @mode.quad - 74
       # sweep flag is true (1) if direction is CCW
-      sweepFlag = 3 - @mode.int
+      sweepFlag = @mode.int - 2
+      # figure out the large arc mode
+      largeArcFlag = 0
+      # if a 360 arc is allowed, need to find out if the angle is <180 or >180
+      if @mode.quad is 75
+        cenX = @position.x + c.i
+        # check the arc angle
+        theta = Math.acos (c.x - cenX)/r
+        # set the large arc flag if it's greater than 180 (pi radians)
+        if theta >= Math.PI then largeArcFlag = 1
 
-      # find the radius by checking which offset signs work
-      # in multi quadrant mode, signs are specified, so if it's a good arc
-      # it will break the loop after the first iteration
-      for n in [ [1,1], [1,-1], [-1,1], [-1,-1] ]
-        # distance squared from the test center to the start
-        rs2 = (@position.x - n[0] * c.i)**2 + (@position.y - n[1] * c.j)**2
-        # same for the end
-        re2 = (c.x - n[0] * c.i)**2 + (c.y - n[1] * c.j)**2
-        # if they equal(ish), we've found the radius
-        if rs2 - re2 < 0.00001
-          r = Math.sqrt(rs2)
-          break
-      # add the arc segment
+        # check for special case where it's a circle (or near)
+        if (Math.abs(@position.x - c.x) < 0.000001) and (Math.abs(@position.y - c.y) < 0.000001)
+          # we'll need two paths (180 deg each)
+          @path.current.push 'A', r, r, xAxisRot, largeArcFlag, sweepFlag, c.x + 2*c.i, c.y + 2*c.j
+
+      # push the arc
       @path.current.push 'A', r, r, xAxisRot, largeArcFlag, sweepFlag, c.x, c.y
     # else someone messed up
     else throw "error at #@{line}: interpolation command without setting mode with G1/2/3"
@@ -292,7 +293,6 @@ class root.Plotter
   move: (c) ->
     # finish any paths
     @finishPath()
-
     # finally, move to the new coordinates
     @moveTo c
 

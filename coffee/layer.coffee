@@ -12,20 +12,11 @@ class LayerObject
   constructor: (params = {}) ->
     @["#{key}"] = value for key, value of params
 
-  adjustX: (x, origin, canvas) ->
-    # return an adjusted x value
-    x - origin.x + canvas.margin
-
-  adjustY: (y, origin, canvas) ->
-    # return an adjusted y value
-    canvas.height - (@y - origin.y) + canvas.margin
-
   print: ->
     console.log "#{key}: #{value}" for key, value of params
 
   draw: (svgItem) ->
     # return the bounding box
-    #console.log "returning bounding box"
     svgItem.bbox()
 
 # pad class for Layer
@@ -34,26 +25,15 @@ class Pad extends LayerObject
     console.log "#{@tool.shape} pad created at #{@x}, #{@y}"
 
   # draw to SVG
-  # parameters are the drawing object,
-  # an origin object with keys x and y
-  # a canvas object with keys width, height, and margin
-  # the units for the drawing
   draw: (drawing) ->
     pad = null
 
-    # adjust for origin and margin in x
-    #x = @x - origin.x + canvas.margin
-    # adjust for origin, margin, and mirror in y
-    #y = canvas.height - (@y - origin.y) + canvas.margin
-
     switch @tool.shape
       when'C'
-        #console.log "drawing circular pad at #{@x}, #{@y} with dia #{@tool.dia}"
         pad = drawing.circle(@tool.dia)
         pad.center(@x, @y)
 
       when 'R'
-        #console.log "drawing rectangular pad at #{@x}, #{@y} with size #{@tool.sizeX}, #{@tool.sizeY}"
         pad = drawing.rect(@tool.sizeX, @tool.sizeY)
         pad.center @x, @y
       when 'O'
@@ -87,56 +67,6 @@ class PathObject extends LayerObject
   # convert a pathArray into a string with coordinates fixed
   pathArrayToString: (pathArray) ->
     pathString = pathArray.join ' '
-    # # path string to pass to SVG
-    # pathString = ''
-    # # process coordinates for origin, margin, and mirror
-    # index = 0
-    # while index < @pathArray.length
-      # # move to command
-      # if @pathArray[index] is 'M'
-      #   pathString += 'M'
-      #   index++
-      #   # two coordinates will follow: x and y
-      #   # x (origin and margin)
-      #   pathString += "#{@pathArray[index] - origin.x + canvas.margin} "
-      #   index++
-      #   # y (origin, margin, and mirror)
-      #   pathString += "#{canvas.height - (@pathArray[index] - origin.y) + canvas.margin}"
-      #   index++
-      # # line to command
-      # else if @pathArray[index] is 'L'
-      #   pathString += 'L'
-      #   index++
-      #   # two coordinates will follow: x and y
-      #   # x (origin and margin)
-      #   pathString += "#{@pathArray[index] - origin.x + canvas.margin} "
-      #   index++
-      #   # y (origin, margin, and mirror)
-      #   pathString += "#{canvas.height - (@pathArray[index] - origin.y) + canvas.margin}"
-      #   index++
-      # # arc to command
-      # else if @pathArray[index] is 'A'
-      #   # first five items parameters are A, rx, ry, xAxisRot, largeArcFlag, and sweepFlag
-      #   # push them without modification
-      #   for p in @pathArray[index...index+5]
-      #     pathString += "#{p} "
-      #   index += 5
-      #   # next two are the x end and the y end... transform accordingly
-      #   # x (origin and margin)
-      #   pathString += "#{@pathArray[index] - origin.x + canvas.margin} "
-      #   index++
-      #   # y (origin, margin, and mirror)
-      #   pathString += "#{canvas.height - (@pathArray[index] - origin.y) + canvas.margin}"
-      #   index++
-      # # close region command
-      # else if @pathArray[index] is 'Z'
-      #   pathString += 'Z'
-      #   index++
-      # # else we are confused
-      # else
-      #   throw "unrecognized path command #{@path[index]}"
-    # return the string
-    pathString
 
 # trace class for Layer
 class Trace extends PathObject
@@ -155,6 +85,8 @@ class Trace extends PathObject
     if @tool.dia? then path.stroke {width: @tool.dia, linecap: 'round'}
     else throw "rectangular trace apertures unimplimented in this reader"
 
+    # no fill
+    path.fill {color: 'transparent'}
     # call the parent draw
     super path
 

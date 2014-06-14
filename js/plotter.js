@@ -200,25 +200,25 @@
     };
 
     Plotter.prototype.parseCoordinate = function(coord) {
-      var negative;
+      var negative, sign;
       negative = false;
-      if (coord[0] === '-') {
-        negative = true;
-        coord = coord.slice(1);
-      }
-      if (coord[0] === '+') {
+      sign = '+';
+      if (coord[0] === '-' || coord[0] === '+') {
+        sign = coord[0];
         coord = coord.slice(1);
       }
       if (this.format.zero === 'L') {
+        while (coord.length <= this.format.dec) {
+          coord = '0' + coord;
+        }
         coord = coord.slice(0, -this.format.dec) + '.' + coord.slice(-this.format.dec);
       } else if (this.format.zero === 'T') {
+        while (coord.length <= this.format.int + 1) {
+          coord = +'0';
+        }
         coord = coord.slice(0, this.format.int) + '.' + coord.slice(this.format.int);
       }
-      coord = parseFloat(coord);
-      if (negative) {
-        coord *= -1;
-      }
-      return coord;
+      return coord = parseFloat(sign + coord);
     };
 
     Plotter.prototype.finishPath = function() {
@@ -228,7 +228,7 @@
             tool: this.tool,
             pathArray: this.path.current
           });
-        } else if (this.position.x - this.path.startX < 0.0000001 && this.position.y - this.path.startY < 0.0000001) {
+        } else if (abs(this.position.x - this.path.startX) < 0.0000001 && abs(this.position.y - this.path.startY) < 0.0000001) {
           this.path.current.push('Z');
           this.layer.addFill({
             pathArray: this.path.current
@@ -243,7 +243,7 @@
     };
 
     Plotter.prototype.interpolate = function(c) {
-      var largeArcFlag, n, r, re2, rs2, sweepFlag, xAxisRot, _i, _len, _ref;
+      var cenX, largeArcFlag, r, sweepFlag, theta, xAxisRot;
       if (this.path.current == null) {
         this.path.current = ['M', this.position.x, this.position.y];
         this.path.startX = this.position.x;
@@ -255,18 +255,18 @@
         if (!(this.tool.shape === 'C' && (this.tool.holeX == null))) {
           throw "error at " + this.line + ": arcs may only be drawn with a solid circular aperture";
         }
-        r = null;
+        r = Math.sqrt(Math.pow(c.i, 2) + Math.pow(c.j, 2));
         xAxisRot = 0;
-        largeArcFlag = this.mode.quad - 74;
-        sweepFlag = 3 - this.mode.int;
-        _ref = [[1, 1], [1, -1], [-1, 1], [-1, -1]];
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          n = _ref[_i];
-          rs2 = Math.pow(this.position.x - n[0] * c.i, 2) + Math.pow(this.position.y - n[1] * c.j, 2);
-          re2 = Math.pow(c.x - n[0] * c.i, 2) + Math.pow(c.y - n[1] * c.j, 2);
-          if (rs2 - re2 < 0.00001) {
-            r = Math.sqrt(rs2);
-            break;
+        sweepFlag = this.mode.int - 2;
+        largeArcFlag = 0;
+        if (this.mode.quad === 75) {
+          cenX = this.position.x + c.i;
+          theta = Math.acos((c.x - cenX) / r);
+          if (theta >= Math.PI) {
+            largeArcFlag = 1;
+          }
+          if ((Math.abs(this.position.x - c.x) < 0.000001) && (Math.abs(this.position.y - c.y) < 0.000001)) {
+            this.path.current.push('A', r, r, xAxisRot, largeArcFlag, sweepFlag, c.x + 2 * c.i, c.y + 2 * c.j);
           }
         }
         this.path.current.push('A', r, r, xAxisRot, largeArcFlag, sweepFlag, c.x, c.y);
