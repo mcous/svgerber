@@ -232,7 +232,7 @@ class root.Plotter
       if @mode.region is off
         @layer.addTrace {tool: @tool, pathArray: @path.current}
       # or region?
-      else if @position.x is @path.startX and @position.y is @path.startY
+      else if @position.x - @path.startX < 0.0000001 and @position.y - @path.startY < 0.0000001
         # end path
         @path.current.push 'Z'
         # create the region
@@ -241,7 +241,7 @@ class root.Plotter
         @path.startX = null
         @path.startY = null
       else
-        throw error "error at #{@line}: region close command on open contour"
+        throw "error at #{@line}: region close command on open contour"
       # clear out the path
       @path.current = null
 

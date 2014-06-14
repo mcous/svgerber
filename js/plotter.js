@@ -228,7 +228,7 @@
             tool: this.tool,
             pathArray: this.path.current
           });
-        } else if (this.position.x === this.path.startX && this.position.y === this.path.startY) {
+        } else if (this.position.x - this.path.startX < 0.0000001 && this.position.y - this.path.startY < 0.0000001) {
           this.path.current.push('Z');
           this.layer.addFill({
             pathArray: this.path.current
@@ -236,7 +236,7 @@
           this.path.startX = null;
           this.path.startY = null;
         } else {
-          throw error("error at " + this.line + ": region close command on open contour");
+          throw "error at " + this.line + ": region close command on open contour";
         }
         return this.path.current = null;
       }
