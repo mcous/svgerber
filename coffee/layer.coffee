@@ -81,7 +81,7 @@ class Trace extends PathObject
 
     # create a path with the processed string
     path = drawing.path path
-    if @tool.dia? then path.stroke {width: @tool.dia, linecap: 'round'}
+    if @tool.dia? then path.stroke {width: @tool.dia, linecap: 'round', linejoin: 'round'}
     else throw "rectangular trace apertures unimplimented in this reader"
 
     # no fill

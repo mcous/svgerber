@@ -125,7 +125,8 @@
       if (this.tool.dia != null) {
         path.stroke({
           width: this.tool.dia,
-          linecap: 'round'
+          linecap: 'round',
+          linejoin: 'round'
         });
       } else {
         throw "rectangular trace apertures unimplimented in this reader";
