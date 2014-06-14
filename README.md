@@ -1,8 +1,8 @@
 # svgerber
-Get it?
+Get it? It's in alpha!
 
 ## what?
-It's a browser based client-side gerber file to svg converter.
+It's a browser based client-side gerber file to SVG converter.
 
 ## why?
 'Cause.
