@@ -71,25 +71,24 @@ class root.Plotter
         @readParameter()
       # else, it's a normal, everyday data block
       else
-        console.log "data block found at line #{@line}"
         block = @readBlock()
-        console.log "block found: #{block}"
+        #console.log "block #{block} found at #{@line}"
 
         while block.length > 0
           # check for an end of file
           if block.match /^M0?2$/
-            console.log "end of file at line #{@line-1}"
+            #console.log "end of file at line #{@line-1}"
             @end = true
             block = ''
 
           # check for a state command (G code)
           else if block.match /^G[01234579][0-7]?/
-            console.log "state command at line #{@line-1}"
+            #console.log "state command at line #{@line-1}"
             block = @processState block
 
           # check for a operation code (D code)
           else if block.match /D[0-9]\d*$/
-            console.log "operation command at line #{@line-1}"
+            #console.log "operation command at line #{@line-1}"
             block = @operate block
 
           # check for a state command
@@ -106,7 +105,6 @@ class root.Plotter
 
   # process the plotter state given a line with a G code in it
   processState: (command) ->
-    console.log "changing plotter state given #{command}"
     # get the g command
     g = command.match /^G[01234579][0-7]?/
     if g? then g = g[0] else throw "error: #{command} is not a valid state command"
@@ -149,7 +147,7 @@ class root.Plotter
         console.log "quadrant mode set to multiple"
       # deprecated commands
       when 'G54', 'G55', 'G70', 'G71', 'G90', 'G91'
-        console.log "deprecated command #{g}; ignoring"
+        #console.log "deprecated command #{g}; ignoring"
       # else unrecognized g code
       else
         throw "error at #{@line}: #{g} is unrecognized"
@@ -161,23 +159,22 @@ class root.Plotter
 
   # operate the plotter given a block with a D code in it
   operate: (command) ->
-    console.log "operating the plotter given #{command}"
     # get the d code
     d = command.match /D[0-9]\d*$/
     if d? then d = d[0] else throw "error: #{command} is not a valid operation command"
     # act acordingly
     switch d
       when 'D1', 'D01'
-        console.log 'interpolate operation found'
+        #console.log 'interpolate operation found'
         @interpolate @getCoordinates(command)
       when 'D2', 'D02'
-        console.log 'move operation found'
+        #console.log 'move operation found'
         @move @getCoordinates(command)
       when 'D3', 'D03'
-        console.log 'flash operation found'
+        #console.log 'flash operation found'
         @flash @getCoordinates(command)
       else
-        console.log 'change tool command found'
+        #console.log 'change tool command found'
         @changeTool d
     # return an empty string
     ''
@@ -300,7 +297,7 @@ class root.Plotter
   moveTo: (c) ->
     @position.x = c.x
     @position.y = c.y
-    console.log "moved to #{c.x}, #{c.y}"
+    #console.log "moved to #{c.x}, #{c.y}"
 
   # flash at the given coordinates
   flash: (c) ->
@@ -340,26 +337,26 @@ class root.Plotter
       command = block[3..]
       switch param
         when 'FS'
-          console.log "format command at line #{@line}: #{block}"
+          #console.log "format command at line #{@line}: #{block}"
           @setFormat command
         when 'MO'
-          console.log "unit mode command at line #{@line}: #{block}"
+          #console.log "unit mode command at line #{@line}: #{block}"
           @setUnitMode command
         when 'AD'
-          console.log "aperture definition at line #{@line}: #{block}"
+          #console.log "aperture definition at line #{@line}: #{block}"
           @createTool command
         when 'AM'
           console.log "aperture macro at line #{@line}: #{block}"
         when 'SR'
           console.log "step repeat command at line #{@line}: #{block}"
         when 'LP'
-          console.log "level polarity at line #{@line}: #{block}"
+          #console.log "level polarity at line #{@line}: #{block}"
           @setPolarity
       # get the check character
       c = @gerber[@index]
 
     # done with parameter block
-    console.log "done with parameter block"
+    #console.log "done with parameter block"
     # push past the trailing % and any newlines
     @index++
     while @gerber[@index] is '\n' or @gerber[@index] is '\r'
@@ -368,8 +365,6 @@ class root.Plotter
 
   # set the format according to the passed command
   setFormat: (command) ->
-    console.log "setting format according to #{command}"
-
     # throw an error if format has already been set
     if @format.set then throw "error at #{line}: format has already been set"
 
@@ -403,8 +398,6 @@ class root.Plotter
 
   # set the unit mode according to the passed command
   setUnitMode: (command) ->
-    console.log "setting unit mode according to #{command}"
-
     # throw an error if mode has already been set
     if @units? then throw "error at #{@line}: unit mode has already been set"
 
@@ -421,10 +414,9 @@ class root.Plotter
 
   # set the level polarity according to the passed command
   setPolarity: (command) ->
-    console.log "setting polarity according to #{command}"
-
     # if it's a good command, set the polarity and set the position to undefined
     if command is 'C' or command is 'D'
+      console.log "polarity set to #{command}"
       @polarity = command
       @position.x = null
       @position.y = null
@@ -440,12 +432,10 @@ class root.Plotter
     @finishPath()
     # change the tool
     @tool = @tools[code]
-    console.log "tool changed to #{code}"
+    #console.log "tool changed to #{code}"
 
   # create a new aperture and add it to the tools list
   createTool: (command) ->
-    console.log "creating a aperture according to #{command}"
-
     toolCode = command[0..2]
     # throw an error if the tool number is bad
     # valid tool numbers: D10..

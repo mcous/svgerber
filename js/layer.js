@@ -120,9 +120,7 @@
 
     Trace.prototype.draw = function(drawing) {
       var path;
-      console.log('drawing path');
       path = this.pathArrayToString(this.pathArray);
-      console.log(path);
       path = drawing.path(path);
       if (this.tool.dia != null) {
         path.stroke({
@@ -138,25 +136,6 @@
       return Trace.__super__.draw.call(this, path);
     };
 
-    Trace.prototype.draw2 = function(drawing, origin, canvas, units) {
-      var trace, x1, x2, y1, y2;
-      trace = null;
-      x1 = this.x - origin.x + canvas.margin;
-      x2 = this.coord.x - origin.x + canvas.margin;
-      y1 = canvas.height - (this.y - origin.y) + canvas.margin;
-      y2 = canvas.height - (this.coord.y - origin.y) + canvas.margin;
-      if (this.tool.shape === 'C') {
-        trace = drawing.line();
-        trace.stroke({
-          width: "" + this.tool.dia,
-          linecap: 'round'
-        });
-        return trace.plot(x1, y1, x2, y2);
-      } else if (this.tool.shape === 'R') {
-        return console.log("fancy trace");
-      }
-    };
-
     return Trace;
 
   })(PathObject);
@@ -170,7 +149,6 @@
 
     Fill.prototype.draw = function(drawing) {
       var path;
-      console.log('drawing fill');
       path = this.pathArrayToString(this.pathArray);
       path = drawing.path(path);
       path.fill({
@@ -189,10 +167,6 @@
     function Layer(name) {
       this.name = name;
       this.layerObjects = [];
-      this.minX = null;
-      this.minY = null;
-      this.maxX = null;
-      this.maxY = null;
     }
 
     Layer.prototype.setUnits = function(u) {
@@ -201,10 +175,6 @@
       } else if (u === 'mm') {
         return this.units = 'mm';
       }
-    };
-
-    Layer.prototype.getSize = function() {
-      return [this.minX, this.maxX, this.minY, this.maxY];
     };
 
     Layer.prototype.addTrace = function(params) {
@@ -242,7 +212,6 @@
         o.draw(group);
       }
       box = group.bbox();
-      console.log(box);
       svg.size("" + box.width + this.units, "" + box.height + this.units).viewbox(0, 0, box.width, box.height);
       group.transform({
         x: -box.x,

@@ -46,19 +46,14 @@
         if (next === '%') {
           this.readParameter();
         } else {
-          console.log("data block found at line " + this.line);
           block = this.readBlock();
-          console.log("block found: " + block);
           while (block.length > 0) {
             if (block.match(/^M0?2$/)) {
-              console.log("end of file at line " + (this.line - 1));
               this.end = true;
               block = '';
             } else if (block.match(/^G[01234579][0-7]?/)) {
-              console.log("state command at line " + (this.line - 1));
               block = this.processState(block);
             } else if (block.match(/D[0-9]\d*$/)) {
-              console.log("operation command at line " + (this.line - 1));
               block = this.operate(block);
             } else {
               console.log("don't know what to do with " + block + " at line " + (this.line - 1));
@@ -74,7 +69,6 @@
 
     Plotter.prototype.processState = function(command) {
       var g;
-      console.log("changing plotter state given " + command);
       g = command.match(/^G[01234579][0-7]?/);
       if (g != null) {
         g = g[0];
@@ -125,7 +119,6 @@
         case 'G71':
         case 'G90':
         case 'G91':
-          console.log("deprecated command " + g + "; ignoring");
           break;
         default:
           throw "error at " + this.line + ": " + g + " is unrecognized";
@@ -139,7 +132,6 @@
 
     Plotter.prototype.operate = function(command) {
       var d;
-      console.log("operating the plotter given " + command);
       d = command.match(/D[0-9]\d*$/);
       if (d != null) {
         d = d[0];
@@ -149,21 +141,17 @@
       switch (d) {
         case 'D1':
         case 'D01':
-          console.log('interpolate operation found');
           this.interpolate(this.getCoordinates(command));
           break;
         case 'D2':
         case 'D02':
-          console.log('move operation found');
           this.move(this.getCoordinates(command));
           break;
         case 'D3':
         case 'D03':
-          console.log('flash operation found');
           this.flash(this.getCoordinates(command));
           break;
         default:
-          console.log('change tool command found');
           this.changeTool(d);
       }
       return '';
@@ -228,7 +216,7 @@
             tool: this.tool,
             pathArray: this.path.current
           });
-        } else if (abs(this.position.x - this.path.startX) < 0.0000001 && abs(this.position.y - this.path.startY) < 0.0000001) {
+        } else if (Math.abs(this.position.x - this.path.startX) < 0.0000001 && Math.abs(this.position.y - this.path.startY) < 0.0000001) {
           this.path.current.push('Z');
           this.layer.addFill({
             pathArray: this.path.current
@@ -283,8 +271,7 @@
 
     Plotter.prototype.moveTo = function(c) {
       this.position.x = c.x;
-      this.position.y = c.y;
-      return console.log("moved to " + c.x + ", " + c.y);
+      return this.position.y = c.y;
     };
 
     Plotter.prototype.flash = function(c) {
@@ -331,15 +318,12 @@
         command = block.slice(3);
         switch (param) {
           case 'FS':
-            console.log("format command at line " + this.line + ": " + block);
             this.setFormat(command);
             break;
           case 'MO':
-            console.log("unit mode command at line " + this.line + ": " + block);
             this.setUnitMode(command);
             break;
           case 'AD':
-            console.log("aperture definition at line " + this.line + ": " + block);
             this.createTool(command);
             break;
           case 'AM':
@@ -349,12 +333,10 @@
             console.log("step repeat command at line " + this.line + ": " + block);
             break;
           case 'LP':
-            console.log("level polarity at line " + this.line + ": " + block);
             this.setPolarity;
         }
         c = this.gerber[this.index];
       }
-      console.log("done with parameter block");
       this.index++;
       _results = [];
       while (this.gerber[this.index] === '\n' || this.gerber[this.index] === '\r') {
@@ -368,7 +350,6 @@
 
     Plotter.prototype.setFormat = function(command) {
       var notation, xFormat, yFormat, zero;
-      console.log("setting format according to " + command);
       if (this.format.set) {
         throw "error at " + line + ": format has already been set";
       }
@@ -408,7 +389,6 @@
     };
 
     Plotter.prototype.setUnitMode = function(command) {
-      console.log("setting unit mode according to " + command);
       if (this.units != null) {
         throw "error at " + this.line + ": unit mode has already been set";
       }
@@ -423,8 +403,8 @@
     };
 
     Plotter.prototype.setPolarity = function(command) {
-      console.log("setting polarity according to " + command);
       if (command === 'C' || command === 'D') {
+        console.log("polarity set to " + command);
         this.polarity = command;
         this.position.x = null;
         return this.position.y = null;
@@ -441,13 +421,11 @@
         throw "error at " + this.line + ": tool " + code + " does not exist";
       }
       this.finishPath();
-      this.tool = this.tools[code];
-      return console.log("tool changed to " + code);
+      return this.tool = this.tools[code];
     };
 
     Plotter.prototype.createTool = function(command) {
       var tool, toolCode, toolParams, toolShape;
-      console.log("creating a aperture according to " + command);
       toolCode = command.slice(0, 3);
       if (!toolCode.match(/D[1-9]\d+/)) {
         throw "error at " + this.line + ": " + toolCode + " is not a valid tool number";

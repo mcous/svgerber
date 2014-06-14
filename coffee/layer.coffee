@@ -75,12 +75,11 @@ class Trace extends PathObject
 
   # draw the path and fill it in
   draw: (drawing) ->
-    console.log 'drawing path'
+    #console.log 'drawing path'
     # path string to pass to SVG
     path = @pathArrayToString @pathArray
 
     # create a path with the processed string
-    console.log path
     path = drawing.path path
     if @tool.dia? then path.stroke {width: @tool.dia, linecap: 'round'}
     else throw "rectangular trace apertures unimplimented in this reader"
@@ -90,48 +89,11 @@ class Trace extends PathObject
     # call the parent draw
     super path
 
-  # draw to SVG
-  # parameters are the drawing object,
-  # an origin object with keys x and y
-  # a canvas object with keys width, height, and margin
-  # the units for the drawing
-  draw2: (drawing, origin, canvas, units) ->
-    trace = null
-
-    # adjust for origin and margin in x
-    x1 = @x - origin.x + canvas.margin
-    x2 = @coord.x - origin.x + canvas.margin
-    # add the units
-    #x1 = "#{x1}#{units}"
-    #x2 = "#{x2}#{units}"
-
-    # adjust for origin and margin in y
-    y1 = canvas.height - (@y - origin.y) + canvas.margin
-    y2 = canvas.height - (@coord.y - origin.y) + canvas.margin
-    # add the units
-    #y1 = "#{y1}#{units}"
-    #y2 = "#{y2}#{units}"
-
-    # if the tool shape is a circle, then we do a line with rounded caps
-    if @tool.shape is 'C'
-      trace = drawing.line()
-      # first param is circle dia
-      trace.stroke {
-        width: "#{@tool.dia}"
-        linecap: 'round'
-      }
-      # plot the stroke to the end
-      trace.plot x1, y1, x2, y2
-
-    # if the tool shape is a rect, then we gotta get fancy
-    else if @tool.shape is 'R'
-      console.log "fancy trace"
-
 # fill class
 class Fill extends PathObject
   # draw the path and fill it in
   draw: (drawing) ->
-    console.log 'drawing fill'
+    #console.log 'drawing fill'
     # path string to pass to SVG
     path = @pathArrayToString @pathArray
 
@@ -146,16 +108,9 @@ class Fill extends PathObject
 class root.Layer
   constructor: (@name) ->
     @layerObjects = []
-    @minX = null
-    @minY = null
-    @maxX = null
-    @maxY = null
 
   setUnits: (u) ->
     if u is 'in' then @units = 'in' else if u is 'mm' then @units = 'mm'
-
-  getSize: ->
-    [@minX, @maxX, @minY, @maxY]
 
   # add a trace given a tool, start points, and the trace coordinates
   addTrace: (params) ->
@@ -166,102 +121,27 @@ class root.Layer
     # for now let's just stick to lines
     t = new Trace params
     @layerObjects.push t
-    # for m, i in t.getRange()
-    #   if i%2 is 0
-    #     if (not @minX?) or (m < @minX)
-    #       @minX = m
-    #     else if (not @maxX?) or (m > @maxX)
-    #       @maxX = m
-    #   else
-    #     if (not @minY?) or (m < @minY)
-    #       @minY = m
-    #     else if (not @maxY?) or (m > @maxY)
-    #       @maxY = m
 
   addPad: (params) ->
     # create the pad
     p = new Pad params
     @layerObjects.push p
-    # for m, i in p.getRange()
-    #   if i%2 is 0
-    #     if (not @minX?) or (m < @minX)
-    #       @minX = m
-    #     else if (not @maxX?) or (m > @maxX)
-    #       @maxX = m
-    #   else
-    #     if (not @minY?) or (m < @minY)
-    #       @minY = m
-    #     else if (not @maxY?) or (m > @maxY)
-    #       @maxY = m
 
   addFill: (params) ->
     # create the fill
     f = new Fill params
     @layerObjects.push f
 
-  # add a pad, trace, or fill(?)
-  # addObject: (action, tool, params) ->
-  #   switch action
-  #     # draw a trace
-  #     when 'T'
-  #       t = new Trace(tool, params)
-  #       for m, i in t.getRange()
-  #         if i%2 is 0
-  #           if (not @minX?) or (m < @minX)
-  #             @minX = m
-  #           else if (not @maxX?) or (m > @maxX)
-  #             @maxX = m
-  #         else
-  #           if (not @minY?) or (m < @minY)
-  #             @minY = m
-  #           else if (not @maxY?) or (m > @maxY)
-  #             @maxY = m
-  #       @layerObjects.push t
-  #     # flash a pad
-  #     when 'P'
-  #       p = new Pad(tool, params)
-  #       for m, i in p.getRange()
-  #         if i%2 is 0
-  #           if (not @minX?) or (m < @minX)
-  #             @minX = m
-  #           else if (not @maxX?) or (m > @maxX)
-  #             @maxX = m
-  #         else
-  #           if (not @minY?) or (m < @minY)
-  #             @minY = m
-  #           else if (not @maxY?) or (m > @maxY)
-  #             @maxY = m
-  #       @layerObjects.push p
-  #     # create a region fill
-  #     when 'F'
-  #       console.log "create a fill or something"
-  #     else
-  #       throw "#{action}_IsInvalidInputTo_Layer::addObject_Error"
-
   draw: (id) ->
     # console.log "drawing layer origin at #{@minX}, #{@minY}"
     console.log "objects to draw: #{@layerObjects.length}"
 
-    # origin = {
-    #   x: @minX
-    #   y: @minY
-    # }
-    # canvas = {
-    #   width: @maxX - @minX
-    #   height: @maxY - @minY
-    #   margin: 0.5
-    # }
-    # create an SVG object
-    # totW = 2*canvas.margin+canvas.width
-    # totH = 2*canvas.margin+canvas.height
-    # svg = SVG(id).size("#{totW}#{@units}", "#{totH}#{@units}").viewbox(0,0,totW,totH)
     svg = SVG id
     group = svg.group()
 
     # draw all the objects and get the bounding box
     o.draw group for o in @layerObjects
     box = group.bbox()
-    console.log box
 
     # resize the svg
     svg.size("#{box.width}#{@units}", "#{box.height}#{@units}").viewbox 0,0,box.width, box.height
