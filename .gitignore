@@ -5,4 +5,4 @@ testgerber
 # we don't need intermediate generated js
 js/*
 # nor do we need generated jade
-jade-include/scripts.jade
+jade-includes/scripts.jade
