@@ -59,6 +59,9 @@ class Pad extends LayerObject
       m = drawing.mask().add(p).add(h)
       pad.maskWith m
 
+    # check if we're clearing
+    if @clear is on then pad.fill '#fff' else pad.fill '#000'
+
     # call the parent draw method
     super pad
 
@@ -86,6 +89,8 @@ class Trace extends PathObject
 
     # no fill
     path.fill {color: 'transparent'}
+    #check if we're clearing
+    if @clear is on then path.stroke '#fff' else path.stroke '#000'
     # call the parent draw
     super path
 
@@ -99,7 +104,9 @@ class Fill extends PathObject
 
     # create a path with the processed string
     path = drawing.path path
-    path.fill({color: '#000'}).stroke {width: 0}
+    path.stroke {width: 0}
+    # check if we're clearing
+    if @clear is on then path.fill '#fff' else path.fill '#000'
 
     # call the parent
     super path
