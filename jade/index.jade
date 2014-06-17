@@ -1,3 +1,5 @@
+- var layerTypes = {'oth': 'other (ignore)', 'fcu': 'front copper', 'fsm': 'front soldermask', 'fss': 'front silkscreen', 'bcu': 'back copper', 'bsm': 'back soldermask', 'bss': 'back silkscreen', 'out': 'board outline'}
+
 doctype html
 html(lang="en")
 
@@ -27,10 +29,12 @@ html(lang="en")
             a(href='#') svgerber
             small= " (it's in alpha!)"
         li.col-sm-2
-          a(href='#') what's all this then?
+          a(href='#').octicon.octicon-question
+            = " what's all this then?"
 
         li.col-sm-2
-          a(href='http://github.com/mcous/svgerber' target='_blank') fork me on github!
+          a(href='http://github.com/mcous/svgerber' target='_blank').octicon.octicon-mark-github
+            = ' fork me on github!'
 
     .container
       h2 Let's do this thing
@@ -43,15 +47,27 @@ html(lang="en")
         li the UI is crap
         li anything else that's broken won't work
 
-    .container
       .row
         div#dropzone.col-sm-8
           span.mega-octicon.octicon-circuit-board
-          h3 drop your gerbers here
-        div.col-sm-4 or click here to select files
+            = ' drop your gerbers here'
+        div.col-sm-4 or select files from your computer
           input(type='file' name='files[]' multiple)#fileselect
+
+    output#upload-output.container.hidden
+      ul#filelist.list-unstyled
+        li#file-upload-template.js-template.row
+          .col-sm-5
+            p.filename filename
+            span= 'layer: '
+            select#js-layer-select-template.layer-type-select
+              each val, key in layerTypes
+                option(value=key)= val
+          .col-sm-7
+            div.progress
+              div#js-progress-template.progress-bar(aria-valuenow='30' aria-valuemin='0' aria-valuemax='100' style='width: 30%;')
       .row
-        output#list
+        button(type="button")#process.btn.btn-primary.btn-lg.col-sm-2 svGo!
 
     .container
       div#layers
