@@ -34,8 +34,12 @@ readFileToDiv = (event, filename) ->
 
 # take care of a file event
 handleFileSelect = (event) ->
+  # stop default actions
+  event.stopPropagation()
+  event.preventDefault()
+
   # arrays for the uploaded files
-  importFiles = event.target.files
+  importFiles = event.dataTransfer.files
   output = []
 
   # add some html to the output
@@ -54,5 +58,14 @@ handleFileSelect = (event) ->
         readFileToDiv event, f.name
       reader.readAsText(f)
 
+# drag and drop file upload
+handleDragOver = (event) ->
+  event.stopPropagation()
+  event.preventDefault()
+  # explicitly say that this is a copy for some reason
+  event.dataTransfer.dropEffect = 'copy'
+
 # attach the event listener
-document.getElementById('files').addEventListener('change', handleFileSelect, false)
+dropZone = document.getElementById 'drop_zone'
+dropZone.addEventListener('dragover', handleDragOver, false)
+dropZone.addEventListener('drop', handleFileSelect, false)

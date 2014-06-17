@@ -16,35 +16,37 @@ html(lang="en")
     <![endif]-->
 
   body
-    nav(roll='navigation').navbar.navbar-default
-      div.container
-        ul.nav
-          li.col-md-8
-            h1#title
-              a(href='#') svgerber
-              small  &#40;it's in alpha!&#41;
-          li.col-md-2
-            a(href='#')
-              = "what's all this then?"
-              span.glyphicon.glyphicon-question-sign
-          li.col-md-2
-            a(href='#') fork me on github
+    nav(roll='navigation').navbar.navbar-default.container-fluid
+      ul.nav.row
+        li.col-sm-8
+          h1#title
+            a(href='#') svgerber
+            small= " (it's in alpha!)"
+        li.col-sm-2
+          a(href='#') what's all this then?
 
-    h2 Let's do this thing
-    p But before we do, be aware that a lot of stuff doesn't work:
-    ul
-      li incremental (instead of absolute) coordinates don't work
-      li trailing zero suppression is untested
-      li level polarity is ignored
-      li old files with deprecated gerber commands could confuse it
-      li the UI doesn't exist
-      li anything else that's broken won't work
+        li.col-sm-2
+          a(href='http://github.com/mcous/svgerber' target='_blank') fork me on github!
 
-    // multiple files
-    input(type='file' name='files[]' multiple)#files
-    output#list
+    .container
+      h2 Let's do this thing
+      p But before we do, be aware that a lot of stuff doesn't work:
+      ul
+        li incremental coordinates don't work
+        li trailing zero suppression is untested
+        li drill files are not supported
+        li old files with deprecated gerber commands could confuse it
+        li the UI is crap
+        li anything else that's broken won't work
 
-    div#layers
+    .container-fluid
+      // multiple files
+      //input(type='file' name='files[]' multiple)#files
+      div#drop_zone drop yo' gerbers here
+      output#list
+
+    .container
+      div#layers
 
     // javascript
     // jquery

@@ -12,31 +12,36 @@
     <![endif]-->
   </head>
   <body>
-    <nav roll="navigation" class="navbar navbar-default">
-      <div class="container">
-        <ul class="nav">
-          <li class="col-md-8">
-            <h1 id="title"><a href="#">svgerber</a><small> &#40;it's in alpha!&#41;</small></h1>
-          </li>
-          <li class="col-md-2"><a href="#">what's all this then?<span class="glyphicon glyphicon-question-sign"></span></a></li>
-          <li class="col-md-2"><a href="#">fork me on github</a></li>
-        </ul>
-      </div>
+    <nav roll="navigation" class="navbar navbar-default container-fluid">
+      <ul class="nav row">
+        <li class="col-sm-8">
+          <h1 id="title"><a href="#">svgerber</a><small> (it's in alpha!)</small></h1>
+        </li>
+        <li class="col-sm-2"><a href="#">what's all this then?</a></li>
+        <li class="col-sm-2"><a href="http://github.com/mcous/svgerber" target="_blank">fork me on github!</a></li>
+      </ul>
     </nav>
-    <h2>Let's do this thing</h2>
-    <p>But before we do, be aware that a lot of stuff doesn't work:</p>
-    <ul>
-      <li>incremental (instead of absolute) coordinates don't work</li>
-      <li>trailing zero suppression is untested</li>
-      <li>level polarity is ignored</li>
-      <li>old files with deprecated gerber commands could confuse it</li>
-      <li>the UI doesn't exist</li>
-      <li>anything else that's broken won't work</li>
-    </ul>
-    <!-- multiple files-->
-    <input type="file" name="files[]" multiple id="files">
-    <output id="list"></output>
-    <div id="layers"></div>
+    <div class="container">
+      <h2>Let's do this thing</h2>
+      <p>But before we do, be aware that a lot of stuff doesn't work:</p>
+      <ul>
+        <li>incremental coordinates don't work</li>
+        <li>trailing zero suppression is untested</li>
+        <li>drill files are not supported</li>
+        <li>old files with deprecated gerber commands could confuse it</li>
+        <li>the UI is crap</li>
+        <li>anything else that's broken won't work</li>
+      </ul>
+    </div>
+    <div class="container-fluid">
+      <!-- multiple files-->
+      <!--input(type='file' name='files[]' multiple)#files-->
+      <div id="drop_zone">drop yo' gerbers here</div>
+      <output id="list"></output>
+    </div>
+    <div class="container">
+      <div id="layers"></div>
+    </div>
     <!-- javascript-->
     <!-- jquery-->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
