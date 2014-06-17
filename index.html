@@ -2,11 +2,27 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>svgerber</title>
+    <!-- bootstrap css-->
+    <link href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries--><!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+    <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
   </head>
   <body>
-    <h1>svgerber (alpha!)</h1>
-    <p>source available at <a href='http://github.com/mcous/svgerber'>github</a></p>
+    <nav roll="navigation" class="navbar navbar-default">
+      <div class="container">
+        <ul class="nav">
+          <li class="col-md-8">
+            <h1 id="title"><a href="#">svgerber</a><small> &#40;it's in alpha!&#41;</small></h1>
+          </li>
+          <li class="col-md-2"><a href="#">what's all this then?<span class="glyphicon glyphicon-question-sign"></span></a></li>
+          <li class="col-md-2"><a href="#">fork me on github</a></li>
+        </ul>
+      </div>
+    </nav>
     <h2>Let's do this thing</h2>
     <p>But before we do, be aware that a lot of stuff doesn't work:</p>
     <ul>
@@ -22,6 +38,11 @@
     <output id="list"></output>
     <div id="layers"></div>
     <!-- javascript-->
+    <!-- jquery-->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+    <!-- bootstrap-->
+    <script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+    <!-- app-->
     <script src="lib/svg.js"></script>
     <script src="js/aperture.js"></script>
     <script src="js/layer.js"></script>
