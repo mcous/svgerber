@@ -132,5 +132,5 @@ handleDragOver = (event) ->
 dropZone = document.getElementById 'dropzone'
 dropZone.addEventListener 'dragover', handleDragOver, false
 dropZone.addEventListener 'drop', handleFileSelect, false
-fileSelect = document.getElementById 'fileselect'
+fileSelect = document.getElementById 'file-upload-select'
 fileSelect.addEventListener 'change', handleFileSelect, false

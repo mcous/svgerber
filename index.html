@@ -25,9 +25,8 @@
         <li class="col-sm-2"><a href="http://github.com/mcous/svgerber" target="_blank" class="octicon octicon-mark-github"> fork me on github!</a></li>
       </ul>
     </nav>
-    <div class="container">
-      <h2>Let's do this thing</h2>
-      <p>But before we do, be aware that a lot of stuff doesn't work:</p>
+    <div id="upload-input" class="container">
+      <h2>Let's do this thing<small> But before we do, be aware that some stuff doesn't work:</small></h2>
       <ul>
         <li>incremental coordinates don't work</li>
         <li>trailing zero suppression is untested</li>
@@ -36,11 +35,10 @@
         <li>the UI is crap</li>
         <li>anything else that's broken won't work</li>
       </ul>
-      <div class="row">
-        <div id="dropzone" class="col-sm-8"><span class="mega-octicon octicon-circuit-board"> drop your gerbers here</span></div>
-        <div class="col-sm-4">or select files from your computer
-          <input type="file" name="files[]" multiple id="fileselect">
-        </div>
+      <div id="dropzone" class="row"><span class="mega-octicon octicon-circuit-board col-sm-8"> drop your gerbers here</span>
+        <label for="file-upload-select" class="col-sm-3 btn btn-lg btn-primary">...or select files
+        </label>
+        <input id="file-upload-select" type="file" name="file-upload-select" multiple>
       </div>
     </div>
     <output id="upload-output" class="container hidden">
@@ -70,7 +68,7 @@
         <button type="button" id="process" class="btn btn-primary btn-lg col-sm-2">svGo!</button>
       </div>
     </output>
-    <div class="container">
+    <div id="process-output" class="container">
       <div id="layers"></div>
     </div>
     <!-- javascript-->
