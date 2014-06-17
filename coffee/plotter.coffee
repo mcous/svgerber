@@ -129,6 +129,9 @@ class root.Plotter
         command = ''
       # region mode on
       when 'G36'
+        # finish any path
+        @finishPath()
+        # turn region mode on
         @mode.region = on
         console.log "region mode on"
       # region mode off
@@ -231,7 +234,7 @@ class root.Plotter
       if @mode.region is off
         @layer.addTrace {tool: @tool, pathArray: @path.current, clear: @mode.clear}
       # or region?
-      else if Math.abs(@position.x - @path.startX) < 0.0000001 and Math.abs(@position.y - @path.startY) < 0.0000001
+      else if Math.abs(@position.x - @path.startX) < 0.000001 and Math.abs(@position.y - @path.startY) < 0.000001
         # end path
         @path.current.push 'Z'
         # create the region
@@ -240,6 +243,7 @@ class root.Plotter
         @path.startX = null
         @path.startY = null
       else
+        console.log "region start: #{@path.startX}, #{@path.startY}; region end: #{@position.x}, #{@position.y}"
         throw "error at #{@line}: region close command on open contour"
       # clear out the path
       @path.current = null
