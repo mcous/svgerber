@@ -8,6 +8,10 @@ html(lang="en")
 
     // bootstrap css
     link(href='//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css' rel='stylesheet')
+    // octicons!
+    link(href='/octicons/octicons.css' rel='stylesheet')
+    // my css
+    link(href='app.css' rel='stylesheet')
 
     // HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries
     <!--[if lt IE 9]>
@@ -39,11 +43,15 @@ html(lang="en")
         li the UI is crap
         li anything else that's broken won't work
 
-    .container-fluid
-      // multiple files
-      //input(type='file' name='files[]' multiple)#files
-      div#drop_zone drop yo' gerbers here
-      output#list
+    .container
+      .row
+        div#dropzone.col-sm-8
+          span.mega-octicon.octicon-circuit-board
+          h3 drop your gerbers here
+        div.col-sm-4 or click here to select files
+          input(type='file' name='files[]' multiple)#fileselect
+      .row
+        output#list
 
     .container
       div#layers

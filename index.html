@@ -6,6 +6,10 @@
     <title>svgerber</title>
     <!-- bootstrap css-->
     <link href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
+    <!-- octicons!-->
+    <link href="/octicons/octicons.css" rel="stylesheet">
+    <!-- my css-->
+    <link href="app.css" rel="stylesheet">
     <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries--><!--[if lt IE 9]>
     <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
     <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
@@ -33,11 +37,18 @@
         <li>anything else that's broken won't work</li>
       </ul>
     </div>
-    <div class="container-fluid">
-      <!-- multiple files-->
-      <!--input(type='file' name='files[]' multiple)#files-->
-      <div id="drop_zone">drop yo' gerbers here</div>
-      <output id="list"></output>
+    <div class="container">
+      <div class="row">
+        <div id="dropzone" class="col-sm-8"><span class="mega-octicon octicon-circuit-board"></span>
+          <h3>drop your gerbers here</h3>
+        </div>
+        <div class="col-sm-4">or click here to select files
+          <input type="file" name="files[]" multiple id="fileselect">
+        </div>
+      </div>
+      <div class="row">
+        <output id="list"></output>
+      </div>
     </div>
     <div class="container">
       <div id="layers"></div>

@@ -29,3 +29,11 @@ Shared under the terms of the [Creative Commons Attribution-ShareAlike 4.0 Licen
 This project uses [svg.js](http://www.svgjs.com/).
 
 © 2012 - 2014 Wout Fierens - svg.js is released under the terms of the MIT license.
+
+# octicons license
+This project uses [GitHub's Octicons](http://octicons.github.com/).
+
+(c) 2012-2014 GitHub
+
+Font License: SIL OFL 1.1 (http://scripts.sil.org/OFL)
+Applies to all font files

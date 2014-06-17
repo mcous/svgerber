@@ -39,7 +39,9 @@ handleFileSelect = (event) ->
   event.preventDefault()
 
   # arrays for the uploaded files
-  importFiles = event.dataTransfer.files
+  importFiles = null
+  if event.dataTransfer? then importFiles = event.dataTransfer.files
+  else importFiles = event.target.files
   output = []
 
   # add some html to the output
@@ -62,10 +64,12 @@ handleFileSelect = (event) ->
 handleDragOver = (event) ->
   event.stopPropagation()
   event.preventDefault()
-  # explicitly say that this is a copy for some reason
+  # explicitly say that this is a copy
   event.dataTransfer.dropEffect = 'copy'
 
-# attach the event listener
-dropZone = document.getElementById 'drop_zone'
-dropZone.addEventListener('dragover', handleDragOver, false)
-dropZone.addEventListener('drop', handleFileSelect, false)
+# attach the event listener to the dropzone and the file select
+dropZone = document.getElementById 'dropzone'
+dropZone.addEventListener 'dragover', handleDragOver, false
+dropZone.addEventListener 'drop', handleFileSelect, false
+fileSelect = document.getElementById 'fileselect'
+fileSelect.addEventListener 'change', handleFileSelect, false

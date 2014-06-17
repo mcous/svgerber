@@ -4,7 +4,8 @@
   "devDependencies" :
   {
     "jade"          : "*",
-    "less"          : "*",
+    "stylus"        : "*",
+    "nib"           : "*",
     "coffee-script" : "*",
     "node-static"   : "*",
     "jasmine-node"  : "*",
