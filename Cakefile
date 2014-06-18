@@ -45,6 +45,14 @@ jadeOpts = {
   'production': ''
 }
 
+# stylus
+stylusDir = 'stylus'
+stylusOut = '.'
+stylusOpts = {
+  'dev': ''
+  'production': '--compress'
+}
+
 # simple dev server with node-static
 port = 8080
 
@@ -144,6 +152,7 @@ gatherChildren = (file, parent=null) ->
 # Cakefile options
 option '-e', '--environment [ENV_NAME]', 'set the build environment (dev or production)'
 
+
 # build the environment
 task 'build:environment', (options) ->
   env = options.environment ? envs[0]
@@ -155,7 +164,6 @@ task 'build:environment', (options) ->
 task 'build:jade', 'compile jade index to html', (options) ->
   # build the environment
   invoke 'build:environment'
-
   # get our list of scripts
   scripts = ''
   if nodes.length is 0 then throw 'coffeeNotCompiledError'
@@ -199,6 +207,12 @@ task 'watch', 'watch coffeescript and jade files for changes', (options) ->
     invoke 'build'
   )
 
+  # watch stylus files
+  fs.watch(stylusDir, (event, filename) ->
+    console.log "#{filename} was #{event}d; rebuilding #{filename[..-6]}.css"
+    invoke 'build:stylus'
+  )
+
 
 # serve task
 task 'serve', 'watch and serve the files to localhost:8080', (options) ->
@@ -215,7 +229,10 @@ task 'serve', 'watch and serve the files to localhost:8080', (options) ->
   ).listen port
   console.log "server started at http://localhost:#{port}\n"
 
-task 'build', 'resolve coffee dependencies, compile coffee, and compile jade', (options) ->
+task 'build', 'resolve coffee dependencies, compile coffee, compile jade, and compile stylus', (options) ->
+  # build the environment
+  invoke 'build:environment'
+
   # gather all the children of the main app
   console.log "gathering dependencies of #{main}"
   nodes = []
@@ -252,6 +269,9 @@ task 'build', 'resolve coffee dependencies, compile coffee, and compile jade', (
   # it is now fine to build the jade
   invoke 'build:jade'
 
+  # and the stylus
+  invoke 'build:stylus'
+
   # compile the coffee script
   console.log "compiling coffeescript"
   exec "coffee #{coffeeOpts[env]} --output #{jsDir} --compile #{coffeeList}", (error, stdout, stderr) ->
@@ -272,4 +292,14 @@ task 'build:bundle', 'bundle all the js files together', (options) ->
   exec "uglifyjs #{uglyOpts} #{jsList} --verbose --output #{bundle}", (error, stdout, stderr) ->
     if error then throw error
     console.log "...done concatinating"
+    console.log stdout + stderr
+
+task 'build:stylus', 'build the stylus files into css files', (options) ->
+  # build the environment
+  invoke 'build:environment'
+  # compile the stylus
+  console.log "compiling stylus to css"
+  exec "stylus #{stylusOpts[env]} --out #{stylusOut} #{stylusDir}/*", (error, stdout, stderr) ->
+    if error then throw error
+    console.log "...done compiling stylus"
     console.log stdout + stderr

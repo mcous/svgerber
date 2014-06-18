@@ -35,7 +35,7 @@ class root.Plotter
     # tool list
     @tools = {}
     # polarity
-    @polarity = 'D'
+    #@polarity = 'D'
 
     # plotter operation
     @tool = null
@@ -51,6 +51,7 @@ class root.Plotter
       int: null
       quad: null
       region: off
+      clear: off
     }
     # trace mode (aka normal operation)
     @path = {
@@ -59,10 +60,29 @@ class root.Plotter
       startY: null
     }
 
-  # plot the layer by reading the gerber file
+    # plotting progress event
+    @progress = new CustomEvent "plotProgress_#{@name}", {
+      detail: {
+        percent: 0
+      }
+    }
+
+    # plotting done event
+    @done = new CustomEvent "plotDone_#{@name}", {
+      detail: {
+        layer: @layer
+      }
+    }
+
+  # plot the layer by reading the gerber file one block at a time
   plot: ->
+    # percent tracking in 10% intervals
+    percent = 0
+    interval = 10
+    count = Math.round @gerber.length * (interval / 100)
+
     # loop until the file ends
-    until @end or @index >= @gerber.length
+    until (@end or @index >= @gerber.length)
       # peak at the next character in the file
       next = @gerber[@index]
       # let's figure out what we're doing
@@ -93,15 +113,22 @@ class root.Plotter
 
           # check for a state command
           else
-            console.log "don't know what to do with #{block} at line #{@line-1}"
+            #console.log "don't know what to do with #{block} at line #{@line-1}"
             block = ''
 
+      # fire the progress event
+      if @index/count > percent then percent += interval
+      if percent isnt @progress.detail.percent
+        @progress.detail.percent = percent
+        root.dispatchEvent @progress
+
+    # done with the read loop
     # if there was a path in progress, finish it
     @finishPath()
     # set the layer units
     @layer.setUnits @units
-    # return the layer
-    @layer
+    # we're done
+    root.dispatchEvent @done
 
   # process the plotter state given a line with a G code in it
   processState: (command) ->
@@ -113,38 +140,41 @@ class root.Plotter
       # linear interpolation mode
       when 'G1', 'G01'
         @mode.int = 1
-        console.log "interpolation mode set to linear"
+        #console.log "interpolation mode set to linear"
       # arc interpolation
       when 'G2', 'G02'
         @mode.int = 2
-        console.log "interpolation mode set to clockwise arc"
+        #console.log "interpolation mode set to clockwise arc"
       when 'G3', 'G03'
         @mode.int = 3
-        console.log "interpolation mode set to counter clockwise arc"
+        #console.log "interpolation mode set to counter clockwise arc"
       # comment mode
       when 'G4', 'G04'
-        console.log "comment; ignoring"
+        #console.log "comment; ignoring"
         # set the command to empty
         command = ''
       # region mode on
       when 'G36'
+        # finish any path
+        @finishPath()
+        # turn region mode on
         @mode.region = on
-        console.log "region mode on"
+        #console.log "region mode on"
       # region mode off
       when 'G37'
         # finsh any paths
         @finishPath()
         # turn off region mode
         @mode.region = off
-        console.log "region mode off"
+        #console.log "region mode off"
       # single quadrant mode
       when 'G74'
         @mode.quad = 74
-        console.log "quadrant mode set to single"
+        #console.log "quadrant mode set to single"
       # multi quadrant mode
       when 'G75'
         @mode.quad = 75
-        console.log "quadrant mode set to multiple"
+        #console.log "quadrant mode set to multiple"
       # deprecated commands
       when 'G54', 'G55', 'G70', 'G71', 'G90', 'G91'
         #console.log "deprecated command #{g}; ignoring"
@@ -228,17 +258,18 @@ class root.Plotter
     if @path.current?
       # trace?
       if @mode.region is off
-        @layer.addTrace {tool: @tool, pathArray: @path.current}
+        @layer.addTrace {tool: @tool, pathArray: @path.current, clear: @mode.clear}
       # or region?
-      else if Math.abs(@position.x - @path.startX) < 0.0000001 and Math.abs(@position.y - @path.startY) < 0.0000001
+      else if Math.abs(@position.x - @path.startX) < 0.000001 and Math.abs(@position.y - @path.startY) < 0.000001
         # end path
         @path.current.push 'Z'
         # create the region
-        @layer.addFill {pathArray: @path.current}
+        @layer.addFill {pathArray: @path.current, clear: @mode.clear}
         # empty out the region
         @path.startX = null
         @path.startY = null
       else
+        #console.log "region start: #{@path.startX}, #{@path.startY}; region end: #{@position.x}, #{@position.y}"
         throw "error at #{@line}: region close command on open contour"
       # clear out the path
       @path.current = null
@@ -269,7 +300,9 @@ class root.Plotter
       if @mode.quad is 75
         cenX = @position.x + c.i
         # check the arc angle
-        theta = Math.acos (c.x - cenX)/r
+        thetaE = Math.acos (c.x - cenX)/r
+        thetaS = Math.acos (c.i)/r
+        theta = Math.abs(thetaE - thetaS)
         # set the large arc flag if it's greater than 180 (pi radians)
         if theta >= Math.PI then largeArcFlag = 1
 
@@ -304,7 +337,7 @@ class root.Plotter
     # flash command should only happen if we're not in region mode
     if @mode.region is on then throw "error at #{@line}: cannot flash (D03) in region mode"
     unless @tool? then throw "error at #{@line}: no tool selected for flash"
-    @layer.addPad {tool: @tool, x: c.x, y: c.y}
+    @layer.addPad {tool: @tool, x: c.x, y: c.y, clear: @mode.clear}
     # move the plotter position
     @moveTo c
 
@@ -351,7 +384,7 @@ class root.Plotter
           console.log "step repeat command at line #{@line}: #{block}"
         when 'LP'
           #console.log "level polarity at line #{@line}: #{block}"
-          @setPolarity
+          @setPolarity command
       # get the check character
       c = @gerber[@index]
 
@@ -416,8 +449,11 @@ class root.Plotter
   setPolarity: (command) ->
     # if it's a good command, set the polarity and set the position to undefined
     if command is 'C' or command is 'D'
-      console.log "polarity set to #{command}"
-      @polarity = command
+      #console.log "polarity set to #{command}"
+      # finish any paths
+      @finishPath()
+      # set the polarity mode
+      @mode.clear = (command is 'C')
       @position.x = null
       @position.y = null
     else throw "error at #{@line}: #{command} is not a valid polarity (C or D)"

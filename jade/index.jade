@@ -1,28 +1,117 @@
+- var layerTypes = {'oth': 'other (ignore)', 'fcu': 'front copper', 'fsm': 'front soldermask', 'fss': 'front silkscreen', 'bcu': 'back copper', 'bsm': 'back soldermask', 'bss': 'back silkscreen', 'out': 'board outline'}
+
 doctype html
 html(lang="en")
 
   head
     meta(charset='utf-8')
+    meta(name='viewport' content='width=device-width, initial-scale=1')
     title svgerber
 
+    // bootstrap css
+    link(href='//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css' rel='stylesheet')
+    // octicons!
+    link(href='/octicons/octicons.css' rel='stylesheet')
+    // my css
+    link(href='app.css' rel='stylesheet')
+
+    // HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+    <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
   body
-    h1 svgerber (alpha!)
-    p source available at <a href='http://github.com/mcous/svgerber'>github</a>
-    h2 Let's do this thing
-    p But before we do, be aware that a lot of stuff doesn't work:
-    ul
-      li incremental (instead of absolute) coordinates don't work
-      li trailing zero suppression is untested
-      li level polarity is ignored
-      li old files with deprecated gerber commands could confuse it
-      li the UI doesn't exist
-      li anything else that's broken won't work
+    nav(roll='navigation').navbar.navbar-default.container-fluid
+      ul.nav.row
+        li.col-sm-10
+          h1#title
+            a(href='#') svgerber
+            small= " (it's in alpha!)"
+        //- li.col-sm-2
+        //-   a(href='#').octicon.octicon-question
+        //-     = " what's all this then?"
 
-    // multiple files
-    input(type='file' name='files[]' multiple)#files
-    output#list
+        li.col-sm-2
+          a(href='http://github.com/mcous/svgerber' target='_blank').octicon.octicon-mark-github
+            = ' fork me on github!'
 
-    div#layers
+    .container#upload-input
+      h2 let's do this thing
+        small= " but before we do, be aware that some stuff doesn't work:"
+      ul
+        li incremental coordinates don't work
+        li trailing zero suppression is untested
+        li drill files are not supported
+        li old files with deprecated gerber commands could confuse it
+        li the UI is crap
+        li anything else that's broken won't work
+
+      #dropzone.row
+        span.mega-octicon.octicon-circuit-board.col-sm-8
+          = ' drop your gerbers here'
+        label(for='file-upload-select').col-sm-3.btn.btn-lg.btn-primary
+          = '...or select files'
+        input#file-upload-select(type='file' name='file-upload-select' multiple)
+
+    output#upload-output.container.hidden
+      ul#filelist.list-unstyled
+        li#file-upload-template.js-template.row
+          .col-sm-5
+            p.filename filename
+            span= 'layer: '
+            select#js-layer-select-template.layer-type-select
+              each val, key in layerTypes
+                option(value=key)= val
+          .col-sm-7
+            div.progress
+              div#js-plot-progress-template.progress-bar.progress-bar(roll='progressbar' aria-valuenow='60' aria-valuemin='0' aria-valuemax='100' style='width: 60%;')
+              div#js-draw-progress-template.progress-bar.progress-bar-success(roll='progressbar' aria-valuenow='20' aria-valuemin='0' aria-valuemax='100' style='width: 20%;')
+      .row
+        button(type='button' disabled='disabled')#process.btn.btn-primary.btn-lg.col-sm-2.col-sm-offset-5
+          = 'svGo!'
+
+    mixin layerContainerContents(longLayer, shortLayer)
+      h2.layer-heading= longLayer
+      div.layer-drawing(id=shortLayer)
+      a(download="#{shortLayer}.svg" href-lang='image/svg+xml' href='#').layer-link
+        = 'download svg'
+
+    #individual-layer-output.container.hidden
+      #copper-layers-row.row
+        #layer-front-copper.layer-container.col-md-6
+          +layerContainerContents('front copper', 'fcu')
+        #layer-back-copper.layer-container.col-md-6
+          +layerContainerContents('back copper', 'bcu')
+      #soldermask-layers-row.row
+        #layer-front-soldermask.layer-container.col-md-6
+          +layerContainerContents('front soldermask', 'fsm')
+        #layer-back-soldermask.layer-container.col-md-6
+          +layerContainerContents('back soldermask', 'bsm')
+      #silkscreen-layers-row.row
+        #layer-front-silkscreen.layer-container.col-md-6
+          +layerContainerContents('front silkscreen', 'fss')
+        #layer-back-silkscreen.layer-container.col-md-6
+          +layerContainerContents('back silkscreen', 'bss')
+      #drawing-layers-row.row
+        #layer-board-outline.layer-container.col-md-6
+          +layerContainerContents('board outline', 'out')
+
+    .container#full-board-output
 
     // javascript
+    // jquery
+    script(src='https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js')
+    // bootstrap
+    script(src='//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js')
+    // app
     include ../jade-includes/scripts
+
+  footer.container
+    .navbar
+      a(href='http://getbootstrap.com/' target='_blank').col-sm-2.col-sm-offset-6
+        = 'built with Bootstrap'
+      a(href='http://octicons.github.com/' target='_blank').col-sm-2
+        = "uses GitHub's Octicons"
+      a(href='http://github.com/mcous/svgerber/blob/master/LICENSE.md' target='_blank').col-sm-2
+        = 'copyright 2014 by michael cousins'

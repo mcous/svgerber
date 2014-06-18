@@ -59,6 +59,18 @@ class Pad extends LayerObject
       m = drawing.mask().add(p).add(h)
       pad.maskWith m
 
+    # pads don't have stroke
+    pad.stroke {width: 0}
+    pad.addClass 'svg-no-stroke'
+
+    # check if we're clearing
+    if @clear is on
+      pad.addClass 'svg-fill-clear'
+      pad.fill '#fff'
+    else
+      pad.attr 'class', 'svg-fill-draw'
+      pad.fill '#000'
+
     # call the parent draw method
     super pad
 
@@ -81,11 +93,18 @@ class Trace extends PathObject
 
     # create a path with the processed string
     path = drawing.path path
-    if @tool.dia? then path.stroke {width: @tool.dia, linecap: 'round'}
+    if @tool.dia? then path.stroke {width: @tool.dia, linecap: 'round', linejoin: 'round'}
     else throw "rectangular trace apertures unimplimented in this reader"
 
     # no fill
-    path.fill {color: 'transparent'}
+    path.fill {color: 'transparent', opacity: 0}
+    #check if we're clearing
+    if @clear is on
+      path.addClass 'svg-stroke-clear'
+      path.stroke '#fff'
+    else
+      path.addClass 'svg-stroke-draw'
+      path.stroke '#000'
     # call the parent draw
     super path
 
@@ -99,7 +118,15 @@ class Fill extends PathObject
 
     # create a path with the processed string
     path = drawing.path path
-    path.fill({color: '#000'}).stroke {width: 0}
+    path.stroke {width: 0}
+    path.addClass 'svg-no-stroke'
+    # check if we're clearing
+    if @clear is on
+      path.addClass 'svg-fill-clear'
+      path.fill '#fff'
+    else
+      path.addClass 'svg-fill-draw'
+      path.fill '#000'
 
     # call the parent
     super path
@@ -134,13 +161,37 @@ class root.Layer
 
   draw: (id) ->
     # console.log "drawing layer origin at #{@minX}, #{@minY}"
-    console.log "objects to draw: #{@layerObjects.length}"
+    #console.log "objects to draw: #{@layerObjects.length}"
+
+    percent = 0
+    interval = 10
+    count = Math.round @layerObjects.length * (interval / 100)
+
+    # create a draw progress event
+    progress = new CustomEvent "drawProgress_#{id}", {
+      detail: {
+        percent: 0
+      }
+    }
+
+    # drawing done event
+    done = new CustomEvent "drawDone_#{id}", {
+      detail: {
+        svg: null
+      }
+    }
 
     svg = SVG id
     group = svg.group()
 
     # draw all the objects and get the bounding box
-    o.draw group for o in @layerObjects
+    for o, i in @layerObjects
+      o.draw group
+      # fire progress event if it's necessary
+      if i/count > percent then percent += interval
+      if percent isnt progress.detail.percent
+        progress.detail.percent = percent
+        root.dispatchEvent progress
     box = group.bbox()
 
     # resize the svg
@@ -152,5 +203,6 @@ class root.Layer
       scaleY: -1
     }
 
-    # return the svg object
-    svg
+    # fire the done event
+    done.detail.svg = svg
+    root.dispatchEvent done

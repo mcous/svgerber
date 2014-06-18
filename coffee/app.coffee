@@ -3,56 +3,218 @@
 # app dependencies
 #require 'plotter'
 
-# convert a file to an svg
-fileToSVG = (file, filename) ->
-  console.log 'converting to svg'
-  p = new Plotter(file, filename[-3..])
+# all gerbers loaded event
+loaded = []
+allowProcessing = ->
+  # BUTTON!
+  button = $('#process')
 
-  # plot and return the layer that was plotted
-  layer = p.plot()
+  # attach an event listener
+  button.on 'click', (event) ->
+    event.stopPropagation()
+    event.preventDefault()
+    # disable the button
+    button.attr 'disabled', 'disabled'
+    button.text 'svGoing!'
+
+    output = $('#individual-layer-output')
+    # unhide the layer outputs (but keep them invisible)
+    output.css('visibility', 'hidden').removeClass 'hidden'
+
+    # then process the gerbers
+    i = -1
+    fn = () ->
+      if ++i < loaded.length
+        gerberToSVG loaded[i], fn
+      else
+        # when done, show the renders
+        output.css('visibility', 'visible')
+        button.text 'svGone!'
+        # go to the layers
+        $('html, body').animate {
+          scrollTop: $('#individual-layer-output').offset().top
+        }, 500
+    fn()
+
+    # return false
+    false
+
+  # go to the go button
+  button.removeAttr 'disabled'
+  $('html, body').animate {
+    scrollTop: button.offset().top
+  }, 250
+
+
+# parse a filename for a likely layer select
+setLayerSelect = (select, filename) ->
+  # default is other
+  val = 'oth'
+  # top copper
+  if filename.match /.gtl$/i
+    val = 'fcu'
+  # top soldermask
+  else if filename.match /.gts$/i
+    val = 'fsm'
+  # top silkscreen
+  else if filename.match /.gto$/i
+    val = 'fss'
+  # bottom copper
+  else if filename.match /.gbl$/i
+    val = 'bcu'
+  # bottom soldermaks
+  else if filename.match /.gbs$/i
+    val = 'bsm'
+  # bottom silkscreen
+  else if filename.match /.gbo$/i
+    val = 'bss'
+  # board outline
+  else if filename.match /(.gko$)|edge/i
+    val = 'out'
+
+  # set the selected attribute
+  option = select.children("[value='#{val}']").attr 'selected',''
+  # return the value selected
+  val
 
 # read a file to a div
-readFileToDiv = (event, filename) ->
-  if event.target.readyState is FileReader.DONE
+gerberToSVG = (gerber, callback) ->
+  console.log 'drawing gerber to svg'
+  filename = gerber.filename
+  id = gerber.name
+  gerber = gerber.file
 
-    # plot something
-    layer = fileToSVG event.target.result, filename
+  svg = null
+  layer = null
 
-    # create a div for the drawing to live in
-    drawDiv = document.createElement 'div'
-    drawDiv.innerHTML = "<h3>#{filename}</h3>"
-    drawDiv.id = "layer-#{layer.name}"
-    drawDiv.class = 'layer-div'
-    document.getElementById('layers').insertBefore(drawDiv, null)
-    # draw the layer to the div
-    svg = layer.draw drawDiv.id
-    svg64 = btoa svg.node.outerHTML
+  # plot something
+  p = new Plotter gerber, id
+  # get the progress bars
+  drawProgress = document.getElementById "js-draw-progress-#{filename}"
+  plotProgress = document.getElementById "js-plot-progress-#{filename}"
 
-    # append the download link
-    imgsrc = "data:image/svg+xml;base64,#{svg64}"
-    drawDiv.innerHTML += "<a download='filename' href-lang='image/svg+xml' href='#{imgsrc}'>download svg</a>"
+  # attach a draw progress listener to the window
+  addEventListener "drawProgress_#{id}", (event) ->
+    percentLoaded = event.detail.percent
+    drawProgress.setAttribute 'aria-valuenow', "#{percentLoaded}"
+    drawProgress.style.width = "#{percentLoaded}%"
+
+  # attach a draw done listener to the window
+  addEventListener "drawDone_#{id}", (event) ->
+    # update progress bar
+    drawProgress.setAttribute 'aria-valuenow', '100'
+    drawProgress.style.width = '100%'
+    # grab svg
+    svg = event.detail.svg
+
+    # enocode svg for download
+    svg64 = "data:image/svg+xml;base64,#{btoa svg.node.outerHTML}"
+    console.log svg64
+    $("##{id}").siblings('a.layer-link').attr 'href', svg64
+
+    # wait briefly, then call the callback
+    setTimeout () ->
+      if callback? and typeof callback is 'function'
+        callback()
+    , 200
+
+  # attach a plot progress listener to the window
+  addEventListener "plotProgress_#{id}", (event) ->
+    # get the progress
+    percentLoaded = event.detail.percent
+    #console.log "percent plotted: #{percentLoaded}"
+    # set the progress bar
+    plotProgress.setAttribute 'aria-valuenow', "#{percentLoaded}"
+    plotProgress.style.width = "#{percentLoaded}%"
+
+  # attach a plot done listener to the window
+  addEventListener "plotDone_#{id}", (event) ->
+    # update the progress bar
+    plotProgress.setAttribute 'aria-valuenow', '100'
+    plotProgress.style.width = '100%'
+    # draw the layer after a delay
+    setTimeout () ->
+      event.detail.layer.draw id
+    , 200
+
+  # plot the layer
+  p.plot()
+
+# file load progress
+updatePlotProgress = (event, filename, progress) ->
+  detail = event.detail
+  if detail.current?
+    percentLoaded = Math.round detail.current/detail.total * 100
+    if percentLoaded <= 100
+      progress['aria-valuenow'] = "#{percentLoaded}"
+      progress.style.width = "#{percentLoaded}%"
 
 # take care of a file event
 handleFileSelect = (event) ->
+  # stop default actions
+  event.stopPropagation()
+  event.preventDefault()
+
   # arrays for the uploaded files
-  importFiles = event.target.files
-  output = []
+  importFiles = null
+  if event.dataTransfer? then importFiles = event.dataTransfer.files
+  else importFiles = event.target.files
 
-  # add some html to the output
-  for f in importFiles
-    output.push '<li><strong>', escape(f.name), '</li>'
-
-  # append the file names to the HTML
-  document.getElementById('list').innerHTML = '<ul>' + output.join('') + '</ul>'
+  # unhide the output container
+  $('#upload-output').removeClass 'hidden'
 
   # read the uploaded files to a div
   for f in importFiles
+    # closure wrapping!
     do (f) ->
+      # get the import file template
+      template = $ '#file-upload-template'
+      item = template.clone().attr('id', "js-upload-#{f.name}")
+
+      # set the filename
+      name = item.find '.filename'
+      name.text("#{f.name}")
+
+      # set the layer select id
+      layerSelect = item.find '.layer-type-select'
+      layerSelect.attr('id', "js-layer-select-#{f.name}")
+
+      # get a likely layer type
+      name = setLayerSelect layerSelect, f.name
+
+      # set the progress bar ids and values
+      progress = item.find '#js-plot-progress-template'
+      progress.attr 'id', "js-plot-progress-#{f.name}"
+      progress.attr('aria-valuenow', '0').width '0%'
+      progress = item.find '#js-draw-progress-template'
+      progress.attr 'id', "js-draw-progress-#{f.name}"
+      progress.attr('aria-valuenow', '0').width '0%'
+
+      # append
+      item.removeClass 'js-template'
+      template.after item
+
       # file reader with onload event attached
       reader = new FileReader()
       reader.onloadend = (event) ->
-        readFileToDiv event, f.name
-      reader.readAsText(f)
+        # add to the array of loaded files
+        if event.target.readyState is FileReader.DONE
+          loaded.push {filename: f.name, file: event.target.result, name: name}
+          # if all files are loaded
+          if loaded.length is importFiles.length
+            allowProcessing()
+      reader.readAsText f
 
-# attach the event listener
-document.getElementById('files').addEventListener('change', handleFileSelect, false)
+# drag and drop file upload
+handleDragOver = (event) ->
+  event.stopPropagation()
+  event.preventDefault()
+  # explicitly say that this is a copy
+  event.dataTransfer.dropEffect = 'copy'
+
+# attach the event listener to the dropzone and the file select
+dropZone = document.getElementById 'dropzone'
+dropZone.addEventListener 'dragover', handleDragOver, false
+dropZone.addEventListener 'drop', handleFileSelect, false
+fileSelect = document.getElementById 'file-upload-select'
+fileSelect.addEventListener 'change', handleFileSelect, false
