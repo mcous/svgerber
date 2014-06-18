@@ -11,6 +11,6 @@ jade-includes/*
 # we don't need the generated app files
 # (unless we're on the gh-pages branch)
 # (if we're on gh-pages, delete this)
-app.css
-app.js
-index.html
+# app.css
+# app.js
+# index.html
