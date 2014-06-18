@@ -1,8 +1,16 @@
 # ignore npm doing it's thing
 node_modules
+
 # testy files
 testgerber
-# we don't need intermediate generated js
+
+# intermediate js and jade files
 js/*
-# nor do we need generated jade
-jade-includes/scripts.jade
+jade-includes/*
+
+# we don't need the generated app files
+# (unless we're on the gh-pages branch)
+# (if we're on gh-pages, delete this)
+app.css
+app.js
+index.html
