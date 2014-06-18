@@ -97,7 +97,7 @@ class Trace extends PathObject
     else throw "rectangular trace apertures unimplimented in this reader"
 
     # no fill
-    path.fill {color: 'transparent'}
+    path.fill {color: 'transparent', opacity: 0}
     #check if we're clearing
     if @clear is on
       path.addClass 'svg-stroke-clear'

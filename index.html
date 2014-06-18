@@ -18,10 +18,9 @@
   <body>
     <nav roll="navigation" class="navbar navbar-default container-fluid">
       <ul class="nav row">
-        <li class="col-sm-8">
+        <li class="col-sm-10">
           <h1 id="title"><a href="#">svgerber</a><small> (it's in alpha!)</small></h1>
         </li>
-        <li class="col-sm-2"><a href="#" class="octicon octicon-question"> what's all this then?</a></li>
         <li class="col-sm-2"><a href="http://github.com/mcous/svgerber" target="_blank" class="octicon octicon-mark-github"> fork me on github!</a></li>
       </ul>
     </nav>
@@ -74,37 +73,37 @@
       <div id="copper-layers-row" class="row">
         <div id="layer-front-copper" class="layer-container col-md-6">
               <h2 class="layer-heading">front copper</h2>
-              <div id="fcu" class="layer-drawing"></div>
+              <div id="fcu" class="layer-drawing"></div><a download="fcu.svg" href-lang="image/svg+xml" href="#" class="layer-link">download svg</a>
         </div>
         <div id="layer-back-copper" class="layer-container col-md-6">
               <h2 class="layer-heading">back copper</h2>
-              <div id="bcu" class="layer-drawing"></div>
+              <div id="bcu" class="layer-drawing"></div><a download="bcu.svg" href-lang="image/svg+xml" href="#" class="layer-link">download svg</a>
         </div>
       </div>
       <div id="soldermask-layers-row" class="row">
         <div id="layer-front-soldermask" class="layer-container col-md-6">
               <h2 class="layer-heading">front soldermask</h2>
-              <div id="fsm" class="layer-drawing"></div>
+              <div id="fsm" class="layer-drawing"></div><a download="fsm.svg" href-lang="image/svg+xml" href="#" class="layer-link">download svg</a>
         </div>
         <div id="layer-back-soldermask" class="layer-container col-md-6">
               <h2 class="layer-heading">back soldermask</h2>
-              <div id="bsm" class="layer-drawing"></div>
+              <div id="bsm" class="layer-drawing"></div><a download="bsm.svg" href-lang="image/svg+xml" href="#" class="layer-link">download svg</a>
         </div>
       </div>
       <div id="silkscreen-layers-row" class="row">
         <div id="layer-front-silkscreen" class="layer-container col-md-6">
               <h2 class="layer-heading">front silkscreen</h2>
-              <div id="fss" class="layer-drawing"></div>
+              <div id="fss" class="layer-drawing"></div><a download="fss.svg" href-lang="image/svg+xml" href="#" class="layer-link">download svg</a>
         </div>
         <div id="layer-back-silkscreen" class="layer-container col-md-6">
               <h2 class="layer-heading">back silkscreen</h2>
-              <div id="bss" class="layer-drawing"></div>
+              <div id="bss" class="layer-drawing"></div><a download="bss.svg" href-lang="image/svg+xml" href="#" class="layer-link">download svg</a>
         </div>
       </div>
       <div id="drawing-layers-row" class="row">
         <div id="layer-board-outline" class="layer-container col-md-6">
               <h2 class="layer-heading">board outline</h2>
-              <div id="out" class="layer-drawing"></div>
+              <div id="out" class="layer-drawing"></div><a download="out.svg" href-lang="image/svg+xml" href="#" class="layer-link">download svg</a>
         </div>
       </div>
     </div>
@@ -121,4 +120,7 @@
     <script src="js/plotter.js"></script>
     <script src="js/app.js"></script>
   </body>
+  <footer class="container">
+    <div class="navbar"><a href="http://getbootstrap.com/" target="_blank" class="col-sm-2 col-sm-offset-6">built with Bootstrap</a><a href="http://octicons.github.com/" target="_blank" class="col-sm-2">uses GitHub's Octicons</a><a href="http://github.com/mcous/svgerber/blob/master/LICENSE.md" target="_blank" class="col-sm-2">copyright 2014 by michael cousins</a></div>
+  </footer>
 </html>

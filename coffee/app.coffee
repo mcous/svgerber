@@ -6,9 +6,8 @@
 # all gerbers loaded event
 loaded = []
 allowProcessing = ->
+  # BUTTON!
   button = $('#process')
-  # enable the go button
-  button.removeAttr 'disabled'
 
   # attach an event listener
   button.on 'click', (event) ->
@@ -16,22 +15,36 @@ allowProcessing = ->
     event.preventDefault()
     # disable the button
     button.attr 'disabled', 'disabled'
-    # unhide the layer outputs
-    $('#individual-layer-output').removeClass 'hidden'
+    button.text 'svGoing!'
 
-    # wait a few ms, then process the gerbers
-    setTimeout () ->
-      i = -1
-      fn = () ->
-        if ++i < loaded.length
-          gerberToSVG loaded[i], fn
-      fn()
-      # for gerber in loaded
-      #   do (gerber) ->
-      #     gerberToSVG gerber.filename, gerber.file, gerber.name
-    , 10
+    output = $('#individual-layer-output')
+    # unhide the layer outputs (but keep them invisible)
+    output.css('visibility', 'hidden').removeClass 'hidden'
 
+    # then process the gerbers
+    i = -1
+    fn = () ->
+      if ++i < loaded.length
+        gerberToSVG loaded[i], fn
+      else
+        # when done, show the renders
+        output.css('visibility', 'visible')
+        button.text 'svGone!'
+        # go to the layers
+        $('html, body').animate {
+          scrollTop: $('#individual-layer-output').offset().top
+        }, 500
+    fn()
+
+    # return false
     false
+
+  # go to the go button
+  button.removeAttr 'disabled'
+  $('html, body').animate {
+    scrollTop: button.offset().top
+  }, 250
+
 
 # parse a filename for a likely layer select
 setLayerSelect = (select, filename) ->
@@ -94,17 +107,22 @@ gerberToSVG = (gerber, callback) ->
     # grab svg
     svg = event.detail.svg
 
+    # enocode svg for download
+    svg64 = "data:image/svg+xml;base64,#{btoa svg.node.outerHTML}"
+    console.log svg64
+    $("##{id}").siblings('a.layer-link').attr 'href', svg64
+
     # wait briefly, then call the callback
     setTimeout () ->
       if callback? and typeof callback is 'function'
         callback()
-    , 250
+    , 200
 
   # attach a plot progress listener to the window
   addEventListener "plotProgress_#{id}", (event) ->
     # get the progress
     percentLoaded = event.detail.percent
-    console.log "percent plotted: #{percentLoaded}"
+    #console.log "percent plotted: #{percentLoaded}"
     # set the progress bar
     plotProgress.setAttribute 'aria-valuenow', "#{percentLoaded}"
     plotProgress.style.width = "#{percentLoaded}%"
@@ -117,32 +135,10 @@ gerberToSVG = (gerber, callback) ->
     # draw the layer after a delay
     setTimeout () ->
       event.detail.layer.draw id
-    , 250
+    , 200
 
   # plot the layer
   p.plot()
-
-  #svg = layer.draw id
-  # create a div for the drawing to live in
-  # template = $ '#js-layer-container-template'
-  # container = template.clone().removeClass 'js-template'
-
-  # set the id of the draw div and the heading of the container properly
-  # container.children('h4.layer-heading').text("#{filename}")
-  # drawDiv = container.children 'div.layer-drawing'
-  # drawDiv.attr 'id', "js-layer-drawing-#{filename}"
-  # template.after container
-  # # drawDiv.innerHTML = "<h3>#{filename}</h3>"
-  # # drawDiv.id = "layer-#{layer.name}"
-  # # drawDiv.class = 'layer-div'
-  # # document.getElementById('layers').insertBefore(drawDiv, null)
-  # # # draw the layer to the div
-  # svg = layer.draw drawDiv.attr 'id'
-  # svg64 = btoa svg.node.outerHTML
-  #
-  # # append the download link
-  # imgsrc = "data:image/svg+xml;base64,#{svg64}"
-  # drawDiv.innerHTML += "<a download='filename' href-lang='image/svg+xml' href='#{imgsrc}'>download svg</a>"
 
 # file load progress
 updatePlotProgress = (event, filename, progress) ->

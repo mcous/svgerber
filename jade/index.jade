@@ -24,13 +24,13 @@ html(lang="en")
   body
     nav(roll='navigation').navbar.navbar-default.container-fluid
       ul.nav.row
-        li.col-sm-8
+        li.col-sm-10
           h1#title
             a(href='#') svgerber
             small= " (it's in alpha!)"
-        li.col-sm-2
-          a(href='#').octicon.octicon-question
-            = " what's all this then?"
+        //- li.col-sm-2
+        //-   a(href='#').octicon.octicon-question
+        //-     = " what's all this then?"
 
         li.col-sm-2
           a(href='http://github.com/mcous/svgerber' target='_blank').octicon.octicon-mark-github
@@ -74,6 +74,8 @@ html(lang="en")
     mixin layerContainerContents(longLayer, shortLayer)
       h2.layer-heading= longLayer
       div.layer-drawing(id=shortLayer)
+      a(download="#{shortLayer}.svg" href-lang='image/svg+xml' href='#').layer-link
+        = 'download svg'
 
     #individual-layer-output.container.hidden
       #copper-layers-row.row
@@ -104,3 +106,12 @@ html(lang="en")
     script(src='//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js')
     // app
     include ../jade-includes/scripts
+
+  footer.container
+    .navbar
+      a(href='http://getbootstrap.com/' target='_blank').col-sm-2.col-sm-offset-6
+        = 'built with Bootstrap'
+      a(href='http://octicons.github.com/' target='_blank').col-sm-2
+        = "uses GitHub's Octicons"
+      a(href='http://github.com/mcous/svgerber/blob/master/LICENSE.md' target='_blank').col-sm-2
+        = 'copyright 2014 by michael cousins'
