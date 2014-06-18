@@ -1,8 +1,8 @@
 # svgerber
-Get it? It's in alpha!
+it's got vectors and it's in alpha
 
 ## what?
-It's a browser based client-side gerber file to SVG converter.
+svgerber is a browser based gerber file to SVG converter. Everything is converted locally in javascript.
 
 ## why?
 'Cause.

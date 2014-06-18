@@ -1,4 +1,4 @@
-# SVGerber license
+# svgerber license
 Copyright 2014 by Michael Cousins
 
 ## all code and documentation
