@@ -43,24 +43,31 @@ fileToSVG = (file, filename) ->
 # read a file to a div
 readFileToDiv = (event, filename) ->
   console.log "drawing to div"
-  # if event.target.readyState is FileReader.DONE
-  #
-  #   # plot something
-  #   layer = fileToSVG event.target.result, filename
-  #
-  #   # create a div for the drawing to live in
-  #   drawDiv = document.createElement 'div'
-  #   drawDiv.innerHTML = "<h3>#{filename}</h3>"
-  #   drawDiv.id = "layer-#{layer.name}"
-  #   drawDiv.class = 'layer-div'
-  #   document.getElementById('layers').insertBefore(drawDiv, null)
-  #   # draw the layer to the div
-  #   svg = layer.draw drawDiv.id
-  #   svg64 = btoa svg.node.outerHTML
-  #
-  #   # append the download link
-  #   imgsrc = "data:image/svg+xml;base64,#{svg64}"
-  #   drawDiv.innerHTML += "<a download='filename' href-lang='image/svg+xml' href='#{imgsrc}'>download svg</a>"
+  if event.target.readyState is FileReader.DONE
+
+    # plot something
+    layer = fileToSVG event.target.result, filename
+
+    # create a div for the drawing to live in
+    template = $ '#js-layer-container-template'
+    container = template.clone().removeClass 'js-template'
+
+    # set the id of the draw div and the heading of the container properly
+    container.children('h4.layer-heading').text("#{filename}")
+    drawDiv = container.children 'div.layer-drawing'
+    drawDiv.attr 'id', "js-layer-drawing-#{filename}"
+    template.after container
+    # drawDiv.innerHTML = "<h3>#{filename}</h3>"
+    # drawDiv.id = "layer-#{layer.name}"
+    # drawDiv.class = 'layer-div'
+    # document.getElementById('layers').insertBefore(drawDiv, null)
+    # # draw the layer to the div
+    svg = layer.draw drawDiv.attr 'id'
+    # svg64 = btoa svg.node.outerHTML
+    #
+    # # append the download link
+    # imgsrc = "data:image/svg+xml;base64,#{svg64}"
+    # drawDiv.innerHTML += "<a download='filename' href-lang='image/svg+xml' href='#{imgsrc}'>download svg</a>"
 
 # file load progress
 updateProgress = (event, file) ->

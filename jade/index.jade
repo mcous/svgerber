@@ -37,8 +37,8 @@ html(lang="en")
             = ' fork me on github!'
 
     .container#upload-input
-      h2 Let's do this thing
-        small= " But before we do, be aware that some stuff doesn't work:"
+      h2 let's do this thing
+        small= " but before we do, be aware that some stuff doesn't work:"
       ul
         li incremental coordinates don't work
         li trailing zero suppression is untested
@@ -69,8 +69,28 @@ html(lang="en")
       .row
         button(type="button")#process.btn.btn-primary.btn-lg.col-sm-2 svGo!
 
-    .container#process-output
-      div#layers
+    mixin layerContainerContents(longLayer, shortLayer)
+      h2.layer-heading= longLayer
+      div.layer-drawing(id=shortLayer)
+
+    #individual-layer-output.container.hidden
+      #copper-layers-row.row
+        #layer-front-copper.layer-container.col-md-6
+          +layerContainerContents('front copper', 'fcu')
+        #layer-back-copper.layer-container.col-md-6
+          +layerContainerContents('back copper', 'bcu')
+      #soldermask-layers-row.row
+        #layer-front-soldermask.layer-container.col-md-6
+          +layerContainerContents('front soldermask', 'fsm')
+        #layer-back-soldermask.layer-container.col-md-6
+          +layerContainerContents('back soldermask', 'bsm')
+      #silkscreen-layers-row.row
+        #layer-front-silkscreen.layer-container.col-md-6
+          +layerContainerContents('front silkscreen', 'fss')
+        #layer-back-silkscreen.layer-container.col-md-6
+          +layerContainerContents('back silkscreen', 'bss')
+
+    .container#full-board-output
 
     // javascript
     // jquery
