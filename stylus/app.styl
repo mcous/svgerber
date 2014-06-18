@@ -19,6 +19,7 @@
 #individual-layer-output
   margin-top 50px
   margin-bottom 50px
+  text-align center
 
 .progress
   margin-top 20px
@@ -31,9 +32,30 @@
   font-size 16px
 
 .layer-container
-  text-align center
   margin-top 20px
   margin-bottom 20px
+  text-align center
+
+.layer-drawing
+  svg
+    overflow visible
 
 .js-template
   display none
+
+.progress
+  position relative
+
+.progress-bar
+  transition width 0.3s
+  position absolute
+  left 0
+
+.progress-bar-success
+  height 50%
+
+.plot-progress-bar
+  background-color blue
+
+.draw-progress-bar
+  background-color green
