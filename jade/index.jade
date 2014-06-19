@@ -56,7 +56,7 @@ html(lang="en")
 
     output#upload-output.container.hidden
       ul#filelist.list-unstyled
-        li#file-upload-template.js-template.row
+        li#js-upload-template.js-template.row
           .col-sm-5
             p.filename filename
             span= 'layer: '
@@ -109,9 +109,11 @@ html(lang="en")
 
   footer.container
     .navbar
-      a(href='http://getbootstrap.com/' target='_blank').col-sm-2.col-sm-offset-6
-        = 'built with Bootstrap'
+      a(href='http://getbootstrap.com/' target='_blank').col-sm-2
+        = 'built with bootstrap'
       a(href='http://octicons.github.com/' target='_blank').col-sm-2
-        = "uses GitHub's Octicons"
-      a(href='http://github.com/mcous/svgerber/blob/master/LICENSE.md' target='_blank').col-sm-2
+        = "uses github's octicons"
+      a(href='http://www.svgjs.com/' target='_blank').col-sm-2
+        = "uses svg.js"
+      a(href='http://github.com/mcous/svgerber/blob/master/LICENSE.md' target='_blank').col-sm-2.col-sm-offset-4
         = 'copyright 2014 by michael cousins'

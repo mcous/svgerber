@@ -5,9 +5,24 @@
 
 # all gerbers loaded event
 loaded = []
+
+# (re)start the app
+restart = ->
+  # loaded objects needs to be empty
+  loaded = []
+
+  # delete all file listings except the template
+  $('#filelist').children().not('#js-upload-template').remove()
+
+  # hide the layer output and delete all svgs in the layer output
+  layerOutput = $('#individual-layer-output').addClass('hidden')
+  layerOutput.find('svg').remove()
+  layerOutput.find('a.layer-link').attr 'href', '#'
+
+
 allowProcessing = ->
   # BUTTON!
-  button = $('#process')
+  button = $('#process').text 'svGo!'
 
   # attach an event listener
   button.on 'click', (event) ->
@@ -24,7 +39,10 @@ allowProcessing = ->
     # then process the gerbers
     i = -1
     fn = () ->
-      if ++i < loaded.length
+      console.log 'fn was called. incrementing i'
+      i++
+      if i < loaded.length
+        console.log "i is #{i} and length is #{loaded.length}"
         gerberToSVG loaded[i], fn
       else
         # when done, show the renders
@@ -95,12 +113,20 @@ gerberToSVG = (gerber, callback) ->
 
   # attach a draw progress listener to the window
   addEventListener "drawProgress_#{id}", (event) ->
+    event.stopPropagation()
+    event.preventDefault()
     percentLoaded = event.detail.percent
     drawProgress.setAttribute 'aria-valuenow', "#{percentLoaded}"
     drawProgress.style.width = "#{percentLoaded}%"
 
   # attach a draw done listener to the window
   addEventListener "drawDone_#{id}", (event) ->
+    # stop the event
+    event.stopPropagation()
+    event.preventDefault()
+    # remove progress listeners
+    removeEventListener "drawProgress_#{id}"
+    removeEventListener "drawDone_#{id}"
     # update progress bar
     drawProgress.setAttribute 'aria-valuenow', '100'
     drawProgress.style.width = '100%'
@@ -109,17 +135,15 @@ gerberToSVG = (gerber, callback) ->
 
     # enocode svg for download
     svg64 = "data:image/svg+xml;base64,#{btoa svg.node.outerHTML}"
-    console.log svg64
     $("##{id}").siblings('a.layer-link').attr 'href', svg64
 
-    # wait briefly, then call the callback
-    setTimeout () ->
-      if callback? and typeof callback is 'function'
-        callback()
-    , 200
+    # call the callback
+    if callback? and typeof callback is 'function' then callback()
 
   # attach a plot progress listener to the window
   addEventListener "plotProgress_#{id}", (event) ->
+    event.stopPropagation()
+    event.preventDefault()
     # get the progress
     percentLoaded = event.detail.percent
     #console.log "percent plotted: #{percentLoaded}"
@@ -129,9 +153,14 @@ gerberToSVG = (gerber, callback) ->
 
   # attach a plot done listener to the window
   addEventListener "plotDone_#{id}", (event) ->
+    event.stopPropagation()
+    event.preventDefault()
     # update the progress bar
     plotProgress.setAttribute 'aria-valuenow', '100'
     plotProgress.style.width = '100%'
+    # remove progress listeners
+    removeEventListener "plotProgress_#{id}"
+    removeEventListener "plotDone_#{id}"
     # draw the layer after a delay
     setTimeout () ->
       event.detail.layer.draw id
@@ -155,20 +184,28 @@ handleFileSelect = (event) ->
   event.stopPropagation()
   event.preventDefault()
 
+  # restart the app
+  if loaded.length isnt 0 then restart()
+
   # arrays for the uploaded files
   importFiles = null
-  if event.dataTransfer? then importFiles = event.dataTransfer.files
-  else importFiles = event.target.files
+  if event.dataTransfer?
+    importFiles = event.dataTransfer.files
+    event.dataTransfer.files = null
+  else
+    importFiles = event.target.files
+    event.target.files = null
 
   # unhide the output container
   $('#upload-output').removeClass 'hidden'
 
   # read the uploaded files to a div
   for f in importFiles
+    console.log "#{f.name} is in importFiles. length is #{importFiles.length}"
     # closure wrapping!
     do (f) ->
-      # get the import file template
-      template = $ '#file-upload-template'
+      # get the import file template list item
+      template = $ '#js-upload-template'
       item = template.clone().attr('id', "js-upload-#{f.name}")
 
       # set the filename
@@ -197,12 +234,17 @@ handleFileSelect = (event) ->
       # file reader with onload event attached
       reader = new FileReader()
       reader.onloadend = (event) ->
+        event.stopPropagation()
+        event.preventDefault()
         # add to the array of loaded files
         if event.target.readyState is FileReader.DONE
+          console.log "pushing #{f.name} to loaded queue"
           loaded.push {filename: f.name, file: event.target.result, name: name}
           # if all files are loaded
           if loaded.length is importFiles.length
+            console.log "allowing processing of #{f.name}"
             allowProcessing()
+      console.log "reading as text"
       reader.readAsText f
 
 # drag and drop file upload
