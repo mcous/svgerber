@@ -3,24 +3,20 @@
 # app dependencies
 #require 'plotter'
 
-# all gerbers loaded event
-loaded = []
-
 # (re)start the app
 restart = ->
-  # loaded objects needs to be empty
-  loaded = []
-
   # delete all file listings except the template
   $('#filelist').children().not('#js-upload-template').remove()
 
   # hide the layer output and delete all svgs in the layer output
-  layerOutput = $('#individual-layer-output').addClass('hidden')
+  layerOutput = $('#individual-layer-output')
+  layerOutput.find('div.layer-drawing').data 'full', false
   layerOutput.find('svg').remove()
   layerOutput.find('a.layer-link').attr 'href', '#'
+  layerOutput.addClass('hidden')
 
 
-allowProcessing = ->
+allowProcessing = (loaded) ->
   # BUTTON!
   button = $('#process').text 'svGo!'
 
@@ -28,6 +24,8 @@ allowProcessing = ->
   button.on 'click', (event) ->
     event.stopPropagation()
     event.preventDefault()
+    # remove the event listener
+    button.off 'click'
     # disable the button
     button.attr 'disabled', 'disabled'
     button.text 'svGoing!'
@@ -36,23 +34,41 @@ allowProcessing = ->
     # unhide the layer outputs (but keep them invisible)
     output.css('visibility', 'hidden').removeClass 'hidden'
 
-    # then process the gerbers
-    i = -1
-    fn = () ->
-      console.log 'fn was called. incrementing i'
-      i++
-      if i < loaded.length
-        console.log "i is #{i} and length is #{loaded.length}"
-        gerberToSVG loaded[i], fn
-      else
-        # when done, show the renders
-        output.css('visibility', 'visible')
-        button.text 'svGone!'
-        # go to the layers
-        $('html, body').animate {
-          scrollTop: $('#individual-layer-output').offset().top
-        }, 500
-    fn()
+    # then process the gerbers recursively
+    # i = -1
+    # fn = () ->
+    #   console.log 'fn was called. incrementing i'
+    #   i++
+    #   if i < loaded.length
+    #     console.log "i is #{i} and length is #{loaded.length}"
+    #     gerberToSVG loaded[i], fn
+    #   else
+    #     # when done, show the renders
+    #     output.css('visibility', 'visible')
+    #     button.text 'svGone!'
+    #     # go to the layers
+    #     $('html, body').animate {
+    #       scrollTop: $('#individual-layer-output').offset().top
+    #     }, 500
+    # fn()
+
+
+    # process the gerbers
+    done = []
+    for gerber in loaded
+      do (gerber) ->
+        if gerber.name not in done
+          gerberToSVG gerber, () ->
+            if gerber.name not in done
+              done.push gerber.name
+              if done.length is loaded.length
+                # when done, show the renders
+                output.css('visibility', 'visible')
+                button.text 'svGone!'
+                # go to the layers
+                $('html, body').animate {
+                  scrollTop: $('#individual-layer-output').offset().top
+                }, 500
 
     # return false
     false
@@ -163,7 +179,11 @@ gerberToSVG = (gerber, callback) ->
     removeEventListener "plotDone_#{id}"
     # draw the layer after a delay
     setTimeout () ->
-      event.detail.layer.draw id
+      draw = $("##{id}")
+      # make sure some bug hasn't tried to call draw more than once
+      unless draw.data 'full'
+        draw.data 'full', true
+        event.detail.layer.draw id
     , 200
 
   # plot the layer
@@ -185,7 +205,7 @@ handleFileSelect = (event) ->
   event.preventDefault()
 
   # restart the app
-  if loaded.length isnt 0 then restart()
+  restart()
 
   # arrays for the uploaded files
   importFiles = null
@@ -198,6 +218,9 @@ handleFileSelect = (event) ->
 
   # unhide the output container
   $('#upload-output').removeClass 'hidden'
+
+  # processed files
+  loaded = []
 
   # read the uploaded files to a div
   for f in importFiles
@@ -243,7 +266,7 @@ handleFileSelect = (event) ->
           # if all files are loaded
           if loaded.length is importFiles.length
             console.log "allowing processing of #{f.name}"
-            allowProcessing()
+            allowProcessing loaded
       console.log "reading as text"
       reader.readAsText f
 
