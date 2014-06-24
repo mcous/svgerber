@@ -52,11 +52,10 @@ allowProcessing = (loaded) ->
         output.css 'visibility', 'visible'
         button.text 'svGone!'
         # update the nav
-        $('#nav-layers').removeClass 'active'
-        $('#nav-svgs').removeClass('disabled').addClass 'active'
+        $('#nav-svgs').removeClass 'disabled'
         # go to the layers
         $('html, body').animate {
-          scrollTop: $('#individual-layer-output').offset().top
+          scrollTop: $('#individual-layer-output').offset().top - $('#top-nav').height() - 10
         }, 500
     fn()
 
@@ -79,15 +78,15 @@ allowProcessing = (loaded) ->
     # return false
     false
 
+
+  # update the nav
+  $('#nav-layers').removeClass 'disabled'
+
   # go to the go button
   button.removeAttr 'disabled'
   $('html, body').animate {
-    scrollTop: $('#upload-list').offset().top - $('#top-nav').height()
+    scrollTop: $('#upload-list').offset().top - $('#top-nav').height() - 10
   }, 250
-
-  # update the nav
-  $('#nav-upload').removeClass 'active'
-  $('#nav-layers').removeClass('disabled').addClass 'active'
 
 
 # parse a filename for a likely layer select
@@ -273,7 +272,7 @@ dropZone.addEventListener 'drop', handleFileSelect, false
 fileSelect = document.getElementById 'file-upload-select'
 fileSelect.addEventListener 'change', handleFileSelect, false
 
-# also attach event listeners on the navlinks
+# also attach event listeners on the navlinks to scroll
 navLinks = $ 'a.nav-link'
 $('a.nav-link').on 'click', (event) ->
   event.stopPropagation()
@@ -281,30 +280,33 @@ $('a.nav-link').on 'click', (event) ->
   a = $ this
   p = a.parent()
   unless p.hasClass 'disabled'
-    #link.parent().removeClass 'selected' for link in navLinks
-    navLinks.parent().removeClass 'active'
-    p.addClass 'active'
     link = a.attr('href').split('#')[1]
     # scroll to the appropriate section
     $('html, body').animate {
       scrollTop: $("##{link}").offset().top - $('#top-nav').height() - 10
     }, 250
 
-# finallay attach an event listener on the window scroll event
-$(window).scroll () ->
-  console.log 'scroll event'
-  s = $(window).scrollTop()
+# finally attach an event listener on the window scroll event to set active
+w = $ window
+w.scroll () ->
+  # find the middle of the window
+  s = w.scrollTop() + w.height()/2
 
-  if s <= (link = $('#nav-svgs')).offset().top - $('#top-nav').height() - 10
-    unless link.parent().hasClass 'disabled'
-      navLinks.parent().removeClass 'active'
-      link.addClass 'active'
+  # by default, assume upload is active
+  unless (li = $('#nav-upload')).hasClass 'active'
+    li.siblings().removeClass 'active'
+    li.addClass 'active'
 
-  else if s <= (link = $('#nav-layers')).offset().top - $('#top-nav').height() - 10
-    unless link.parent().hasClass 'disabled'
-      navLinks.parent().removeClass 'active'
-      link.addClass 'active'
+  # check if we're in layer output territory
+  if s >= $('#upload-list').offset().top - $('#top-nav').height() - 10
+    unless (li = $('#nav-layers')).hasClass 'disabled' or li.hasClass 'active'
+      console.log "#nav-layers is not disabled"
+      li.siblings().removeClass 'active'
+      li.addClass 'active'
 
-  else
-    navLinks.parent().removeClass 'active'
-    $('#nav-upload').addClass 'active'
+  # finally check if we're in svg territory
+  if s >= $('#individual-layer-output').offset().top - $('#top-nav').height() - 10
+    unless (li = $('#nav-svgs')).hasClass 'disabled' or li.hasClass 'active'
+      console.log "#nav-svgs is not disabled"
+      li.siblings().removeClass 'active'
+      li.addClass 'active'
