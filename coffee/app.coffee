@@ -46,6 +46,9 @@ allowProcessing = (loaded) ->
         # when done, show the renders
         output.css 'visibility', 'visible'
         button.text 'svGone!'
+        # update the nav
+        $('#nav-layers').removeClass 'active'
+        $('#nav-svgs').removeClass('disabled').addClass 'active'
         # go to the layers
         $('html, body').animate {
           scrollTop: $('#individual-layer-output').offset().top
@@ -74,8 +77,12 @@ allowProcessing = (loaded) ->
   # go to the go button
   button.removeAttr 'disabled'
   $('html, body').animate {
-    scrollTop: button.offset().top
+    scrollTop: $('#upload-output').offset().top - $('#top-nav').height()
   }, 250
+
+  # update the nav
+  $('#nav-upload').removeClass 'active'
+  $('#nav-layers').removeClass('disabled').addClass 'active'
 
 
 # parse a filename for a likely layer select
@@ -122,6 +129,7 @@ gerberToSVG = (gerber, callback) ->
 
   # add the drawing icon
   icon = $(document.getElementById "js-upload-#{filename}").children '.mega-octicon'
+  icon.removeClass 'octicon-chevron-right'
   icon.addClass 'octicon-pencil'
 
   # plot something
@@ -224,9 +232,6 @@ handleFileSelect = (event) ->
       # set the progress bar ids and values
       progress = item.find '#js-plot-progress-template'
       progress.attr 'id', "js-plot-progress-#{f.name}"
-      progress.attr('aria-valuenow', '0').width '0%'
-      progress = item.find '#js-draw-progress-template'
-      progress.attr 'id', "js-draw-progress-#{f.name}"
       progress.attr('aria-valuenow', '0').width '0%'
 
       # append
