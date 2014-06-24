@@ -5,8 +5,14 @@
 
 # (re)start the app
 restart = ->
+  console.log "restarting app"
+
   # delete all file listings except the template
   $('#filelist').children().not('#js-upload-template').remove()
+
+  # set the nav bar
+  $('a.nav-link').parent().removeClass('active').addClass 'disabled'
+  $('#nav-upload').removeClass('disabled').addClass 'active'
 
   # hide the layer output and delete all svgs in the layer output
   layerOutput = $('#individual-layer-output')
@@ -14,7 +20,6 @@ restart = ->
   layerOutput.find('svg').remove()
   layerOutput.find('a.layer-link').attr 'href', '#'
   layerOutput.addClass('hidden')
-
 
 allowProcessing = (loaded) ->
   # BUTTON!
@@ -269,11 +274,37 @@ fileSelect = document.getElementById 'file-upload-select'
 fileSelect.addEventListener 'change', handleFileSelect, false
 
 # also attach event listeners on the navlinks
+navLinks = $ 'a.nav-link'
 $('a.nav-link').on 'click', (event) ->
   event.stopPropagation()
   event.preventDefault()
   a = $ this
   p = a.parent()
   unless p.hasClass 'disabled'
+    #link.parent().removeClass 'selected' for link in navLinks
+    navLinks.parent().removeClass 'active'
+    p.addClass 'active'
     link = a.attr('href').split('#')[1]
-    console.log link
+    # scroll to the appropriate section
+    $('html, body').animate {
+      scrollTop: $("##{link}").offset().top - $('#top-nav').height() - 10
+    }, 250
+
+# finallay attach an event listener on the window scroll event
+$(window).scroll () ->
+  console.log 'scroll event'
+  s = $(window).scrollTop()
+
+  if s <= (link = $('#nav-svgs')).offset().top - $('#top-nav').height() - 10
+    unless link.parent().hasClass 'disabled'
+      navLinks.parent().removeClass 'active'
+      link.addClass 'active'
+
+  else if s <= (link = $('#nav-layers')).offset().top - $('#top-nav').height() - 10
+    unless link.parent().hasClass 'disabled'
+      navLinks.parent().removeClass 'active'
+      link.addClass 'active'
+
+  else
+    navLinks.parent().removeClass 'active'
+    $('#nav-upload').addClass 'active'

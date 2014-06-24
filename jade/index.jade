@@ -9,7 +9,7 @@ html(lang="en")
     title svgerber
 
     // bootstrap css
-    link(href='//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css' rel='stylesheet')
+    link(href='/css/bootstrap.min.css' rel='stylesheet')
     // octicons!
     link(href='/octicons/octicons.css' rel='stylesheet')
     // my css
@@ -29,7 +29,7 @@ html(lang="en")
           a(href='#') svgerber
           small= " (alpha!)"
         li#nav-upload.col-xs-3.col-sm-2.active
-          a(href='#upload-input').octicon.octicon-cloud-upload.nav-link
+          a(href='#dropzone').octicon.octicon-cloud-upload.nav-link
             span.hidden-xs= ' upload'
         li#nav-layers.col-xs-3.col-sm-2.disabled
           a(href='#upload-list').octicon.octicon-list-unordered.nav-link
@@ -106,9 +106,9 @@ html(lang="en")
 
     // javascript
     // jquery
-    script(src='https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js')
+    script(src='/lib/jquery-2.1.1.min.js')
     // bootstrap
-    script(src='//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js')
+    script(src='/lib/bootstrap.min.js')
     // app
     include ../jade-includes/scripts
 
