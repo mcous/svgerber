@@ -1,6 +1,11 @@
 # simple file reader for svGerber
 
 # app dependencies
+# jquery and bootstrap
+#require 'lib/jquery-2.1.1.min.js'
+#require 'lib/bootstrap.min.js'
+
+# board plotter class
 #require 'plotter'
 
 # (re)start the app

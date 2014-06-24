@@ -8,11 +8,9 @@ html(lang="en")
     meta(name='viewport' content='width=device-width, initial-scale=1')
     title svgerber
 
-    // bootstrap css
-    link(href='/css/bootstrap.min.css' rel='stylesheet')
     // octicons!
     link(href='/octicons/octicons.css' rel='stylesheet')
-    // my css
+    // css bundle (includes bootstrap)
     link(href='app.css' rel='stylesheet')
 
     // HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries
@@ -104,12 +102,7 @@ html(lang="en")
 
     .container#full-board-output
 
-    // javascript
-    // jquery
-    script(src='/lib/jquery-2.1.1.min.js')
-    // bootstrap
-    script(src='/lib/bootstrap.min.js')
-    // app
+    // app bundle (includes jquery and bootstrap)
     include ../jade-includes/scripts
 
   footer.container
