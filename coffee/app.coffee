@@ -112,6 +112,7 @@ setLayerSelect = (select, filename) ->
 # read a file to a div
 gerberToSVG = (gerber, callback) ->
   console.log 'drawing gerber to svg'
+
   filename = gerber.filename
   id = gerber.name
   gerber = gerber.file
@@ -119,16 +120,19 @@ gerberToSVG = (gerber, callback) ->
   svg = null
   layer = null
 
+  # add the drawing icon
+  icon = $(document.getElementById "js-upload-#{filename}").children '.mega-octicon'
+  icon.addClass 'octicon-pencil'
+
   # plot something
   p = new Plotter gerber, id
   # get the progress bars
-  drawProgress = document.getElementById "js-draw-progress-#{filename}"
   plotProgress = document.getElementById "js-plot-progress-#{filename}"
 
   # progress tracking
   done = 0
   # update interval
-  interval = 10
+  interval = 4
 
   # attach a transition end listener to the CSS3 progress animation
   plotProgress.addEventListener 'transitionend', (event) ->
@@ -141,21 +145,24 @@ gerberToSVG = (gerber, callback) ->
       plotProgress.setAttribute 'aria-valuenow', "#{done}"
       plotProgress.style.width = "#{done}%"
     else
-      # we're done
+      # we're done plotting, let's remove the listener
       plotProgress.removeEventListener 'transitionend'
+
+      # scale the svg
       p.layer.drawNext()
       # enocode svg for download
       svg64 = "data:image/svg+xml;base64,#{btoa p.layer.svg.node.outerHTML}"
       $("##{id}").siblings('a.layer-link').attr 'href', svg64
+
+      icon.removeClass 'octicon-pencil'
+      icon.addClass 'octicon-check'
 
       # call the callback
       if callback? and typeof callback is 'function' then callback()
 
 
   # plot and draw the layer
-  console.log "plotting to #{done + interval}"
   done = p.plotToPercent done + interval
-  console.log "got to #{done}"
   plotProgress.setAttribute 'aria-valuenow', "#{done}"
   plotProgress.style.width = "#{done}%"
 

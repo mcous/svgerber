@@ -22,19 +22,19 @@ html(lang="en")
     <![endif]-->
 
   body
-    nav(roll='navigation').navbar.navbar-default.container-fluid
-      ul.nav.row
-        li.col-sm-10
-          h1#title
-            a(href='#') svgerber
-            small= " (it's in alpha!)"
-        //- li.col-sm-2
-        //-   a(href='#').octicon.octicon-question
-        //-     = " what's all this then?"
-
-        li.col-sm-2
-          a(href='http://github.com/mcous/svgerber' target='_blank').octicon.octicon-mark-github
-            = ' fork me on github!'
+    nav(roll='navigation')#top-nav.navbar.navbar-default.navbar-fixed-top.container-fluid
+      ul.nav.nav-pills.row
+        li.col-xs-12.col-sm-4: h1#title
+          a(href='#') svgerber
+          small= " (alpha!)"
+        li.col-xs-3.col-sm-2: a(href='#').octicon.octicon-cloud-upload
+          = ' upload'
+        li.col-xs-3.col-sm-2: a(href='#').octicon.octicon-list-unordered
+          = ' layers'
+        li.col-xs-3.col-sm-2: a(href='#').octicon.octicon-circuit-board
+          = ' renders'
+        li.col-xs-3.col-sm-2: a(href='http://github.com/mcous/svgerber' target='_blank').octicon.octicon-mark-github
+          = ' source'
 
     .container#upload-input
       h2 let's do this thing
@@ -57,13 +57,14 @@ html(lang="en")
     output#upload-output.container.hidden
       ul#filelist.list-unstyled
         li#js-upload-template.js-template.row
-          .col-sm-5
+          .col-sm-4.filelist-item
             p.filename filename
             span= 'layer: '
             select#js-layer-select-template.layer-type-select
               each val, key in layerTypes
                 option(value=key)= val
-          .col-sm-7
+          .col-sm-1.filelist-item.mega-octicon
+          .col-sm-7.filelist-item
             div.progress
               div#js-plot-progress-template.progress-bar.progress-bar(roll='progressbar' aria-valuenow='60' aria-valuemin='0' aria-valuemax='100' style='width: 60%;')
               div#js-draw-progress-template.progress-bar.progress-bar-success(roll='progressbar' aria-valuenow='20' aria-valuemin='0' aria-valuemax='100' style='width: 20%;')

@@ -166,7 +166,6 @@ class root.Plotter
         # set the layer units
         @layer.setUnits @units
     # return
-    console.log "@index is #{@index} at #{Date.now()}"
     done
 
   # plot one block at a time and returns progress percentage
