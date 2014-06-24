@@ -1,6 +1,6 @@
 # a selection of classes for building a circuit board
 
-#require 'lib/svg.js'
+#require 'lib/svg.min.js'
 #require 'aperture.coffee'
 
 # export the Layer
