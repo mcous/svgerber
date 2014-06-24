@@ -49,6 +49,7 @@ jadeOpts = {
 stylusDir = 'stylus'
 stylusOut = '.'
 stylusOpts = {
+  'all': "--out #{stylusOut} --include-css --include ./css"
   'dev': ''
   'production': '--compress'
 }
@@ -65,7 +66,8 @@ stat = require 'node-static'
 
 # constants
 # match for the require call
-requireMatch = /^#require\s+(('[\w\.\/]+')|("[\w\.\/]+"))\s*$/
+requireMatch = /^#require/
+depMatch = /('[-_\w\.\/]+')|("[-_\w\.\/]+")/
 
 # dependency node class to build out the graph
 class Node
@@ -109,7 +111,7 @@ class Node
     # format them into their full filenames
     for d,i in deps
       # strip away the require stuff
-      deps[i] = d.match(/('[\w\.\/]+')|("[\w\.\/]+")/)[0]
+      deps[i] = d.match(depMatch)[0]
       deps[i] = deps[i][1..-2]
       # lets find that file
       if fs.existsSync(deps[i])
@@ -299,7 +301,7 @@ task 'build:stylus', 'build the stylus files into css files', (options) ->
   invoke 'build:environment'
   # compile the stylus
   console.log "compiling stylus to css"
-  exec "stylus #{stylusOpts[env]} --out #{stylusOut} #{stylusDir}/*", (error, stdout, stderr) ->
+  exec "stylus #{stylusOpts[env]} #{stylusOpts['all']} #{stylusDir}/*", (error, stdout, stderr) ->
     if error then throw error
     console.log "...done compiling stylus"
     console.log stdout + stderr

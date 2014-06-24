@@ -1,4 +1,31 @@
 // svgerber stylesheet
+// bring in bootstrap
+@import "bootstrap.min.css"
+
+// body padding for fixed navbar
+body
+  padding-top 50px
+
+#top-nav-spacer
+  height 50px
+
+#top-nav
+  h1
+    margin-top 9px
+    margin-bottom 9px
+    font-size 30px
+
+  .nav
+    li
+      margin-left 0
+      height 100%
+
+    .octicon
+      text-align center
+      font-size 18px
+      padding 8px
+      margin-top 10px
+      margin-bottom 2px
 
 #dropzone
   margin-top 25px
@@ -14,15 +41,33 @@
 
 #filelist
   li
+    height 48px
     margin 10px
 
-#individual-layer-output
-  margin-top 50px
-  margin-bottom 50px
-  text-align center
+  .filelist-item
+    height 100%
 
-.progress
+  .mega-octicon
+    font-size 48px
+    text-align right
+
+  .progress
+    height 32px
+    margin-top 8px
+    margin-bottom 8px
+
+  .progress-bar
+    transition width 30ms
+
+// process button
+#process
   margin-top 20px
+  margin-bottom 20px
+
+#individual-layer-output
+  padding-top 10px
+  padding-bottom 10px
+  text-align center
 
 .filename
   margin-bottom 0
@@ -43,22 +88,6 @@
 .js-template
   display none
 
-.progress
-  position relative
-
-.progress-bar
-  transition width 0.3s
-  position absolute
-  left 0
-
-.progress-bar-success
-  height 50%
-
-.plot-progress-bar
-  background-color blue
-
-.draw-progress-bar
-  background-color green
-
 footer
+  text-align center
   margin-top 50px

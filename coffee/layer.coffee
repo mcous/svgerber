@@ -1,6 +1,6 @@
 # a selection of classes for building a circuit board
 
-#require 'lib/svg.js'
+#require 'lib/svg.min.js'
 #require 'aperture.coffee'
 
 # export the Layer
@@ -133,8 +133,11 @@ class Fill extends PathObject
 
 # layer class
 class root.Layer
-  constructor: (@name) ->
+  constructor: (id) ->
+    @svg = SVG(id)
+    @group = @svg.group()
     @layerObjects = []
+    @index = 0
 
   setUnits: (u) ->
     if u is 'in' then @units = 'in' else if u is 'mm' then @units = 'mm'
@@ -147,17 +150,21 @@ class root.Layer
 
     # for now let's just stick to lines
     t = new Trace params
-    @layerObjects.push t
+    # draw the trace
+    t.draw @group
 
   addPad: (params) ->
     # create the pad
     p = new Pad params
-    @layerObjects.push p
+    # draw the pad
+    p.draw @group
 
   addFill: (params) ->
     # create the fill
     f = new Fill params
-    @layerObjects.push f
+    # draw fill
+    f.draw @group
+    #@layerObjects.push f
 
   draw: (id) ->
     # console.log "drawing layer origin at #{@minX}, #{@minY}"
@@ -206,3 +213,16 @@ class root.Layer
     # fire the done event
     done.detail.svg = svg
     root.dispatchEvent done
+
+  drawNext: () ->
+    # resize the svg
+    box = @group.bbox()
+    @svg.size("#{box.width}#{@units}", "#{box.height}#{@units}").viewbox 0,0,box.width, box.height
+    # transform the items to fit in the svg and mirror the y
+    @group.transform {
+      x: -box.x
+      y: box.y2
+      scaleY: -1
+    }
+    # return the svg
+    @svg

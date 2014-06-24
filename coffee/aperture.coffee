@@ -5,7 +5,7 @@ root = exports ? this
 class root.Aperture
   constructor: (params) ->
     @["#{key}"] = value for key, value of params
-    @print()
+    #@print()
 
   print: ->
     p = "aperture #{@code} is a #{@shape} with "
