@@ -60,20 +60,6 @@ class root.Plotter
       startY: null
     }
 
-    # plotting progress event
-    @progress = new CustomEvent "plotProgress_#{@name}", {
-      detail: {
-        percent: 0
-      }
-    }
-
-    # plotting done event
-    @done = new CustomEvent "plotDone_#{@name}", {
-      detail: {
-        layer: @layer
-      }
-    }
-
   # plot the layer by reading the gerber file one block at a time
   plot: ->
     # percent tracking in 10% intervals
@@ -129,6 +115,59 @@ class root.Plotter
     @layer.setUnits @units
     # we're done
     root.dispatchEvent @done
+
+  # plot to a certain amount of the file done
+  plotToPercent: (p = 100) ->
+    target = Math.round p/100 * @gerber.length
+    until @end or @index >= target
+      # peak at the next character in the file
+      next = @gerber[@index]
+      # let's figure out what we're doing
+      # if the next character is a %, then we're dealing with a parameter command
+      if next is '%'
+        @readParameter()
+      # else, it's a normal, everyday data block
+      else
+        block = @readBlock()
+        #console.log "block #{block} found at #{@line}"
+
+        while block.length > 0
+          # check for an end of file
+          if block.match /^M0?2$/
+            #console.log "end of file at line #{@line-1}"
+            @end = true
+            block = ''
+
+          # check for a state command (G code)
+          else if block.match /^G[01234579][0-7]?/
+            #console.log "state command at line #{@line-1}"
+            block = @processState block
+
+          # check for a operation code (D code)
+          else if block.match /D[0-9]\d*$/
+            #console.log "operation command at line #{@line-1}"
+            block = @operate block
+
+          # check for a state command
+          else
+            #console.log "don't know what to do with #{block} at line #{@line-1}"
+            block = ''
+
+    # get progress and prevent premature finish
+    done = Math.round @index / @gerber.length * 100
+    if done >= 100 then done = 99
+    if @index >= @gerber.length
+      unless @end then throw "end of file without M02"
+      else
+        # done with the file
+        done = 100
+        # if there was a path in progress, finish it
+        @finishPath()
+        # set the layer units
+        @layer.setUnits @units
+    # return
+    console.log "@index is #{@index} at #{Date.now()}"
+    done
 
   # plot one block at a time and returns progress percentage
   plotNext: ->

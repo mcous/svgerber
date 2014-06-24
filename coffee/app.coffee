@@ -32,7 +32,7 @@ allowProcessing = (loaded) ->
 
     output = $('#individual-layer-output')
     # unhide the layer outputs (but keep them invisible)
-    output.css('visibility', 'hidden').removeClass 'hidden'
+    output.removeClass('hidden').css 'visibility', 'hidden'
 
     # then process the gerbers recursively
     # i = -1
@@ -44,7 +44,7 @@ allowProcessing = (loaded) ->
     #     gerberToSVG loaded[i], fn
     #   else
     #     # when done, show the renders
-    #     output.css('visibility', 'visible')
+    #     output.css 'visibility', 'visible'
     #     button.text 'svGone!'
     #     # go to the layers
     #     $('html, body').animate {
@@ -52,23 +52,21 @@ allowProcessing = (loaded) ->
     #     }, 500
     # fn()
 
-
-    # process the gerbers
+    # # process the gerbers
     done = []
     for gerber in loaded
       do (gerber) ->
         if gerber.name not in done
           gerberToSVG gerber, () ->
-            if gerber.name not in done
-              done.push gerber.name
-              if done.length is loaded.length
-                # when done, show the renders
-                output.css('visibility', 'visible')
-                button.text 'svGone!'
-                # go to the layers
-                $('html, body').animate {
-                  scrollTop: $('#individual-layer-output').offset().top
-                }, 500
+            done.push gerber.name
+            if done.length is loaded.length
+              # when done, show the renders
+              output.css('visibility', 'visible')
+              button.text 'svGone!'
+              # go to the layers
+              $('html, body').animate {
+                scrollTop: $('#individual-layer-output').offset().top
+              }, 500
 
     # return false
     false
@@ -127,80 +125,21 @@ gerberToSVG = (gerber, callback) ->
   drawProgress = document.getElementById "js-draw-progress-#{filename}"
   plotProgress = document.getElementById "js-plot-progress-#{filename}"
 
-  # attach a draw progress listener to the window
-  # addEventListener "drawProgress_#{id}", (event) ->
-  #   event.stopPropagation()
-  #   event.preventDefault()
-  #   percentLoaded = event.detail.percent
-  #   drawProgress.setAttribute 'aria-valuenow', "#{percentLoaded}"
-  #   drawProgress.style.width = "#{percentLoaded}%"
-
-  # attach a draw done listener to the window
-  # addEventListener "drawDone_#{id}", (event) ->
-  #   # stop the event
-  #   event.stopPropagation()
-  #   event.preventDefault()
-  #   # remove progress listeners
-  #   removeEventListener "drawProgress_#{id}"
-  #   removeEventListener "drawDone_#{id}"
-  #   # update progress bar
-  #   drawProgress.setAttribute 'aria-valuenow', '100'
-  #   drawProgress.style.width = '100%'
-  #   # grab svg
-  #   svg = event.detail.svg
-  #
-  #   # enocode svg for download
-  #   svg64 = "data:image/svg+xml;base64,#{btoa svg.node.outerHTML}"
-  #   $("##{id}").siblings('a.layer-link').attr 'href', svg64
-  #
-  #   # call the callback
-  #   if callback? and typeof callback is 'function' then callback()
-  #
-  # # attach a plot progress listener to the window
-  # addEventListener "plotProgress_#{id}", (event) ->
-  #   event.stopPropagation()
-  #   event.preventDefault()
-  #   # get the progress
-  #   percentLoaded = event.detail.percent
-  #   #console.log "percent plotted: #{percentLoaded}"
-  #   # set the progress bar
-  #   plotProgress.setAttribute 'aria-valuenow', "#{percentLoaded}"
-  #   plotProgress.style.width = "#{percentLoaded}%"
-  #
-  # # attach a plot done listener to the window
-  # addEventListener "plotDone_#{id}", (event) ->
-  #   event.stopPropagation()
-  #   event.preventDefault()
-  #   # update the progress bar
-  #   plotProgress.setAttribute 'aria-valuenow', '100'
-  #   plotProgress.style.width = '100%'
-  #   # remove progress listeners
-  #   removeEventListener "plotProgress_#{id}"
-  #   removeEventListener "plotDone_#{id}"
-  #   # draw the layer after a delay
-  #   setTimeout () ->
-  #     draw = $("##{id}")
-  #     # make sure some bug hasn't tried to call draw more than once
-  #     unless draw.data 'full'
-  #       draw.data 'full', true
-  #       event.detail.layer.draw id
-  #   , 200
-
   # progress tracking
   done = 0
-  lastDone = 0
-  plotUntilProgress = () ->
-    while done is lastDone or done%2 isnt 0
-      done = p.plotNext()
-    lastDone = done
-    plotProgress.setAttribute 'aria-valuenow', "#{done}"
-    plotProgress.style.width = "#{done}%"
+  # update interval
+  interval = 100
 
-  # attach a animation end listener to the CSS3 progress animation
+  # attach a transition end listener to the CSS3 progress animation
   plotProgress.addEventListener 'transitionend', (event) ->
     event.stopPropagation()
     event.preventDefault()
-    if done isnt 100 then plotUntilProgress()
+    if done < 100
+      console.log "plotting to #{done + interval}"
+      done = p.plotToPercent done + interval
+      console.log "got to #{done}"
+      plotProgress.setAttribute 'aria-valuenow', "#{done}"
+      plotProgress.style.width = "#{done}%"
     else
       # we're done
       plotProgress.removeEventListener 'transitionend'
@@ -214,7 +153,11 @@ gerberToSVG = (gerber, callback) ->
 
 
   # plot and draw the layer
-  plotUntilProgress()
+  console.log "plotting to #{done + interval}"
+  done = p.plotToPercent done + interval
+  console.log "got to #{done}"
+  plotProgress.setAttribute 'aria-valuenow', "#{done}"
+  plotProgress.style.width = "#{done}%"
 
 
 
