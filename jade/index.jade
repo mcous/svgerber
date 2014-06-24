@@ -29,13 +29,13 @@ html(lang="en")
           a(href='#') svgerber
           small= " (alpha!)"
         li#nav-upload.col-xs-3.col-sm-2.active
-          a(href='#').octicon.octicon-cloud-upload
+          a(href='#upload-input').octicon.octicon-cloud-upload.nav-link
             span.hidden-xs= ' upload'
         li#nav-layers.col-xs-3.col-sm-2.disabled
-          a(href='#').octicon.octicon-list-unordered
+          a(href='#upload-list').octicon.octicon-list-unordered.nav-link
             span.hidden-xs= ' layers'
         li#nav-svgs.col-xs-3.col-sm-2.disabled
-          a(href='#').octicon.octicon-circuit-board
+          a(href='#individual-layer-output').octicon.octicon-circuit-board.nav-link
             span.hidden-xs= ' svgs'
         li#nav-source.col-xs-3.col-sm-2
           a(href='http://github.com/mcous/svgerber' target='_blank').octicon.octicon-mark-github
@@ -59,7 +59,7 @@ html(lang="en")
           = '...or select files'
         input#file-upload-select(type='file' name='file-upload-select' multiple)
 
-    output#upload-output.container.hidden
+    output#upload-list.container.hidden
       ul#filelist.list-unstyled
         li#js-upload-template.js-template.row
           .col-xs-2.col-md-1.filelist-item.mega-octicon.octicon-chevron-right

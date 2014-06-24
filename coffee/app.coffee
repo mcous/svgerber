@@ -77,7 +77,7 @@ allowProcessing = (loaded) ->
   # go to the go button
   button.removeAttr 'disabled'
   $('html, body').animate {
-    scrollTop: $('#upload-output').offset().top - $('#top-nav').height()
+    scrollTop: $('#upload-list').offset().top - $('#top-nav').height()
   }, 250
 
   # update the nav
@@ -204,7 +204,7 @@ handleFileSelect = (event) ->
     event.target.files = null
 
   # unhide the output container
-  $('#upload-output').removeClass 'hidden'
+  $('#upload-list').removeClass 'hidden'
 
   # processed files
   loaded = []
@@ -267,3 +267,13 @@ dropZone.addEventListener 'dragover', handleDragOver, false
 dropZone.addEventListener 'drop', handleFileSelect, false
 fileSelect = document.getElementById 'file-upload-select'
 fileSelect.addEventListener 'change', handleFileSelect, false
+
+# also attach event listeners on the navlinks
+$('a.nav-link').on 'click', (event) ->
+  event.stopPropagation()
+  event.preventDefault()
+  a = $ this
+  p = a.parent()
+  unless p.hasClass 'disabled'
+    link = a.attr('href').split('#')[1]
+    console.log link
