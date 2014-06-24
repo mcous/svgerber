@@ -35,38 +35,38 @@ allowProcessing = (loaded) ->
     output.removeClass('hidden').css 'visibility', 'hidden'
 
     # then process the gerbers recursively
-    # i = -1
-    # fn = () ->
-    #   console.log 'fn was called. incrementing i'
-    #   i++
-    #   if i < loaded.length
-    #     console.log "i is #{i} and length is #{loaded.length}"
-    #     gerberToSVG loaded[i], fn
-    #   else
-    #     # when done, show the renders
-    #     output.css 'visibility', 'visible'
-    #     button.text 'svGone!'
-    #     # go to the layers
-    #     $('html, body').animate {
-    #       scrollTop: $('#individual-layer-output').offset().top
-    #     }, 500
-    # fn()
+    i = -1
+    fn = () ->
+      console.log 'fn was called. incrementing i'
+      i++
+      if i < loaded.length
+        console.log "i is #{i} and length is #{loaded.length}"
+        gerberToSVG loaded[i], fn
+      else
+        # when done, show the renders
+        output.css 'visibility', 'visible'
+        button.text 'svGone!'
+        # go to the layers
+        $('html, body').animate {
+          scrollTop: $('#individual-layer-output').offset().top
+        }, 500
+    fn()
 
     # # process the gerbers
-    done = []
-    for gerber in loaded
-      do (gerber) ->
-        if gerber.name not in done
-          gerberToSVG gerber, () ->
-            done.push gerber.name
-            if done.length is loaded.length
-              # when done, show the renders
-              output.css('visibility', 'visible')
-              button.text 'svGone!'
-              # go to the layers
-              $('html, body').animate {
-                scrollTop: $('#individual-layer-output').offset().top
-              }, 500
+    # done = []
+    # for gerber in loaded
+    #   do (gerber) ->
+    #     if gerber.name not in done
+    #       gerberToSVG gerber, () ->
+    #         done.push gerber.name
+    #         if done.length is loaded.length
+    #           # when done, show the renders
+    #           output.css('visibility', 'visible')
+    #           button.text 'svGone!'
+    #           # go to the layers
+    #           $('html, body').animate {
+    #             scrollTop: $('#individual-layer-output').offset().top
+    #           }, 500
 
     # return false
     false
@@ -128,7 +128,7 @@ gerberToSVG = (gerber, callback) ->
   # progress tracking
   done = 0
   # update interval
-  interval = 100
+  interval = 10
 
   # attach a transition end listener to the CSS3 progress animation
   plotProgress.addEventListener 'transitionend', (event) ->
