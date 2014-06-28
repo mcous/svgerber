@@ -14,6 +14,8 @@ restart = ->
 
   # delete all file listings except the template
   $('#filelist').children().not('#js-upload-template').remove()
+  # hide the file list
+  $('#upload-list').addClass 'hidden'
 
   # set the nav bar
   $('a.nav-link').parent().removeClass('active').addClass 'disabled'
@@ -61,7 +63,7 @@ allowProcessing = (loaded) ->
         # go to the layers
         $('html, body').animate {
           scrollTop: $('#individual-layer-output').offset().top - $('#top-nav').height() - 10
-        }, 500
+        }, 250
     fn()
 
     # # process the gerbers
@@ -78,7 +80,7 @@ allowProcessing = (loaded) ->
     #           # go to the layers
     #           $('html, body').animate {
     #             scrollTop: $('#individual-layer-output').offset().top
-    #           }, 500
+    #           }, 250
 
     # return false
     false
@@ -291,7 +293,19 @@ $('a.nav-link').on 'click', (event) ->
       scrollTop: $("##{link}").offset().top - $('#top-nav').height() - 10
     }, 250
 
-# finally attach an event listener on the window scroll event to set active
+# event listener on main title to restart the app and scroll to the top
+$('#title').on 'click', (event) ->
+  event.stopPropagation()
+  event.preventDefault()
+  a = $(this).children('a')
+  # restart the app
+  restart()
+  # scroll to top
+  $('html, body').animate {
+    scrollTop: 0
+  }, 250
+
+# attach an event listener on the window scroll event to set active
 w = $ window
 w.scroll () ->
   # find the middle of the window
