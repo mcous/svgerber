@@ -1,6 +1,5 @@
-# ignore npm and bower doing their thing
+# ignore npm doing its thing
 node_modules
-bower_components
 
 # testy files
 testgerber
