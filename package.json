@@ -1,14 +1,15 @@
 {
-  "name"            : "labs.cosine.io",
+  "name"            : "svgerber.cousins.io",
   "version"         : "0.0.1",
   "devDependencies" :
   {
-    "jade"          : "*",
-    "stylus"        : "*",
-    "nib"           : "*",
-    "coffee-script" : "*",
-    "node-static"   : "*",
-    "jasmine-node"  : "*",
-    "uglify-js"     : "*"
+    "jade"             : "*",
+    "stylus"           : "*",
+    "nib"              : "*",
+    "coffee-script"    : "*",
+    "node-static"      : "*",
+    "jasmine-node"     : "*",
+    "bower"            : "*",
+    "uglify-js"        : "*"
   }
 }

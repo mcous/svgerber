@@ -2,8 +2,8 @@
 
 # app dependencies
 # jquery and bootstrap
-#require 'lib/jquery-2.1.1.min.js'
-#require 'lib/bootstrap.min.js'
+#require 'bower_components/jquery/dist/jquery.min.js'
+#require 'bower_components/bootstrap/dist/js/bootstrap.min.js'
 
 # board plotter class
 #require 'plotter'

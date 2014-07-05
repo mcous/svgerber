@@ -1,0 +1,10 @@
+{
+  "name"            : "svgerber.cousins.io",
+  "dependencies" :
+  {
+    "jquery"     : "*",
+    "bootstrap"  : "*",
+    "octicons"   : "*",
+    "svg.js"     : "*"
+  }
+}

@@ -1,10 +1,7 @@
 # a selection of classes for building a circuit board
 
-#require 'lib/svg.min.js'
-#require 'aperture.coffee'
-
-# export the Layer
-root = exports ? this
+# requirements
+#require 'bower_components/svg.js/dist/svg.min.js'
 
 # layer object (pad or trace)
 class LayerObject
@@ -132,9 +129,10 @@ class Fill extends PathObject
     super path
 
 # layer class
-class root.Layer
+#class root.Layer
+class Layer
   constructor: (id) ->
-    @svg = SVG(id)
+    @svg = SVG id
     @group = @svg.group()
     @layerObjects = []
     @index = 0
@@ -166,54 +164,6 @@ class root.Layer
     f.draw @group
     #@layerObjects.push f
 
-  draw: (id) ->
-    # console.log "drawing layer origin at #{@minX}, #{@minY}"
-    #console.log "objects to draw: #{@layerObjects.length}"
-
-    percent = 0
-    interval = 10
-    count = Math.round @layerObjects.length * (interval / 100)
-
-    # create a draw progress event
-    progress = new CustomEvent "drawProgress_#{id}", {
-      detail: {
-        percent: 0
-      }
-    }
-
-    # drawing done event
-    done = new CustomEvent "drawDone_#{id}", {
-      detail: {
-        svg: null
-      }
-    }
-
-    svg = SVG id
-    group = svg.group()
-
-    # draw all the objects and get the bounding box
-    for o, i in @layerObjects
-      o.draw group
-      # fire progress event if it's necessary
-      if i/count > percent then percent += interval
-      if percent isnt progress.detail.percent
-        progress.detail.percent = percent
-        root.dispatchEvent progress
-    box = group.bbox()
-
-    # resize the svg
-    svg.size("#{box.width}#{@units}", "#{box.height}#{@units}").viewbox 0,0,box.width, box.height
-    # transform the items to fit in the svg and mirror the y
-    group.transform {
-      x: -box.x
-      y: box.y2
-      scaleY: -1
-    }
-
-    # fire the done event
-    done.detail.svg = svg
-    root.dispatchEvent done
-
   drawNext: () ->
     # resize the svg
     box = @group.bbox()
@@ -226,3 +176,6 @@ class root.Layer
     }
     # return the svg
     @svg
+
+# export
+if module? then module.exports = Layer else @.Layer = Layer

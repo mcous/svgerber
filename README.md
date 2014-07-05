@@ -18,7 +18,8 @@ If you want to run it locally and play around, run the dev server. Thanks to @hc
 
 This project (for now) uses cake (Coffeescript make) to build and serve the app.
 
-1. `$ npm install  # install dependencies`
+1. `$ npm install  # install dev dependencies`
+2. `$ bower install  # install app dependencies`
 2. `$ cake serve   # start the server / file watcher`
 3. surf the web at http://localhost:8080
 
