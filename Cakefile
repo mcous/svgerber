@@ -29,7 +29,8 @@ jsList = ''
 
 # uglify.js
 uglyOpts = '--preamble "/* view source at github.com/mcous/svgerber */"
-            --compress drop_console=true'
+            --compress drop_console=true
+            --mangle'
 # output bundle file
 bundle = 'app.js'
 
