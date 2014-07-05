@@ -50,7 +50,7 @@ jadeOpts = {
 stylusDir = 'stylus'
 stylusOut = '.'
 stylusOpts = {
-  'all': "--out #{stylusOut} --include-css --include ./css"
+  'all': "--out #{stylusOut} --include-css"
   'dev': ''
   'production': '--compress'
 }
