@@ -33,12 +33,8 @@ deployFiles = [
 
 # arguments (checks for production build)
 argv = require('minimist') process.argv.slice(2), {
-  default: {
-    p: false
-  }
-  alias: {
-    p: 'production'
-  }
+  default: { p: false }
+  alias: { p: 'production' }
 }
 
 # octicon stuff
@@ -47,12 +43,9 @@ gulp.task 'octicons', ->
     .pipe ignore.include /(\.eot)|(\.svg)|(\.ttf)|(\.woff)/
     .pipe gulp.dest '.'
 
-gulp.task 'production', ->
-  argv.p = true
-
+# clean tasks
 gulp.task 'clean', ['clean:css', 'clean:js', 'clean:html']
 
-# clean
 gulp.task 'clean:css', ->
   gulp.src '*.css', {read: false}
     .pipe rimraf()
@@ -133,6 +126,6 @@ gulp.task 'serve', ['watch'], ->
 gulp.task 'deploy', ['default'], ->
   gulp.src deployFiles
     .pipe deploy {
-      branch: 'gh-test'
+      branch: 'gh-pages'
       push: argv.p
     }
