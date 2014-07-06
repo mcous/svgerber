@@ -30,8 +30,8 @@
     "coffee-script"    : "*",
     "node-static"      : "*",
     "jasmine-node"     : "*",
-    "bower"            : "*",
     "uglify-js"        : "*",
+    "bower"            : "*",
     "browserify"       : "*",
     "coffeeify"        : "*",
     "browserify-shim"  : "*"
