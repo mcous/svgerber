@@ -1,6 +1,27 @@
 {
   "name"            : "svgerber.cousins.io",
   "version"         : "0.0.1",
+  "description"     : "Client-side Gerber file to SVG converter",
+  "repository" : {
+    "type" : "git",
+    "url"  : "git://github.com/mcous/svgerber.git"
+  },
+  "browser" : {
+    "jquery"    : "./bower_components/jquery/dist/jquery.js",
+    "bootstrap" : "./bower_components/bootstrap/dist/js/bootstrap.js",
+    "svg.js"    : "./bower_components/svg.js/dist/svg.js"
+  },
+  "browserify" : {
+    "transform" : [
+      "browserify-shim",
+      "coffeeify"
+    ]
+  },
+  "browserify-shim" : {
+    "jquery"    : "$",
+    "bootstrap" : { "depends" : [ "jquery:$" ] },
+    "svg.js" : "SVG"
+  },
   "devDependencies" :
   {
     "jade"             : "*",
@@ -10,6 +31,9 @@
     "node-static"      : "*",
     "jasmine-node"     : "*",
     "bower"            : "*",
-    "uglify-js"        : "*"
+    "uglify-js"        : "*",
+    "browserify"       : "*",
+    "coffeeify"        : "*",
+    "browserify-shim"  : "*"
   }
 }

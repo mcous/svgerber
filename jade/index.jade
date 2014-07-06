@@ -8,8 +8,8 @@ html(lang="en")
     meta(name='viewport' content='width=device-width, initial-scale=1')
     title svgerber
 
-    // octicons!
-    link(href='/bower_components/octicons/octicons/octicons.css' rel='stylesheet')
+    // octicons
+    link(href='bower_components/octicons/octicons/octicons.css' rel='stylesheet')
     // css bundle (includes bootstrap)
     link(href='app.css' rel='stylesheet')
 
@@ -111,7 +111,8 @@ html(lang="en")
     .container#full-board-output
 
     // app bundle (includes jquery and bootstrap)
-    include ../jade-includes/scripts
+    //include ../jade-includes/scripts
+    script(src='app.js')
 
   footer.container
     .navbar

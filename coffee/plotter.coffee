@@ -6,6 +6,8 @@
 # export to node or window
 # root = exports ? this
 
+Layer = require './layer.coffee'
+
 # aperture class
 class Aperture
   constructor: (params) ->

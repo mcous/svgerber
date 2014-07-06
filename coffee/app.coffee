@@ -8,6 +8,11 @@
 # board plotter class
 #require 'plotter'
 
+$ = require 'jquery'
+require 'bootstrap'
+
+Plotter = require './plotter.coffee'
+
 # (re)start the app
 restart = ->
   console.log "restarting app"

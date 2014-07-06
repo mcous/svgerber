@@ -3,6 +3,8 @@
 # requirements
 #require 'bower_components/svg.js/dist/svg.min.js'
 
+SVG = require 'svg.js'
+
 # layer object (pad or trace)
 class LayerObject
   # constructor takes in the tool shape, start position, parameters

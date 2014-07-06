@@ -4,10 +4,6 @@ node_modules
 # testy files
 testgerber
 
-# intermediate js and jade files
-js/*
-jade-includes/*
-
 # we don't need the generated app files
 # (unless we're on the gh-pages branch)
 # (if we're on gh-pages, delete this)
