@@ -2,13 +2,12 @@
 # dependencies
 browserify = require 'browserify'
 source     = require 'vinyl-source-stream'
-stat = require 'node-static'
+stat       = require 'node-static'
 # plugins
 gulp       = require 'gulp'
 util       = require 'gulp-util'
 streamify  = require 'gulp-streamify'
 stylus     = require 'gulp-stylus'
-#less       = require 'gulp-less'
 prefix     = require 'gulp-autoprefixer'
 minifycss  = require 'gulp-minify-css'
 jade       = require 'gulp-jade'
@@ -51,13 +50,23 @@ gulp.task 'octicons', ->
 gulp.task 'production', ->
   argv.p = true
 
+gulp.task 'clean', ['clean:css', 'clean:js', 'clean:html']
+
 # clean
-gulp.task 'clean', ->
-  gulp.src ['./app.css', './app.js', './index.html'], {read: false}
+gulp.task 'clean:css', ->
+  gulp.src '*.css', {read: false}
+    .pipe rimraf()
+
+gulp.task 'clean:js', ->
+  gulp.src '*.js', {read: false}
+    .pipe rimraf()
+
+gulp.task 'clean:html', ->
+  gulp.src '*.html', {read: false}
     .pipe rimraf()
 
 # compile stylus
-gulp.task 'stylus', ['clean', 'octicons'], ->
+gulp.task 'stylus', ['clean:css', 'octicons'], ->
   gulp.src './stylus/app.styl'
     .pipe stylus {
       'include css': 'true'
@@ -67,7 +76,7 @@ gulp.task 'stylus', ['clean', 'octicons'], ->
     .pipe gulp.dest '.'
 
 # compile jade
-gulp.task 'jade', ['clean'], ->
+gulp.task 'jade', ['clean:html'], ->
   gulp.src './jade/index.jade'
     .pipe jade {
       pretty: !argv.p
@@ -75,7 +84,7 @@ gulp.task 'jade', ['clean'], ->
     .pipe gulp.dest '.'
 
 # compile and bundle coffee with browserify
-gulp.task 'coffee', ['clean'], ->
+gulp.task 'coffee', ['clean:js'], ->
   browserify './coffee/app.coffee'
     .bundle {
       insertGlobals: !argv.p
@@ -95,7 +104,7 @@ gulp.task 'default', ['stylus', 'jade', 'coffee']
 # watch files with autoreload
 gulp.task 'watch', ['default'], ->
   # live reload server
-  server = livereload
+  livereload.listen()
   # watch stylus
   gulp.watch './stylus/*.styl', ['stylus']
   # watch jade
@@ -105,7 +114,7 @@ gulp.task 'watch', ['default'], ->
   # reload on changes
   gulp.watch ['./index.html', './app.css', './app.js']
     .on 'change', (file) ->
-      server.changed file.path
+      livereload.changed file.path
 
 # set up static server
 gulp.task 'serve', ['watch'], ->

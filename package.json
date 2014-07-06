@@ -29,12 +29,8 @@
   },
   "devDependencies" :
   {
-    "jade"                : "*",
-    "stylus"              : "*",
-    "coffee-script"       : "*",
     "node-static"         : "*",
     "jasmine-node"        : "*",
-    "uglify-js"           : "*",
     "bower"               : "*",
     "browserify"          : "*",
     "coffeeify"           : "*",
@@ -51,7 +47,6 @@
     "gulp-jade"           : "*",
     "gulp-uglifyjs"       : "*",
     "gulp-livereload"     : "*",
-    "gulp-notify"         : "*",
     "gulp-rimraf"         : "*",
     "gulp-gh-pages"       : "*"
   }
