@@ -17,9 +17,9 @@
       "coffeeify"
     ],
     "noParse" : [
-      "./bower_components/jquery/dist/jquery.js",
-      "./bower_components/bootstrap/dist/js/bootstrap.js",
-      "./bower_components/svg.js/dist/svg.js"
+      "jquery",
+      "bootstrap",
+      "svg.js"
     ]
   },
   "browserify-shim" : {
@@ -42,13 +42,16 @@
     "vinyl-source-stream" : "*",
     "minimist"            : "*",
     "gulp"                : "*",
+    "gulp-util"           : "*",
+    "gulp-streamify"      : "*",
     "gulp-stylus"         : "*",
     "gulp-autoprefixer"   : "*",
     "gulp-minify-css"     : "*",
     "gulp-jade"           : "*",
-    "gulp-uglify"         : "*",
+    "gulp-uglifyjs"       : "*",
     "gulp-livereload"     : "*",
     "gulp-notify"         : "*",
-    "gulp-rimraf"         : "*"
+    "gulp-rimraf"         : "*",
+    "gulp-gh-pages"       : "*"
   }
 }
