@@ -15,6 +15,11 @@
     "transform" : [
       "browserify-shim",
       "coffeeify"
+    ],
+    "noParse" : [
+      "./bower_components/jquery/dist/jquery.js",
+      "./bower_components/bootstrap/dist/js/bootstrap.js",
+      "./bower_components/svg.js/dist/svg.js"
     ]
   },
   "browserify-shim" : {
@@ -24,16 +29,26 @@
   },
   "devDependencies" :
   {
-    "jade"             : "*",
-    "stylus"           : "*",
-    "nib"              : "*",
-    "coffee-script"    : "*",
-    "node-static"      : "*",
-    "jasmine-node"     : "*",
-    "uglify-js"        : "*",
-    "bower"            : "*",
-    "browserify"       : "*",
-    "coffeeify"        : "*",
-    "browserify-shim"  : "*"
+    "jade"                : "*",
+    "stylus"              : "*",
+    "coffee-script"       : "*",
+    "node-static"         : "*",
+    "jasmine-node"        : "*",
+    "uglify-js"           : "*",
+    "bower"               : "*",
+    "browserify"          : "*",
+    "coffeeify"           : "*",
+    "browserify-shim"     : "*",
+    "vinyl-source-stream" : "*",
+    "minimist"            : "*",
+    "gulp"                : "*",
+    "gulp-stylus"         : "*",
+    "gulp-autoprefixer"   : "*",
+    "gulp-minify-css"     : "*",
+    "gulp-jade"           : "*",
+    "gulp-uglify"         : "*",
+    "gulp-livereload"     : "*",
+    "gulp-notify"         : "*",
+    "gulp-rimraf"         : "*"
   }
 }
