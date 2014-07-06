@@ -18,6 +18,20 @@ rimraf     = require 'gulp-rimraf'
 deploy     = require 'gulp-gh-pages'
 ignore     = require 'gulp-ignore'
 
+# deploy files
+deployFiles = [
+  'index.html'
+  'app.css'
+  'app.js'
+  'octicons.eot'
+  'octicons.svg'
+  'octicons.ttf'
+  'octicons.woff'
+  'LICENSE.md'
+  'README.md'
+  'CNAME'
+]
+
 # arguments (checks for production build)
 argv = require('minimist') process.argv.slice(2), {
   default: {
@@ -61,7 +75,7 @@ gulp.task 'jade', ['clean'], ->
     .pipe gulp.dest '.'
 
 # compile and bundle coffee with browserify
-gulp.task 'coffee', ->
+gulp.task 'coffee', ['clean'], ->
   browserify './coffee/app.coffee'
     .bundle {
       insertGlobals: !argv.p
@@ -80,17 +94,14 @@ gulp.task 'default', ['stylus', 'jade', 'coffee']
 
 # watch files with autoreload
 gulp.task 'watch', ['default'], ->
-
   # live reload server
   server = livereload
-
   # watch stylus
   gulp.watch './stylus/*.styl', ['stylus']
   # watch jade
   gulp.watch './jade/*.jade', ['jade']
   # watch coffee
   gulp.watch './coffee/*.coffee', ['coffee']
-
   # reload on changes
   gulp.watch ['./index.html', './app.css', './app.js']
     .on 'change', (file) ->
@@ -110,8 +121,9 @@ gulp.task 'serve', ['watch'], ->
   console.log "server started at http://localhost:8080\n"
 
 # deploy to gh-pages
-gulp.task 'deploy', ->
-  gulp.src ['./index.html', 'app.css', 'app.js', 'bower_components/octicons/octicons/*']
+gulp.task 'deploy', ['default'], ->
+  gulp.src deployFiles
     .pipe deploy {
       branch: 'gh-test'
+      push: argv.p
     }
