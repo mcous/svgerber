@@ -8,6 +8,7 @@ gulp       = require 'gulp'
 util       = require 'gulp-util'
 streamify  = require 'gulp-streamify'
 stylus     = require 'gulp-stylus'
+#less       = require 'gulp-less'
 prefix     = require 'gulp-autoprefixer'
 minifycss  = require 'gulp-minify-css'
 jade       = require 'gulp-jade'
@@ -15,6 +16,7 @@ uglify     = require 'gulp-uglifyjs'
 livereload = require 'gulp-livereload'
 rimraf     = require 'gulp-rimraf'
 deploy     = require 'gulp-gh-pages'
+ignore     = require 'gulp-ignore'
 
 # arguments (checks for production build)
 argv = require('minimist') process.argv.slice(2), {
@@ -26,6 +28,12 @@ argv = require('minimist') process.argv.slice(2), {
   }
 }
 
+# octicon stuff
+gulp.task 'octicons', ->
+  gulp.src './bower_components/octicons/octicons/octicons.*'
+    .pipe ignore.include /(\.eot)|(\.svg)|(\.ttf)|(\.woff)/
+    .pipe gulp.dest '.'
+
 gulp.task 'production', ->
   argv.p = true
 
@@ -35,7 +43,7 @@ gulp.task 'clean', ->
     .pipe rimraf()
 
 # compile stylus
-gulp.task 'stylus', ['clean'], ->
+gulp.task 'stylus', ['clean', 'octicons'], ->
   gulp.src './stylus/app.styl'
     .pipe stylus {
       'include css': 'true'
@@ -103,8 +111,7 @@ gulp.task 'serve', ['watch'], ->
 
 # deploy to gh-pages
 gulp.task 'deploy', ->
-  gulp.src './'
+  gulp.src ['./index.html', 'app.css', 'app.js', 'bower_components/octicons/octicons/*']
     .pipe deploy {
       branch: 'gh-test'
-      push: false
     }

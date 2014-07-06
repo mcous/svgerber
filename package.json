@@ -43,6 +43,7 @@
     "minimist"            : "*",
     "gulp"                : "*",
     "gulp-util"           : "*",
+    "gulp-ignore"         : "*",
     "gulp-streamify"      : "*",
     "gulp-stylus"         : "*",
     "gulp-autoprefixer"   : "*",

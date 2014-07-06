@@ -1,12 +1,12 @@
-# ignore npm doing its thing
+# ignore npm and bower doing their thing
 node_modules
+bower_components
 
 # testy files
 testgerber
 
 # we don't need the generated app files
-# (unless we're on the gh-pages branch)
-# (if we're on gh-pages, delete this)
 app.css
 app.js
 index.html
+octicons.*
