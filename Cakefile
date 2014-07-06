@@ -1,7 +1,4 @@
 # cakefile for svgerber
-# This cakefile supports automatic dependency resolution by sticking:
-  #require "filename"
-# in any file that depends on another file.
 
 # Cakefile options
 # valid build environments (first value is default)

@@ -1,16 +1,10 @@
-# simple file reader for svGerber
+# main svgerber site application
 
-# app dependencies
-# jquery and bootstrap
-#require 'bower_components/jquery/dist/jquery.min.js'
-#require 'bower_components/bootstrap/dist/js/bootstrap.min.js'
-
-# board plotter class
-#require 'plotter'
-
+# uses jquery and bootstrap
 $ = require 'jquery'
 require 'bootstrap'
 
+# gerber to svg plotter
 Plotter = require './plotter.coffee'
 
 # (re)start the app

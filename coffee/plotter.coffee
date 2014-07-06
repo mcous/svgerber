@@ -1,11 +1,6 @@
-# plotter classes for svgerber
+# gerber to svg plotter class
 
-# we need the aperture and board class
-#require 'layer'
-
-# export to node or window
-# root = exports ? this
-
+# we need the board layer class
 Layer = require './layer.coffee'
 
 # aperture class
@@ -35,7 +30,6 @@ class Aperture
     console.log p
 
 # Plotter class
-#class root.Plotter
 class Plotter
   # constructor takes the filestring and the name of the layer
   constructor: (@gerber, @name) ->
@@ -714,5 +708,5 @@ class Plotter
     # return the array
     numbers
 
-# export
+# export to node or window
 if module? then module.exports = Plotter else @.Plotter = Plotter

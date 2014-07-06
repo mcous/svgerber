@@ -1,8 +1,6 @@
-# a selection of classes for building a circuit board
+# classes to represent a layer of a circuit board
 
-# requirements
-#require 'bower_components/svg.js/dist/svg.min.js'
-
+# requires the svg.js library
 SVG = require 'svg.js'
 
 # layer object (pad or trace)
@@ -179,5 +177,5 @@ class Layer
     # return the svg
     @svg
 
-# export
+# export to node or window
 if module? then module.exports = Layer else @.Layer = Layer
