@@ -9,7 +9,7 @@ Plotter = require './plotter.coffee'
 
 # (re)start the app
 restart = ->
-  console.log "restarting app"
+  console.log "restarting svgerber"
 
   # delete all file listings except the template
   $('#filelist').children().not('#js-upload-template').remove()

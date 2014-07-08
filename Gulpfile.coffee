@@ -1,6 +1,7 @@
 # gulpfile
 # dependencies
 browserify = require 'browserify'
+watchify   = require 'watchify'
 source     = require 'vinyl-source-stream'
 stat       = require 'node-static'
 # plugins
@@ -96,31 +97,45 @@ gulp.task 'default', ['stylus', 'jade', 'coffee']
 
 # watch files with autoreload
 gulp.task 'watch', ['default'], ->
-  # live reload server
-  livereload.listen()
+  bundler = watchify './coffee/app.coffee'
+  rebundle = ->
+    bundler.bundle {
+        insertGlobals: !argv.p
+        debug: !argv.p
+      }
+      .on 'error', (e) ->
+        util.log 'browserify error', e
+      .pipe source 'app.js'
+      .pipe gulp.dest '.'
+  bundler.on 'update', rebundle
+  bundler.on 'log', (msg) -> util.log "bundle: ${msg}"
+
   # watch stylus
   gulp.watch './stylus/*.styl', ['stylus']
   # watch jade
   gulp.watch './jade/*.jade', ['jade']
-  # watch coffee
-  gulp.watch './coffee/*.coffee', ['coffee']
-  # reload on changes
-  gulp.watch ['./index.html', './app.css', './app.js']
-    .on 'change', (file) ->
-      livereload.changed file.path
+  # bundle coffee
+  rebundle()
 
-# set up static server
+# set up static server with autoreload
 gulp.task 'serve', ['watch'], ->
   server = new stat.Server '.'
   require('http').createServer( (request, response) ->
     request.addListener( 'end', ->
       server.serve(request, response, (error, result)->
-        if error then console.log "error serving #{request.url}"
-        else console.log "served #{request.url}"
+        if error then util.log "error serving #{request.url}"
+        else util.log "served #{request.url}"
       )
     ).resume()
   ).listen 8080
-  console.log "server started at http://localhost:8080\n"
+  util.log "server started at http://localhost:8080\n"
+
+  # live reload server
+  livereload.listen()
+  # reload on changes
+  gulp.watch ['./index.html', './app.css', './app.js']
+    .on 'change', (file) ->
+      livereload.changed file.path
 
 # deploy to gh-pages
 gulp.task 'deploy', ['default'], ->

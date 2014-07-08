@@ -33,6 +33,7 @@
     "jasmine-node"        : "*",
     "bower"               : "*",
     "browserify"          : "*",
+    "watchify"            : "*",
     "coffeeify"           : "*",
     "browserify-shim"     : "*",
     "vinyl-source-stream" : "*",
