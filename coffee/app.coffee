@@ -122,7 +122,7 @@ setLayerSelect = (select, filename) ->
     val = 'out'
 
   # set the selected attribute
-  option = select.children("[value='#{val}']").attr 'selected',''
+  option = select.children("[value='#{val}']").attr 'selected','selected'
   # return the value selected
   val
 
@@ -131,7 +131,22 @@ gerberToSVG = (gerber, callback) ->
   console.log 'drawing gerber to svg'
 
   filename = gerber.filename
-  id = gerber.name
+  select = $(document.getElementById "js-layer-select-#{filename}")
+  id = select.find(":selected").attr 'value'
+
+  # get the progress bars
+  plotProgress = document.getElementById "js-plot-progress-#{filename}"
+  # progress tracking
+  done = 0
+  # update interval
+  interval = 4
+
+  # we're done if it's an other file
+  if id is 'oth'
+    plotProgress.setAttribute 'aria-valuenow', "100"
+    plotProgress.style.width = "100%"
+    if callback? and typeof callback is 'function' then callback()
+    return
   gerber = gerber.file
 
   svg = null
@@ -144,13 +159,6 @@ gerberToSVG = (gerber, callback) ->
 
   # plot something
   p = new Plotter gerber, id
-  # get the progress bars
-  plotProgress = document.getElementById "js-plot-progress-#{filename}"
-
-  # progress tracking
-  done = 0
-  # update interval
-  interval = 4
 
   # attach a transition end listener to the CSS3 progress animation
   plotProgress.addEventListener 'transitionend', (event) ->
