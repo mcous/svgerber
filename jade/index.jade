@@ -8,9 +8,6 @@ html(lang="en")
     meta(name='viewport' content='width=device-width, initial-scale=1')
     title svgerber
 
-    // octicons
-    //link(href='bower_components/octicons/octicons/octicons.css' rel='stylesheet')
-    // css bundle (includes bootstrap)
     link(href='app.css' rel='stylesheet')
 
     // HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries
@@ -51,9 +48,6 @@ html(lang="en")
       h2 let's do this thing
         small= " but before we do, be aware that some stuff doesn't work:"
       ul
-        li incremental coordinates don't work
-        li aperture macros don't work
-        li trailing zero suppression is untested
         li drill files are not supported
         li old files with deprecated gerber commands could confuse it
         li the UI is crap
@@ -122,7 +116,5 @@ html(lang="en")
         = 'built with bootstrap'
       a(href='http://octicons.github.com/' target='_blank').col-sm-2
         = "uses github's octicons"
-      a(href='http://www.svgjs.com/' target='_blank').col-sm-2
-        = "uses svg.js"
-      a(href='http://github.com/mcous/svgerber/blob/master/LICENSE.md' target='_blank').col-sm-2.col-sm-offset-4
+      a(href='http://github.com/mcous/svgerber/blob/master/LICENSE.md' target='_blank').col-sm-4.col-sm-offset-4
         = 'copyright 2014 by michael cousins'

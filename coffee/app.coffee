@@ -59,11 +59,10 @@ allowProcessing = (loaded) ->
         $('html, body').animate {
           scrollTop: $('#individual-layer-output').offset().top - $('#top-nav').height() - 10
         }, 250
-    fn()
+    setTimeout fn, 50
 
     # return false
     false
-
 
   # update the nav
   $('#nav-layers').removeClass 'disabled'
@@ -80,25 +79,25 @@ setLayerSelect = (select, filename) ->
   # default is other
   val = 'oth'
   # top copper
-  if filename.match /.gtl$/i
+  if filename.match /(\.gtl)|(\.cmp)$/i
     val = 'fcu'
   # top soldermask
-  else if filename.match /.gts$/i
+  else if filename.match /(\.gts)|(\.stc)$/i
     val = 'fsm'
   # top silkscreen
-  else if filename.match /.gto$/i
+  else if filename.match /(\.gto)|(\.plc)$/i
     val = 'fss'
   # bottom copper
-  else if filename.match /.gbl$/i
+  else if filename.match /(\.gbl)|(\.sol)$/i
     val = 'bcu'
-  # bottom soldermaks
-  else if filename.match /.gbs$/i
+  # bottom soldermask
+  else if filename.match /(\.gbs)|(\.sts)$/i
     val = 'bsm'
   # bottom silkscreen
-  else if filename.match /.gbo$/i
+  else if filename.match /(\.gbo)|(\.pls)$/i
     val = 'bss'
   # board outline
-  else if filename.match /(.gko$)|edge/i
+  else if filename.match /(\.gko$)|edge/i
     val = 'out'
 
   # set the selected attribute

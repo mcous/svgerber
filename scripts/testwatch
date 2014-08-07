@@ -1,9 +1,0 @@
-#! /bin/bash
-# watch for test changes and test
-
-# get script directory
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
-cd  ${DIR}/..
-
-exec jasmine-node --color --autotest --watch coffee --coffee --verbose spec
