@@ -17,11 +17,13 @@ livereload = require 'gulp-livereload'
 rimraf     = require 'gulp-rimraf'
 deploy     = require 'gulp-gh-pages'
 ignore     = require 'gulp-ignore'
+concat     = require 'gulp-concat'
 
 # deploy files
 deployFiles = [
   'index.html'
   'app.css'
+  'vendor.js'
   'app.js'
   'octicons.eot'
   'octicons.svg'
@@ -30,6 +32,12 @@ deployFiles = [
   'LICENSE.md'
   'README.md'
   'CNAME'
+]
+
+# vendor files
+vendorFiles = [
+  './bower_components/jquery/dist/jquery.min.js'
+  './bower_components/bootstrap/dist/js/bootstrap.min.js'
 ]
 
 # arguments (checks for production build)
@@ -52,7 +60,7 @@ gulp.task 'clean:css', ->
     .pipe rimraf()
 
 gulp.task 'clean:js', ->
-  gulp.src '*.js', {read: false}
+  gulp.src 'app.js', {read: false}
     .pipe rimraf()
 
 gulp.task 'clean:html', ->
@@ -77,13 +85,19 @@ gulp.task 'jade', ['clean:html'], ->
     }
     .pipe gulp.dest '.'
 
+# bundle vendor files with concat
+gulp.task 'vendor', ->
+  gulp.src vendorFiles
+    .pipe concat 'vendor.js'
+    .pipe gulp.dest '.'
+
 # compile and bundle coffee with browserify
 gulp.task 'coffee', ['clean:js'], ->
-  browserify './coffee/app.coffee'
-    .bundle {
+  browserify './coffee/app.coffee', {
       insertGlobals: !argv.p
       debug: !argv.p
     }
+    .bundle()
     .pipe source 'app.js'
     .pipe if argv.p then streamify uglify {
       preamble: '/* view source at github.com/mcous/svgerber */'
@@ -97,12 +111,12 @@ gulp.task 'default', ['stylus', 'jade', 'coffee']
 
 # watch files with autoreload
 gulp.task 'watch', ['default'], ->
-  bundler = watchify './coffee/app.coffee'
+  bundler = watchify browserify './coffee/app.coffee', {
+    insertGlobals: !argv.p
+    debug: !argv.p
+  }
   rebundle = ->
-    bundler.bundle {
-        insertGlobals: !argv.p
-        debug: !argv.p
-      }
+    bundler.bundle()
       .on 'error', (e) ->
         util.log 'browserify error', e
       .pipe source 'app.js'

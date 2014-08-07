@@ -111,8 +111,9 @@ html(lang="en")
 
     .container#full-board-output
 
-    // app bundle (includes jquery and bootstrap)
-    //include ../jade-includes/scripts
+    // vendor bundle (jQuery and Bootstrap)
+    script(src='vendor.js')
+    // app bundle
     script(src='app.js')
 
   footer.container

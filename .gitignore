@@ -8,5 +8,6 @@ testgerber
 # we don't need the generated app files
 app.css
 app.js
+vendor.js
 index.html
 octicons.*
