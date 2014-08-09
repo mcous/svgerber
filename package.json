@@ -1,53 +1,40 @@
 {
-  "name"            : "svgerber.cousins.io",
-  "version"         : "0.0.8",
-  "description"     : "Client-side Gerber file to SVG converter",
-  "repository" : {
-    "type" : "git",
-    "url"  : "git://github.com/mcous/svgerber.git"
+  "name": "svgerber.cousins.io",
+  "version": "0.0.8",
+  "description": "Client-side Gerber file to SVG converter",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/mcous/svgerber.git"
   },
-  "browser" : {
-    "jquery"    : "./bower_components/jquery/dist/jquery.js",
-    "bootstrap" : "./bower_components/bootstrap/dist/js/bootstrap.js",
-    "svg.js"    : "./bower_components/svg.js/dist/svg.js"
-  },
-  "browserify" : {
-    "transform" : [
-      "browserify-shim",
+  "browserify": {
+    "transform": [
       "coffeeify"
-    ],
-    "noParse" : [
-      "jquery",
-      "bootstrap",
-      "svg.js"
     ]
   },
-  "browserify-shim" : {
-    "jquery"    : "$",
-    "bootstrap" : { "depends" : [ "jquery:$" ] },
-    "svg.js" : "SVG"
+  "devDependencies": {
+    "bower": "*",
+    "browserify": "*",
+    "coffeeify": "*",
+    "gulp": "*",
+    "gulp-autoprefixer": "*",
+    "gulp-concat": "^2.3.4",
+    "gulp-gh-pages": "*",
+    "gulp-ignore": "*",
+    "gulp-jade": "*",
+    "gulp-livereload": "*",
+    "gulp-minify-css": "*",
+    "gulp-rimraf": "*",
+    "gulp-streamify": "*",
+    "gulp-stylus": "*",
+    "gulp-uglifyjs": "*",
+    "gulp-util": "*",
+    "jasmine-node": "*",
+    "minimist": "*",
+    "node-static": "*",
+    "vinyl-source-stream": "*",
+    "watchify": "*"
   },
-  "devDependencies" :
-  {
-    "node-static"         : "*",
-    "jasmine-node"        : "*",
-    "bower"               : "*",
-    "browserify"          : "*",
-    "coffeeify"           : "*",
-    "browserify-shim"     : "*",
-    "vinyl-source-stream" : "*",
-    "minimist"            : "*",
-    "gulp"                : "*",
-    "gulp-util"           : "*",
-    "gulp-ignore"         : "*",
-    "gulp-streamify"      : "*",
-    "gulp-stylus"         : "*",
-    "gulp-autoprefixer"   : "*",
-    "gulp-minify-css"     : "*",
-    "gulp-jade"           : "*",
-    "gulp-uglifyjs"       : "*",
-    "gulp-livereload"     : "*",
-    "gulp-rimraf"         : "*",
-    "gulp-gh-pages"       : "*"
+  "dependencies": {
+    "gerber-to-svg": "*"
   }
 }

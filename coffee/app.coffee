@@ -1,15 +1,11 @@
 # main svgerber site application
 
-# uses jquery and bootstrap
-$ = require 'jquery'
-require 'bootstrap'
-
 # gerber to svg plotter
-Plotter = require './plotter.coffee'
+gerber2svg = require 'gerber-to-svg'
 
 # (re)start the app
 restart = ->
-  console.log "restarting app"
+  console.log "restarting svgerber"
 
   # delete all file listings except the template
   $('#filelist').children().not('#js-upload-template').remove()
@@ -63,27 +59,10 @@ allowProcessing = (loaded) ->
         $('html, body').animate {
           scrollTop: $('#individual-layer-output').offset().top - $('#top-nav').height() - 10
         }, 250
-    fn()
-
-    # # process the gerbers
-    # done = []
-    # for gerber in loaded
-    #   do (gerber) ->
-    #     if gerber.name not in done
-    #       gerberToSVG gerber, () ->
-    #         done.push gerber.name
-    #         if done.length is loaded.length
-    #           # when done, show the renders
-    #           output.css('visibility', 'visible')
-    #           button.text 'svGone!'
-    #           # go to the layers
-    #           $('html, body').animate {
-    #             scrollTop: $('#individual-layer-output').offset().top
-    #           }, 250
+    setTimeout fn, 50
 
     # return false
     false
-
 
   # update the nav
   $('#nav-layers').removeClass 'disabled'
@@ -100,29 +79,29 @@ setLayerSelect = (select, filename) ->
   # default is other
   val = 'oth'
   # top copper
-  if filename.match /.gtl$/i
+  if filename.match /(\.gtl)|(\.cmp)$/i
     val = 'fcu'
   # top soldermask
-  else if filename.match /.gts$/i
+  else if filename.match /(\.gts)|(\.stc)$/i
     val = 'fsm'
   # top silkscreen
-  else if filename.match /.gto$/i
+  else if filename.match /(\.gto)|(\.plc)$/i
     val = 'fss'
   # bottom copper
-  else if filename.match /.gbl$/i
+  else if filename.match /(\.gbl)|(\.sol)$/i
     val = 'bcu'
-  # bottom soldermaks
-  else if filename.match /.gbs$/i
+  # bottom soldermask
+  else if filename.match /(\.gbs)|(\.sts)$/i
     val = 'bsm'
   # bottom silkscreen
-  else if filename.match /.gbo$/i
+  else if filename.match /(\.gbo)|(\.pls)$/i
     val = 'bss'
   # board outline
-  else if filename.match /(.gko$)|edge/i
+  else if filename.match /(\.gko$)|edge/i
     val = 'out'
 
   # set the selected attribute
-  option = select.children("[value='#{val}']").attr 'selected',''
+  option = select.children("[value='#{val}']").attr 'selected','selected'
   # return the value selected
   val
 
@@ -131,58 +110,83 @@ gerberToSVG = (gerber, callback) ->
   console.log 'drawing gerber to svg'
 
   filename = gerber.filename
-  id = gerber.name
-  gerber = gerber.file
+  select = $(document.getElementById "js-layer-select-#{filename}")
+  id = select.find(":selected").attr 'value'
 
-  svg = null
-  layer = null
-
-  # add the drawing icon
-  icon = $(document.getElementById "js-upload-#{filename}").children '.mega-octicon'
-  icon.removeClass 'octicon-chevron-right'
-  icon.addClass 'octicon-pencil'
-
-  # plot something
-  p = new Plotter gerber, id
   # get the progress bars
   plotProgress = document.getElementById "js-plot-progress-#{filename}"
-
   # progress tracking
   done = 0
   # update interval
   interval = 4
 
-  # attach a transition end listener to the CSS3 progress animation
-  plotProgress.addEventListener 'transitionend', (event) ->
-    event.stopPropagation()
-    event.preventDefault()
-    if done < 100
-      console.log "plotting to #{done + interval}"
-      done = p.plotToPercent done + interval
-      console.log "got to #{done}"
-      plotProgress.setAttribute 'aria-valuenow', "#{done}"
-      plotProgress.style.width = "#{done}%"
-    else
-      # we're done plotting, let's remove the listener
-      plotProgress.removeEventListener 'transitionend'
+  # we're done if it's an other file
+  if id is 'oth'
+    plotProgress.setAttribute 'aria-valuenow', "100"
+    plotProgress.style.width = "100%"
+    if callback? and typeof callback is 'function' then callback()
+    return
 
-      # scale the svg
-      p.layer.drawNext()
-      # enocode svg for download
-      svg64 = "data:image/svg+xml;base64,#{btoa p.layer.svg.node.outerHTML}"
-      $("##{id}").siblings('a.layer-link').attr 'href', svg64
+  gerber = gerber.file
+  svg = null
+  layer = null
 
-      icon.removeClass 'octicon-pencil'
-      icon.addClass 'octicon-check'
+  # add the drawing icon
+  icon = $(document.getElementById "js-upload-#{filename}")
+    .children '.mega-octicon'
+  icon.removeClass 'octicon-chevron-right'
+  icon.addClass 'octicon-pencil'
+  # plot the thing
+  layerDiv = $ "##{id}"
+  console.log "inserting svg into #{id}"
+  svg = gerber2svg gerber
+  layerDiv.html svg
+  # encode it for download
+  svg64 = "data:image/svg+xml;base64,#{svg}"
+  layerDiv.siblings('a.layer-link').attr 'href', svg64
+  # remove drawing icon
+  icon.removeClass 'octicon-pencil'
+  icon.addClass 'octicon-check'
+  # call the callback
+  plotProgress.setAttribute 'aria-valuenow', "100"
+  plotProgress.style.width = "100%"
+  if callback? and typeof callback is 'function' then callback()
 
-      # call the callback
-      if callback? and typeof callback is 'function' then callback()
-
-
-  # plot and draw the layer
-  done = p.plotToPercent done + interval
-  plotProgress.setAttribute 'aria-valuenow', "#{done}"
-  plotProgress.style.width = "#{done}%"
+  #
+  # # plot something
+  # p = new Plotter gerber, id
+  #
+  # # attach a transition end listener to the CSS3 progress animation
+  # plotProgress.addEventListener 'transitionend', (event) ->
+  #   event.stopPropagation()
+  #   event.preventDefault()
+  #   if done < 100
+  #     console.log "plotting to #{done + interval}"
+  #     done = p.plotToPercent done + interval
+  #     console.log "got to #{done}"
+  #     plotProgress.setAttribute 'aria-valuenow', "#{done}"
+  #     plotProgress.style.width = "#{done}%"
+  #   else
+  #     # we're done plotting, let's remove the listener
+  #     plotProgress.removeEventListener 'transitionend'
+  #
+  #     # scale the svg
+  #     p.layer.drawNext()
+  #     # enocode svg for download
+  #     svg64 = "data:image/svg+xml;base64,#{btoa p.layer.svg.node.outerHTML}"
+  #     $("##{id}").siblings('a.layer-link').attr 'href', svg64
+  #
+  #     icon.removeClass 'octicon-pencil'
+  #     icon.addClass 'octicon-check'
+  #
+  #     # call the callback
+  #     if callback? and typeof callback is 'function' then callback()
+  #
+  #
+  # # plot and draw the layer
+  # done = p.plotToPercent done + interval
+  # plotProgress.setAttribute 'aria-valuenow', "#{done}"
+  # plotProgress.style.width = "#{done}%"
 
 
 
