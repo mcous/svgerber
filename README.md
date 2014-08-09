@@ -8,7 +8,7 @@ svgerber is a browser based gerber file to SVG converter. Everything is converte
 'Cause.
 
 ## when?
-Right now, it's able to render certain gerber files (specifically: mine that I generate from KiCad). The step and repeat command could get dicey, but eveything else should be there. If you try it out with a file and get freezes or errors, let me know.
+Right now, it's able to render certain gerber files (specifically: mine that I generate from KiCad). The step and repeat command could get dicey, but everything else should be there. If you try it out with a file and get freezes or errors, let me know.
 
 ## how?
 Go to [svgerber.cousins.io](http://svgerber.cousins.io).
