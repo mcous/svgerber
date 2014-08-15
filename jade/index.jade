@@ -1,4 +1,4 @@
-- var layerTypes = {'oth': 'other (ignore)', 'fcu': 'front copper', 'fsm': 'front soldermask', 'fss': 'front silkscreen', 'bcu': 'back copper', 'bsm': 'back soldermask', 'bss': 'back silkscreen', 'out': 'board outline'}
+- var layerTypes = {'oth': 'other (ignore)', 'fcu': 'front copper', 'fsm': 'front soldermask', 'fss': 'front silkscreen', 'bcu': 'back copper', 'bsm': 'back soldermask', 'bss': 'back silkscreen', 'out': 'board outline', 'drl': 'drill hits'}
 
 doctype html
 html(lang="en")
@@ -48,10 +48,9 @@ html(lang="en")
       h2 let's do this thing
         small= " but before we do, be aware that some stuff doesn't work:"
       ul
-        li drill files are not supported
         li old files with deprecated gerber commands could confuse it
         li the UI is crap
-        li anything else that's broken won't work
+        li step and repeat probably won't work
 
       #dropzone.row
         span.mega-octicon.octicon-circuit-board.col-sm-8
@@ -79,9 +78,10 @@ html(lang="en")
 
     mixin layerContainerContents(longLayer, shortLayer)
       h2.layer-heading= longLayer
-      div.layer-drawing(id=shortLayer)
-      a(download="#{shortLayer}.svg" href-lang='image/svg+xml' href='#').layer-link
-        = 'download svg'
+      div.layer-drawing(id=shortLayer): p File not uploaded for this layer
+      button(type='button').btn.btn-link.btn-download.disabled
+        a(download="#{shortLayer}.svg" href-lang='image/svg+xml' href='#').layer-link
+          = 'download svg'
 
     #individual-layer-output.container.hidden
       #copper-layers-row.row
@@ -102,6 +102,8 @@ html(lang="en")
       #drawing-layers-row.row
         #layer-board-outline.layer-container.col-md-6
           +layerContainerContents('board outline', 'out')
+        #layer-drill-hits.layer-container.col-md-6
+          +layerContainerContents('drill hits', 'drl')
 
     .container#full-board-output
 

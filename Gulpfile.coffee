@@ -114,6 +114,9 @@ gulp.task 'watch', ['default'], ->
   bundler = watchify browserify './coffee/app.coffee', {
     insertGlobals: !argv.p
     debug: !argv.p
+    cache: {}
+    packageCache: {}
+    fullPaths: {}
   }
   rebundle = ->
     bundler.bundle()
@@ -122,7 +125,7 @@ gulp.task 'watch', ['default'], ->
       .pipe source 'app.js'
       .pipe gulp.dest '.'
   bundler.on 'update', rebundle
-  bundler.on 'log', (msg) -> util.log "bundle: ${msg}"
+  bundler.on 'log', (msg) -> util.log "bundle: #{msg}"
 
   # watch stylus
   gulp.watch './stylus/*.styl', ['stylus']

@@ -20,6 +20,7 @@ restart = ->
   layerOutput = $('#individual-layer-output')
   layerOutput.find('div.layer-drawing').data 'full', false
   layerOutput.find('svg').remove()
+  layerOutput.find('.btn-download').addClass 'disabled'
   layerOutput.find('a.layer-link').attr 'href', '#'
   layerOutput.addClass('hidden')
 
@@ -99,6 +100,9 @@ setLayerSelect = (select, filename) ->
   # board outline
   else if filename.match /(\.gko$)|edge/i
     val = 'out'
+  # drill hits
+  else if filename.match /(\.xln$)|(\.drl$)|(\.txt$)|(\.drd$)/
+    val = 'drl'
 
   # set the selected attribute
   option = select.children("[value='#{val}']").attr 'selected','selected'
@@ -136,17 +140,34 @@ gerberToSVG = (gerber, callback) ->
     .children '.mega-octicon'
   icon.removeClass 'octicon-chevron-right'
   icon.addClass 'octicon-pencil'
-  # plot the thing
+  # plot the thing ()
   layerDiv = $ "##{id}"
   console.log "inserting svg into #{id}"
-  svg = gerber2svg gerber
-  layerDiv.html svg
-  # encode it for download
-  svg64 = "data:image/svg+xml;base64,#{btoa svg}"
-  layerDiv.siblings('a.layer-link').attr 'href', svg64
+  success = true
+  try
+    # try to grab the svg
+    svg = gerber2svg gerber, { drill: (id is 'drl') }
+  catch e
+    success = false
+    svg = """
+      <p class="error-message"> Unable to process #{filename} </p>
+      <p class="error-message"> #{e.message} </p>
+    """
+
+  # encode the svg for download if success
+  if success
+    svg64 = "data:image/svg+xml;base64,#{btoa svg}"
+    downloadBtn = layerDiv.siblings('.btn-download').removeClass 'disabled'
+    downloadBtn.children('a.layer-link').attr('href', svg64)
+
+  # change the progress bar icon
   # remove drawing icon
   icon.removeClass 'octicon-pencil'
-  icon.addClass 'octicon-check'
+  if success then icon.addClass 'octicon-check' else icon.addClass 'octicon-x'
+
+  # put svg or error message in the div
+  layerDiv.html svg
+
   # call the callback
   plotProgress.setAttribute 'aria-valuenow', "100"
   plotProgress.style.width = "100%"
