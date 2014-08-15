@@ -142,7 +142,7 @@ gerberToSVG = (gerber, callback) ->
   svg = gerber2svg gerber
   layerDiv.html svg
   # encode it for download
-  svg64 = "data:image/svg+xml;base64,#{svg}"
+  svg64 = "data:image/svg+xml;base64,#{btoa svg}"
   layerDiv.siblings('a.layer-link').attr 'href', svg64
   # remove drawing icon
   icon.removeClass 'octicon-pencil'
@@ -151,44 +151,6 @@ gerberToSVG = (gerber, callback) ->
   plotProgress.setAttribute 'aria-valuenow', "100"
   plotProgress.style.width = "100%"
   if callback? and typeof callback is 'function' then callback()
-
-  #
-  # # plot something
-  # p = new Plotter gerber, id
-  #
-  # # attach a transition end listener to the CSS3 progress animation
-  # plotProgress.addEventListener 'transitionend', (event) ->
-  #   event.stopPropagation()
-  #   event.preventDefault()
-  #   if done < 100
-  #     console.log "plotting to #{done + interval}"
-  #     done = p.plotToPercent done + interval
-  #     console.log "got to #{done}"
-  #     plotProgress.setAttribute 'aria-valuenow', "#{done}"
-  #     plotProgress.style.width = "#{done}%"
-  #   else
-  #     # we're done plotting, let's remove the listener
-  #     plotProgress.removeEventListener 'transitionend'
-  #
-  #     # scale the svg
-  #     p.layer.drawNext()
-  #     # enocode svg for download
-  #     svg64 = "data:image/svg+xml;base64,#{btoa p.layer.svg.node.outerHTML}"
-  #     $("##{id}").siblings('a.layer-link').attr 'href', svg64
-  #
-  #     icon.removeClass 'octicon-pencil'
-  #     icon.addClass 'octicon-check'
-  #
-  #     # call the callback
-  #     if callback? and typeof callback is 'function' then callback()
-  #
-  #
-  # # plot and draw the layer
-  # done = p.plotToPercent done + interval
-  # plotProgress.setAttribute 'aria-valuenow', "#{done}"
-  # plotProgress.style.width = "#{done}%"
-
-
 
 # file load progress
 updatePlotProgress = (event, filename, progress) ->
