@@ -26,7 +26,7 @@ restart = ->
 
 allowProcessing = (loaded) ->
   # BUTTON!
-  button = $('#process').text 'svGo!'
+  button = $('#process').text 'svg!'
 
   # attach an event listener
   button.on 'click', (event) ->
@@ -36,24 +36,27 @@ allowProcessing = (loaded) ->
     button.off 'click'
     # disable the button
     button.attr 'disabled', 'disabled'
-    button.text 'svGoing!'
+    button.text 'converting'
 
     output = $('#individual-layer-output')
     # unhide the layer outputs (but keep them invisible)
     output.removeClass('hidden').css 'visibility', 'hidden'
 
     # then process the gerbers recursively
+    count = -1
+    process = ->
+      if count < loaded.length then count++
+
     i = -1
     fn = () ->
-      console.log 'fn was called. incrementing i'
       i++
       if i < loaded.length
         console.log "i is #{i} and length is #{loaded.length}"
-        gerberToSVG loaded[i], fn
+        convertGerber loaded[i], fn
       else
         # when done, show the renders
         output.css 'visibility', 'visible'
-        button.text 'svGone!'
+        button.text 'done!'
         # update the nav
         $('#nav-svgs').removeClass 'disabled'
         # go to the layers
@@ -110,26 +113,15 @@ setLayerSelect = (select, filename) ->
   val
 
 # read a file to a div
-gerberToSVG = (gerber, callback) ->
+convertGerber = (gerber, callback) ->
   console.log 'drawing gerber to svg'
 
   filename = gerber.filename
   select = $(document.getElementById "js-layer-select-#{filename}")
   id = select.find(":selected").attr 'value'
 
-  # get the progress bars
-  plotProgress = document.getElementById "js-plot-progress-#{filename}"
-  # progress tracking
-  done = 0
-  # update interval
-  interval = 4
-
   # we're done if it's an other file
-  if id is 'oth'
-    plotProgress.setAttribute 'aria-valuenow', "100"
-    plotProgress.style.width = "100%"
-    if callback? and typeof callback is 'function' then callback()
-    return
+  if id is 'oth' then callback?(); return
 
   gerber = gerber.file
   svg = null
@@ -169,18 +161,8 @@ gerberToSVG = (gerber, callback) ->
   layerDiv.html svg
 
   # call the callback
-  plotProgress.setAttribute 'aria-valuenow', "100"
-  plotProgress.style.width = "100%"
   if callback? and typeof callback is 'function' then callback()
 
-# file load progress
-updatePlotProgress = (event, filename, progress) ->
-  detail = event.detail
-  if detail.current?
-    percentLoaded = Math.round detail.current/detail.total * 100
-    if percentLoaded <= 100
-      progress['aria-valuenow'] = "#{percentLoaded}"
-      progress.style.width = "#{percentLoaded}%"
 
 # take care of a file event
 handleFileSelect = (event) ->
@@ -208,7 +190,6 @@ handleFileSelect = (event) ->
 
   # read the uploaded files to a div
   for f in importFiles
-    console.log "#{f.name} is in importFiles. length is #{importFiles.length}"
     # closure wrapping!
     do (f) ->
       # get the import file template list item
@@ -216,7 +197,7 @@ handleFileSelect = (event) ->
       item = template.clone().attr('id', "js-upload-#{f.name}")
 
       # set the filename
-      name = item.find '.filename'
+      name = item.find '.filename-text'
       name.text("#{f.name}")
 
       # set the layer select id
@@ -225,11 +206,6 @@ handleFileSelect = (event) ->
 
       # get a likely layer type
       name = setLayerSelect layerSelect, f.name
-
-      # set the progress bar ids and values
-      progress = item.find '#js-plot-progress-template'
-      progress.attr 'id', "js-plot-progress-#{f.name}"
-      progress.attr('aria-valuenow', '0').width '0%'
 
       # append
       item.removeClass 'js-template'

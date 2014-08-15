@@ -150,7 +150,7 @@ gulp.task 'serve', ['watch'], ->
   # live reload server
   livereload.listen()
   # reload on changes
-  gulp.watch ['./index.html', './app.css', './app.js']
+  gulp.watch [ './index.html', './app.css', './app.js' ]
     .on 'change', (file) ->
       livereload.changed file.path
 
