@@ -2,9 +2,6 @@
 node_modules
 bower_components
 
-# testy files
-testgerber
-
 # we don't need the generated app files
 app.css
 app.js
