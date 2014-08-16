@@ -1,6 +1,45 @@
 // svgerber stylesheet
 // uses jeet
+@import 'jeet'
+edit()
 
+// top bottom margin mixin
+margin-tb(n)
+  margin-top n
+  margin-bottom n
+
+// content container
+// .Content
+//   center 968px
+
+.Container
+  center()
+
+#main-nav
+  col(1/8)
+  text-align center
+
+.Nav-brand
+  font-size 24px
+  text-decoration none
+
+.Nav-list
+  padding 0
+  list-style none
+  font-size 20px
+  line-height 1.4
+
+#information
+  center(600px)
+
+#caution
+  center(768px)
+
+#sample
+  col(1/3)
+
+#upload
+  col(2/3)
 
 // // body padding for fixed navbar
 // body

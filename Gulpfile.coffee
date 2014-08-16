@@ -1,4 +1,7 @@
 # gulpfile
+# front end deps
+jeet       = require 'jeet'
+rupture    = require 'rupture'
 # dependencies
 browserify = require 'browserify'
 watchify   = require 'watchify'
@@ -69,7 +72,7 @@ gulp.task 'clean', ->
 # compile stylus
 gulp.task 'style', ->
   gulp.src STYLE
-    .pipe stylus()
+    .pipe stylus( { use: [ jeet(), rupture() ] } ).on 'error', gutil.log
     .pipe prefix 'last 2 versions', '> 5%'
     .pipe if argv.p then minifycss() else gutil.noop()
     .pipe gulp.dest DEPLOY
@@ -77,13 +80,13 @@ gulp.task 'style', ->
 # compile jade
 gulp.task 'template', ->
   gulp.src TEMPLATE
-    .pipe jade()
+    .pipe jade().on 'error', gutil.log
     .pipe gulp.dest DEPLOY
 
 # compile and bundle coffee with browserify
 gulp.task 'script', ->
   browserify SCRIPT
-    .bundle()
+    .bundle().on 'error', gutil.log
     .pipe source path.basename gutil.replaceExtension SCRIPT, '.js'
     # minify if production build
     .pipe if argv.p then streamify uglify {
