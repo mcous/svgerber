@@ -113,9 +113,9 @@ gulp.task 'watch', ->
   bundler.on 'log', (msg) -> gutil.log "bundle: #{msg}"
 
   # watch stylus
-  gulp.watch './stylus/*.styl', ['stylus']
+  gulp.watch './stylus/*.styl', ['style']
   # watch jade
-  gulp.watch './jade/*.jade', ['jade']
+  gulp.watch './jade/*.jade', ['template']
   # bundle coffee
   rebundle()
 
