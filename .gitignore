@@ -3,8 +3,4 @@ node_modules
 bower_components
 
 # we don't need the generated app files
-app.css
-app.js
-vendor.js
-index.html
-octicons.*
+public

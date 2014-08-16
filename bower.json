@@ -3,8 +3,6 @@
   "dependencies" :
   {
     "jquery"     : "*",
-    "bootstrap"  : "*",
-    "octicons"   : "*",
-    "svg.js"     : "*"
+    "octicons"   : "*"
   }
 }

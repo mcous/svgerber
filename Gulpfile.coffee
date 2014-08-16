@@ -3,41 +3,42 @@
 browserify = require 'browserify'
 watchify   = require 'watchify'
 source     = require 'vinyl-source-stream'
-stat       = require 'node-static'
-# plugins
+path       = require 'path'
+# gulp and plugins
 gulp       = require 'gulp'
-util       = require 'gulp-util'
+gutil      = require 'gulp-util'
 streamify  = require 'gulp-streamify'
 stylus     = require 'gulp-stylus'
 prefix     = require 'gulp-autoprefixer'
 minifycss  = require 'gulp-minify-css'
 jade       = require 'gulp-jade'
 uglify     = require 'gulp-uglifyjs'
-livereload = require 'gulp-livereload'
 rimraf     = require 'gulp-rimraf'
 deploy     = require 'gulp-gh-pages'
 ignore     = require 'gulp-ignore'
 concat     = require 'gulp-concat'
+webserver  = require 'gulp-webserver'
 
-# deploy files
-deployFiles = [
-  'index.html'
-  'app.css'
-  'vendor.js'
-  'app.js'
-  'octicons.eot'
-  'octicons.svg'
-  'octicons.ttf'
-  'octicons.woff'
-  'LICENSE.md'
-  'README.md'
-  'CNAME'
-]
+# deploy location
+DEPLOY = './public'
+
+# app files
+SCRIPT   = './coffee/app.coffee'
+TEMPLATE = './jade/index.jade'
+STYLE    = './stylus/app.styl'
 
 # vendor files
-vendorFiles = [
+VENDOR_JS = [
   './bower_components/jquery/dist/jquery.min.js'
-  './bower_components/bootstrap/dist/js/bootstrap.min.js'
+]
+VENDOR_CSS = [
+  './bower_components/octicons/octicons/octicons.css'
+]
+VENDOR_ICON = [
+  './bower_components/octicons/octicons/octicons.eot'
+  './bower_components/octicons/octicons/octicons.ttf'
+  './bower_components/octicons/octicons/octicons.woff'
+  './bower_components/octicons/octicons/octicons.svg'
 ]
 
 # arguments (checks for production build)
@@ -46,74 +47,58 @@ argv = require('minimist') process.argv.slice(2), {
   alias: { p: 'production' }
 }
 
-# octicon stuff
-gulp.task 'octicons', ->
-  gulp.src './bower_components/octicons/octicons/octicons.*'
-    .pipe ignore.include /(\.eot)|(\.svg)|(\.ttf)|(\.woff)/
-    .pipe gulp.dest '.'
+# bundle vendor files with concat if necessary and copy them to deploy folder
+gulp.task 'vendorCSS', ->
+  gulp.src VENDOR_CSS
+    .pipe concat 'vendor.css'
+    .pipe gulp.dest DEPLOY
+gulp.task 'vendorJS', ->
+  gulp.src VENDOR_JS
+    .pipe concat 'vendor.js'
+    .pipe gulp.dest DEPLOY
+gulp.task 'vendorIcon', ->
+  gulp.src VENDOR_ICON
+    .pipe gulp.dest DEPLOY
+gulp.task 'vendor', [ 'vendorCSS', 'vendorJS', 'vendorIcon' ]
 
-# clean tasks
-gulp.task 'clean', ['clean:css', 'clean:js', 'clean:html']
-
-gulp.task 'clean:css', ->
-  gulp.src '*.css', {read: false}
-    .pipe rimraf()
-
-gulp.task 'clean:js', ->
-  gulp.src 'app.js', {read: false}
-    .pipe rimraf()
-
-gulp.task 'clean:html', ->
-  gulp.src '*.html', {read: false}
+# clean out the deploy folder
+gulp.task 'clean', ->
+  gulp.src "#{DEPLOY}/*"
     .pipe rimraf()
 
 # compile stylus
-gulp.task 'stylus', ['clean:css', 'octicons'], ->
-  gulp.src './stylus/app.styl'
-    .pipe stylus {
-      'include css': 'true'
-    }
+gulp.task 'style', ->
+  gulp.src STYLE
+    .pipe stylus()
     .pipe prefix 'last 2 versions', '> 5%'
-    .pipe if argv.p then minifycss() else util.noop()
-    .pipe gulp.dest '.'
+    .pipe if argv.p then minifycss() else gutil.noop()
+    .pipe gulp.dest DEPLOY
 
 # compile jade
-gulp.task 'jade', ['clean:html'], ->
-  gulp.src './jade/index.jade'
-    .pipe jade {
-      pretty: !argv.p
-    }
-    .pipe gulp.dest '.'
-
-# bundle vendor files with concat
-gulp.task 'vendor', ->
-  gulp.src vendorFiles
-    .pipe concat 'vendor.js'
-    .pipe gulp.dest '.'
+gulp.task 'template', ->
+  gulp.src TEMPLATE
+    .pipe jade()
+    .pipe gulp.dest DEPLOY
 
 # compile and bundle coffee with browserify
-gulp.task 'coffee', ['clean:js'], ->
-  browserify './coffee/app.coffee', {
-      insertGlobals: !argv.p
-      debug: !argv.p
-    }
+gulp.task 'script', ->
+  browserify SCRIPT
     .bundle()
-    .pipe source 'app.js'
+    .pipe source path.basename gutil.replaceExtension SCRIPT, '.js'
+    # minify if production build
     .pipe if argv.p then streamify uglify {
       preamble: '/* view source at github.com/mcous/svgerber */'
       compress: { drop_console: true }
       mangle: true
-    } else util.noop()
-    .pipe gulp.dest '.'
+    } else gutil.noop()
+    .pipe gulp.dest DEPLOY
 
-# default task (build everything)
-gulp.task 'default', ['stylus', 'jade', 'coffee']
+# default task build everything
+gulp.task 'build', [ 'vendor', 'style', 'template', 'script' ]
 
-# watch files with autoreload
-gulp.task 'watch', ['default'], ->
-  bundler = watchify browserify './coffee/app.coffee', {
-    insertGlobals: !argv.p
-    debug: !argv.p
+# watch files with coffee files with watchify and others with gulp.watch
+gulp.task 'watch', ->
+  bundler = watchify browserify SCRIPT, {
     cache: {}
     packageCache: {}
     fullPaths: {}
@@ -121,11 +106,11 @@ gulp.task 'watch', ['default'], ->
   rebundle = ->
     bundler.bundle()
       .on 'error', (e) ->
-        util.log 'browserify error', e
-      .pipe source 'app.js'
-      .pipe gulp.dest '.'
+        gutil.log 'browserify error', e
+      .pipe source path.basename gutil.replaceExtension SCRIPT, '.js'
+      .pipe gulp.dest DEPLOY
   bundler.on 'update', rebundle
-  bundler.on 'log', (msg) -> util.log "bundle: #{msg}"
+  bundler.on 'log', (msg) -> gutil.log "bundle: #{msg}"
 
   # watch stylus
   gulp.watch './stylus/*.styl', ['stylus']
@@ -134,30 +119,18 @@ gulp.task 'watch', ['default'], ->
   # bundle coffee
   rebundle()
 
-# set up static server with autoreload
-gulp.task 'serve', ['watch'], ->
-  server = new stat.Server '.'
-  require('http').createServer( (request, response) ->
-    request.addListener( 'end', ->
-      server.serve(request, response, (error, result)->
-        if error then util.log "error serving #{request.url}"
-        else util.log "served #{request.url}"
-      )
-    ).resume()
-  ).listen 8080
-  util.log "server started at http://localhost:8080\n"
-
-  # live reload server
-  livereload.listen()
-  # reload on changes
-  gulp.watch [ './index.html', './app.css', './app.js' ]
-    .on 'change', (file) ->
-      livereload.changed file.path
-
 # deploy to gh-pages
-gulp.task 'deploy', ['default'], ->
-  gulp.src deployFiles
+gulp.task 'deploy', ['build'], ->
+  gulp.src DEPLOY
     .pipe deploy {
       branch: 'gh-pages'
       push: argv.p
+    }
+
+# dev server is default task
+gulp.task 'default', [ 'build', 'watch' ], ->
+  gulp.src DEPLOY
+    .pipe webserver {
+      livereload: true
+      open: true
     }
