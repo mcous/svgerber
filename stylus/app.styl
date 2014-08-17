@@ -3,43 +3,205 @@
 @import 'jeet'
 edit()
 
-// top bottom margin mixin
+// mobile breakpoint
+BP = 680px
+
+// fontstants
+SIZE = 16
+LINE = 1.2
+
+// top bottom and left right margin and padding mixins
 margin-tb(n)
   margin-top n
   margin-bottom n
+margin-lr(n)
+  margin-left n
+  margin-right n
+// top bottom margin mixin
+padding-tb(n)
+  padding-top n
+  padding-bottom n
 
-// content container
-// .Content
-//   center 968px
+// defaults and pagewide styling
+body
+  font-family sans-serif
+  font-size FONT
+  line-height LINE
+  padding 0
+  margin 0
 
+h1, h2, h3, h4, h5, h6, p
+  margin-tb 0.5em
+
+.List-unstyled
+  padding 0
+  margin 0
+  list-style none
+
+// buttons
+.Btn
+  font-family sans-serif
+  text-align center
+  border-style solid
+  border-width 1px
+  border-radius 3px
+  border-color slategrey
+  padding 0.5em 1em 0.5em 1em
+  margin 0.25em
+  font-size 16px
+  width 10em
+
+.Btn-lg
+  font-size 18px
+  width 80%
+  max-width 16em
+
+// general spacing
 .Container
-  center()
-
-#main-nav
-  col(1/8)
+  col(.95)
+  shift(.025)
+  margin-tb 1em
   text-align center
 
-.Nav-brand
-  font-size 24px
-  text-decoration none
+// main nav
+navHt = 3em
+navLinkHt = 1.5em
+navLinkPad = ( navHt - navLinkHt )/( 2 * navLinkHt )
+
+#main-nav
+  text-align center
+  height navHt
+  margin-bottom 1em
 
 .Nav-list
-  padding 0
-  list-style none
-  font-size 20px
-  line-height 1.4
+  height 100%
+  li
+    position relative
+    height 100%
+    span(1/4)
 
+.Nav--link
+  width 100%
+  font-size navLinkHt
+  padding-top navLinkPad
+  padding-bottom navLinkPad
+  span
+    +below(BP)
+      display none
+// end main nav
+
+// CONTENT
+
+// top row
 #information
-  center(600px)
+  col(1/3)
+  shift(1/3)
+  +below(BP)
+    unshift()
+    stack()
 
 #caution
-  center(768px)
+  col(1/3)
+  shift(-1/3)
+  +below(BP)
+    unshift()
+    stack()
+  ul
+    text-align left
 
 #sample
   col(1/3)
+  +below(BP)
+    stack()
+// end top row
 
-#upload
-  col(2/3)
+// file upload
+#dropzone
+  border-width 2px
+  border-style dashed
+  border-color slategrey
+  border-radius 1em
+  margin-bottom 1em
+  input
+    display none
+  label
+    font-style sans
+  position relative
+  height 16em
+  .Container
+    align()
+
+.DropzoneContents
+  margin-tb 0.5em
+  stack()
+
+.Dropzone--btn
+  display inline-block
+  width auto
+  height auto
+  padding 0.5em 1em 0.5em 1em
+// end file upload
+
+
+// uploaded file list
+#file-list
+  center(56em)
+
+.UploadList--item
+  margin-tb 1em
+
+.UploadList--filename
+  float left
+  font-size 1.75em
+
+.UploadList--select
+  float right
+
+.UploadList--text
+  line-height LINE
+
+span.UploadList--text
+  margin-lr 0.5em
+  font-size 1.75em
+
+select.UploadList--text
+  font-size 1em
+  height 1.75em * LINE
+  margin 0
+  border-width 0
+  border-radius 0
+  vertical-align top
+// end uploaded file list
+
+// board output
+// #board-output
+//   col(.8)
+//   shift(.1)
+
+.BoardContainer
+  col(.4)
+  shift(.1)
+
+.LayerContainer
+  col(1/4)
+
+.LayerImage
+  width 100%
+// end board output
+
+// layer output
+
+
+// end layer output
+
+
+// footer
+.Foot--links
+  align()
+  a
+    margin 1em
+// end footer
+
 
 // // body padding for fixed navbar
 // body

@@ -73,7 +73,6 @@ gulp.task 'clean', ->
 gulp.task 'style', ->
   gulp.src STYLE
     .pipe stylus( { use: [ jeet(), rupture() ] } ).on 'error', gutil.log
-    .pipe prefix 'last 2 versions', '> 5%'
     .pipe if argv.p then minifycss() else gutil.noop()
     .pipe gulp.dest DEPLOY
 

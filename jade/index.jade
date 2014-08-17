@@ -32,92 +32,102 @@ html(lang="en")
 
   body
     nav(roll='navigation')#main-nav.Nav
-      a.Nav-brand(href='#') svgerber
-        small= ' (alpha!)'
-      ul.Nav-list
+      ul.List-unstyled.Nav-list
+        li#nav-top
+          +a('#').Nav--link.Nav--brand.mega-octicon.octicon-jump-up
+            span= ' svgerber'
         li#nav-upload.is-active
-          +a('#upload-input').Nav--link
-            span.octicon.octicon-cloud-upload= ' upload'
+          +a('#upload-input').mega-octicon.octicon-cloud-upload.Nav--link
+            span= ' upload'
         li#nav-layers.disabled
-          +a('#file-list').Nav--link
-            span.octicon.octicon-list-unordered= ' layers'
+          +a('#file-list').mega-octicon.octicon-list-unordered.Nav--link
+            span= ' layers'
         li#board-output.disabled
-          +a('#layer-output').Nav--link
-            span.octicon.octicon-circuit-board= ' svgs'
-        li#nav-source
-          +aNew('http://github.com/mcous/svgerber').Nav--link
-            span.octicon.octicon-mark-github= ' source'
+          +a('#layer-output').mega-octicon.octicon-circuit-board.Nav--link
+            span= ' svgs'
 
-    .Content
-      #information.Container
+    .Container
+      #information
         h2 what is this?
         p
-          | This page will take your Gerber and drill files for printed circuit
-          | board fabrication and convert them into web-friendly SVG image files
-          | for viewing and download. It's in alpha and there's bugs. It's most
-          = ' thoroughly tested on files from KiCad. Run into problems? '
+          = 'This page will take your '
+          strong: +aNew('http://en.wikipedia.org/wiki/Gerber_format') Gerber
+          = ' and '
+          strong: +aNew('http://en.wikipedia.org/wiki/Excellon') Drill
+          = ' files and convert them to '
+          strong: +aNew('http://en.wikipedia.org/wiki/Scalable_Vector_Graphics')
+            = 'SVGs'
+          = ' for viewing and download. Run into problems™? '
           +aNew('https://github.com/mcous/svgerber/issues')= 'Open an issue'
           = ' with the file attached. Enjoy!'
 
-      #upload-input.Container
-        #caution
-          h2 let's do this thing
-            small= ", but let's also be aware that some things might not work:"
-          ul
-            li old files with deprecated Gerber commands could confuse it
-            li step and repeat probably won't work
+      #caution
+        h2 let's do this thing
+          small.SubHeading <br>but it could get weird:
+        ul
+          li older files could confuse the library
+          li step and repeat probably won't work
 
-        #sample
-          h3 don't have and gerbers handy?
-          button(type='button')#sample-button.Btn
-            = 'click this big button to load a sample set'
-          p
-            = '(courtesy of '
-            +aNew("https://github.com/wileycousins/clockblock")= 'the clockblock'
-            = ')'
+      #sample
+        h2 no gerbers handy?
+        button(type='button')#sample-button.Btn.Btn-lg
+          = 'click this big button to load a sample set'
+        p
+          = '(courtesy of '
+          +aNew("https://github.com/wileycousins/clockblock")= 'the clockblock'
+          = ')'
 
-        #upload.Dropzone
-          span.mega-octicon.octicon-circuit-board
+    #upload.Container
+      #dropzone
+        .Container
+          span.DropzoneContents.mega-octicon.octicon-circuit-board
             = ' drop your gerbers here'
-          label(for='upload-select').Btn
-            = '...or select files'
+          .DropzoneContents
+            label(for='upload-select')#upload-select-btn.Btn.Dropzone--btn
+              = 'or select files'
+            button(type='button')#url-paste-btn.Dropzone--btn.Btn
+              = 'or paste urls'
           input#upload-select(type='file' name='upload-select' multiple)
 
-      output(for='upload')#file-list.Container.UploadList
-        ul
+      output(for='upload')#file-list.UploadList
+        ul.List-unstyled
           li.UploadList--item.is-js-template
-            span.UploadList--filename= 'filename '
-            span.octicon.octicon-chevron-right
-            span.UploadList--text= ' layer type: '
-            select.UploadList--LayerSelect.is-js-template
-              each val, key in layerTypes
-                option(value=key)= val
+            span.UploadList--filename= 'potentially-long-filname.gerber.gerber.gbr '
+            span.UploadList--select
+              span.UploadList--text.mega-octicon.octicon-chevron-right
+                = ' layer type: '
+              select.UploadList--text.is-js-template
+                each val, key in layerTypes
+                  option(value=key)= val
 
-        button(type='button' disabled='disabled')#convert-button.Btn
-          = 'svg!'
+      button(type='button' disabled='disabled')#convert-btn.Btn
+        = 'svg!'
 
-      mixin layerContainerContents(longLayer, shortLayer)
-        h2.LayerHeading= longLayer
-        div.LayerDrawing(id=shortLayer): p File not uploaded for this layer
-        button(type='button' disabled='disabled').Btn.Btn--download.is-disabled
-          a(download="#{shortLayer}.svg" href-lang='image/svg+xml' href='#')
-            = 'download svg'
+    mixin layerContainerContents(longLayer, shortLayer)
+      h2.LayerHeading= longLayer
+      div.LayerDrawing(id=shortLayer)
+        p File not uploaded for this layer
+        img(src='http://placekitten.com/g/300/300').LayerImage
+      button(type='button' disabled='disabled').Btn.Btn--download.is-disabled
+        a(download="#{shortLayer}.svg" href-lang='image/svg+xml' href='#')
+          = 'download svg'
 
-      output(for='file-list')#board-output.Container
-        .BoardContainer.is-js-template
-          +layerContainerContents('template', 'temp1')
+    output(for='file-list')#board-output.Container.is-hidden
+      .BoardContainer.is-js-template
+        +layerContainerContents('board-template', 'temp1')
 
-      output(for='file-list')#layer-output.Container
-        .LayerContainer.is-js-template
-          +layerContainerContents('template', 'temp2')
+    output(for='file-list')#layer-output.Container.is-hidden
+      .LayerContainer.is-js-template
+        +layerContainerContents('layer-template', 'temp2')
+
+    footer.Container.Foot
+      .Foot--links
+        +aNew('http://octicons.github.com/')
+          = "uses github's octicons"
+        +aNew('http://github.com/mcous/svgerber/blob/master/LICENSE.md')
+          = 'copyright 2014 by michael cousins'
 
     // vendor bundle (jQuery)
     //script(src='vendor.js')
     // app bundle
     //script(src='app.js')
-
-  footer.Foot
-    +aNew('http://octicons.github.com/').Foot--link
-      = "uses github's octicons"
-    +aNew('http://github.com/mcous/svgerber/blob/master/LICENSE.md').Foot--cr
-      = 'copyright 2014 by michael cousins'
