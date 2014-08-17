@@ -1,7 +1,26 @@
 // svgerber stylesheet
+// fonts
+@import url('http://fonts.googleapis.com/css?family=Karma|Lato:700,400italic')
 // uses jeet
 @import 'jeet'
-edit()
+//edit()
+
+BODY_COLOR    = whitesmoke
+BODY_GRAD     = linear-gradient(135deg, whitesmoke, gainsboro)
+
+BTN_BG        = whitesmoke
+BTN_TEXT      = black
+
+//NAV_COLOR     = darken(#6000CC, 50%)
+NAV_COLOR     = lighten(black, 25%)
+NAVLINK_COLOR = whitesmoke
+
+BOX_COLOR     = lighten(black, 50%)
+BOX_BORDER    = darken(BOX_COLOR, 50%)
+BOXTEXT_COLOR = whitesmoke
+
+FOOT_BG       = lighten(black, 75%)
+FOOR_TEXT     = whitesmoke
 
 // mobile breakpoint
 BP = 43em
@@ -10,6 +29,11 @@ BP = 43em
 SIZE = 16
 LINE = 1.2
 
+// main nav
+navHt = 3em
+navLinkHt = 1.5em
+navLinkPad = ( navHt - navLinkHt )/( 2 * navLinkHt )
+
 // top bottom and left right margin and padding mixins
 margin-tb(n)
   margin-top n
@@ -17,45 +41,103 @@ margin-tb(n)
 margin-lr(n)
   margin-left n
   margin-right n
-// top bottom margin mixin
+// top bottom, left right margin mixin
 padding-tb(n)
   padding-top n
   padding-bottom n
+padding-lr(n)
+  padding-left n
+  padding-right n
 
 // defaults and pagewide styling
+html, body
+  width 100%
+  min-height 100%
+
 body
-  font-family sans-serif
+  font-family Karma, serif
   font-size SIZE
   line-height LINE
   text-align center
   padding 0
   margin 0
+  // color
+  background-color BODY_COLOR
+  background-image BODY_GRAD
 
-h1, h2, h3, h4, h5, h6, p
+// pad content for sticky nav
+.Content
+  padding-top navHt
+
+h1, h2, h3, h4, h5, h6, strong, .Btn, .Heading
+  font-family Lato, sans-serif
+  font-weight 700
+
+small
+  font-style italic
+
+h1,h2, h3, h4, h5, h6, p
   margin-tb 0.5em
 
+p
+  margin-lr 0.5em
+
+a
+  text-decoration none
+  color desaturate(lighten(blue, 10%), 30%)
+
 .List-unstyled
-  padding 0
   margin 0
+  padding 0
   list-style none
+
+ul
+  padding-lr 2em
 
 // buttons
 .Btn
-  font-family sans-serif
+  // text style
+  font-weight 400
+  font-style italic
+  font-size 16px
   text-align center
+  // border style
   border-style solid
-  border-width 1px
-  border-radius 3px
-  border-color slategrey
+  border-color black
+  border-width 0
+  border-radius 0.5em
+  &:hover
+    box-shadow 0.05em 0.05em 0.2em black
+  &:active
+    outline none
+    box-shadow 0 0 0.1em black
+  // shadow
+  box-shadow 0.1em 0.1em 0.4em black
+  // spacing
   padding 0.5em 1em 0.5em 1em
   margin 0.25em
-  font-size 16px
+  // size
   width 10em
+  // color
+  background-color BTN_BG
+  color BTN_TEXT
+
+// links styled as buttons
+a.Btn
+  display inline-block
 
 .Btn-lg
   font-size 18px
   width 80%
   max-width 16em
+
+button:disabled, .Btn.is-disabled
+  color lighten(black, 33%)
+  border-color lighten(black, 33%)
+  border-width 1px
+  box-shadow none
+  pointer-events none
+  cursor default
 
 // general spacing
 .Container
@@ -63,15 +145,35 @@ h1, h2, h3, h4, h5, h6, p
   shift(.025)
   margin-tb 1em
 
-// main nav
-navHt = 3em
-navLinkHt = 1.5em
-navLinkPad = ( navHt - navLinkHt )/( 2 * navLinkHt )
+.Row
+  col()
+  width 100%
+
+// content boxes
+.Box
+  // border and colors
+  border-radius 1em
+  border-style solid
+  border-width 1px
+  border-color BOX_BORDER
+  background-color BOX_COLOR
+  color BOXTEXT_COLOR
+  // spacing
+  margin-tb 1em
 
 #main-nav
   text-align center
   height navHt
   margin-bottom 1em
+  border-bottom 1px solid darken(NAV_COLOR, 25%)
+  // color
+  background-color NAV_COLOR
+  // shadow
+  box-shadow 0 0.1em 0.5em black
+  // fixed to top
+  width 100%
+  position fixed
+  z-index 1
 
 .Nav-list
   height 100%
@@ -82,12 +184,26 @@ navLinkPad = ( navHt - navLinkHt )/( 2 * navLinkHt )
 
 .Nav--link
   width 100%
+  max-height navHt
   font-size navLinkHt
   padding-top navLinkPad
   padding-bottom navLinkPad
+  color inherit
   span
     +below(BP)
       display none
+
+.Nav--linkButton
+  // link color
+  color NAVLINK_COLOR
+  &:hover, &.is-active
+    background-color darken(NAV_COLOR, 25%)
+  &.is-disabled
+    color darken(NAVLINK_COLOR, 50%)
+    background-color NAV_COLOR
+    pointer-events none
+    cursor default
+
 // end main nav
 
 // CONTENT
@@ -117,17 +233,22 @@ navLinkPad = ( navHt - navLinkHt )/( 2 * navLinkHt )
 
 // file upload
 #dropzone
+  // border
   border-width 2px
   border-style dashed
-  border-color slategrey
+  border-color black
   border-radius 1em
+  // inset shadow
+  box-shadow inset 0.1em 0.1em 0.4em black
+  // spacing
   margin-bottom 1em
+  // hide the default file select stuff
   input
     display none
-  label
-    font-style sans
+  // position relative for centering of things
   position relative
   height 20em
+  // align the container inside
   .Container
     align()
 
@@ -150,6 +271,7 @@ navLinkPad = ( navHt - navLinkHt )/( 2 * navLinkHt )
 .UploadList--item
   overflow hidden
   margin-bottom 1em
+  padding 0.75em
 
 .UploadList--filename
   float left
@@ -161,6 +283,8 @@ navLinkPad = ( navHt - navLinkHt )/( 2 * navLinkHt )
 
 .UploadList--text
   line-height LINE
+  background-color inherit
+  color inherit
 
 span.UploadList--text
   margin-lr 0.5em
@@ -176,6 +300,9 @@ select.UploadList--text
 // end uploaded file list
 
 // board output
+#board-output-row
+  background-color lighten(black, 75%)
+
 #board-output
   col(.8)
   shift(.1)
@@ -189,6 +316,11 @@ select.UploadList--text
   col(1/4)
   +below(BP)
     col(1/2)
+
+.LayerDrawing
+  padding 2em
+  background-color whitesmoke
+  border-radius 1em
 
 .LayerImage
   width 100%
@@ -204,95 +336,9 @@ select.UploadList--text
 footer
   col()
   margin 1em 0 0 0
+  background-color FOOT_BG
 .Foot--links
   a
     display inline-block
     margin 1em
 // end footer
-
-
-// // body padding for fixed navbar
-// body
-//   padding-top 50px
-//
-// // disable top navbar collapse
-// #top-nav
-//   .navbar-collapse.collapse
-//     display block !important
-//
-//   .navbar-nav
-//     li, .navbar-nav
-//       float left !important
-//
-//   .navbar-nav.navbar-right:last-child
-//     margin-right -15px !important
-//
-//   .navbar-right
-//     float right !important
-//
-// #dropzone
-//   margin-top 25px
-//   margin-bottom 25px
-//   padding-top 100px
-//   padding-bottom 100px
-//   text-align center
-//   border thin dashed black
-//   border-radius 10px
-//
-// #file-upload-select
-//   display none
-//
-// #filelist
-//   .upload-list-item
-//     margin-top 10px
-//     margin-bottom 10px
-//
-//   .mega-octicon
-//     height 44px
-//     margin-top 5px
-//     text-align right
-//
-//   .filename-text
-//     margin-top 5px
-//     margin-bottom 0
-//     font-size 24px
-//
-//   .layer-type
-//     height 44px
-//   .layer-type-text
-//     font-size 18px
-//     line-height 1.1
-//   .layer-type-select
-//     font-size 16px
-//     height 22px
-//     color whitesmoke
-//     background slategrey
-//     width 100%
-//     border 0
-//     border-radius 0
-//
-// // all buttons get some margin
-// .btn
-//   margin-top 10px
-//   margin-bottom 10px
-//
-// #individual-layer-output
-//   padding-top 10px
-//   padding-bottom 10px
-//   text-align center
-//
-// .layer-container
-//   margin-top 20px
-//   margin-bottom 20px
-//   text-align center
-//
-// .layer-drawing
-//   svg
-//     overflow visible
-//
-// // .js-template
-// //   display none
-//
-// footer
-//   text-align center
-//   margin-top 50px

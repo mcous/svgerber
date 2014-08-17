@@ -1,14 +1,3 @@
-- layerTypes = {}
-- layerTypes.oth = 'other (ignore)'
-- layerTypes.fcu = 'front copper'
-- layerTypes.fsm = 'front soldermask'
-- layerTypes.fss = 'front silkscreen'
-- layerTypes.bcu = 'back copper'
-- layerTypes.bsm = 'back soldermask'
-- layerTypes.bss = 'back silkscreen'
-- layerTypes.int = 'internal copper'
-- layerTypes.out = 'board outline'
-- layerTypes.drl = 'drill hits'
 
 - github = 'https://github.com/mcous/svgerber/blob/master/README.md'
 
@@ -35,95 +24,99 @@ html(lang="en")
   body
     nav(roll='navigation')#main-nav.Nav
       ul.List-unstyled.Nav-list
-        li#nav-top
+        li#nav-top.Nav--linkButton
           +a('#').Nav--link.Nav--brand.mega-octicon.octicon-jump-up
-            span= ' svgerber'
-        li#nav-upload.is-active
+            span.Heading= ' svgerber'
+        li#nav-upload.Nav--linkButton.is-active
           +a('#upload-input').mega-octicon.octicon-cloud-upload.Nav--link
-            span= ' upload'
-        li#nav-filelist.disabled
+            span.Heading= ' upload'
+        li#nav-filelist.Nav--linkButton.is-disabled
           +a('#file-list').mega-octicon.octicon-list-unordered.Nav--link
-            span= ' layers'
-        li#nav-output.disabled
+            span.Heading= ' layers'
+        li#nav-output.Nav--linkButton.is-disabled
           +a('#layer-output').mega-octicon.octicon-circuit-board.Nav--link
-            span= ' svgs'
-        li#nav-about
+            span.Heading= ' svgs'
+        li#nav-about.Nav--linkButton
           +aNew(github).mega-octicon.octicon-info.Nav--link
-            span= ' about'
+            span.Heading= ' about'
 
-    .Container
-      #information
-        h2 what is this?
-        p
-          = 'This page will take your '
-          strong: +aNew('http://en.wikipedia.org/wiki/Gerber_format') Gerber
-          = ' and '
-          strong: +aNew('http://en.wikipedia.org/wiki/Excellon') Drill
-          = ' files and convert them to '
-          strong: +aNew('http://en.wikipedia.org/wiki/Scalable_Vector_Graphics')
-            = 'SVGs'
-          = ' for viewing and download. Run into problems™? '
-          +aNew('https://github.com/mcous/svgerber/issues')= 'Open an issue'
-          = ' with the file attached. Enjoy!'
+    .Content
+      .Container
+        #information
+          .Box
+            h2 what is this?
+            p
+              = 'This page will take your '
+              strong: +aNew('http://en.wikipedia.org/wiki/Gerber_format') Gerber
+              = ' and '
+              strong: +aNew('http://en.wikipedia.org/wiki/Excellon') drill
+              = ' files and convert them to '
+              strong: +aNew('http://en.wikipedia.org/wiki/Scalable_Vector_Graphics')
+                = 'SVGs'
+              = ' for viewing/download. Run into problems™? '
+              +aNew('https://github.com/mcous/svgerber/issues')= 'Open an issue'
+              = ' with the file attached.'
 
-      #caution
-        h2 let's do this thing
-          small.SubHeading <br>but it could get weird:
-        ul
-          li older files could confuse the library
-          li step and repeat probably won't work
+        #caution
+          .Box
+            h2 let's do this thing
+              small.SubHeading <br>(but it could get weird)
+            ul
+              li older files could confuse the library
+              li step and repeat probably won't work
 
-      #sample
-        h2 no gerbers handy?
-        button(type='button')#sample-button.Btn.Btn-lg
-          = 'click this big button to load a sample set'
-        p
-          = '(courtesy of '
-          +aNew("https://github.com/wileycousins/clockblock")= 'the clockblock'
-          = ')'
+        #sample
+          .Box
+            h2 no gerbers handy?
+            button(type='button')#sample-button.Btn.Btn-lg
+              = 'load a sample set'
+            p
+              = '(courtesy of '
+              +aNew("https://github.com/wileycousins/clockblock")= 'the clockblock'
+              = ')'
 
-    #upload.Container
-      #dropzone
-        .Container
-          span.DropzoneContents.mega-octicon.octicon-circuit-board
-            = ' drop your gerbers here'
-          .DropzoneContents
-            label(for='upload-select')#upload-select-btn.Btn.Dropzone--btn
-              = 'or select files'
-            button(type='button')#url-paste-btn.Dropzone--btn.Btn
-              = 'or paste urls'
-          input#upload-select(type='file' name='upload-select' multiple)
+      #upload.Container
+        #dropzone
+          .Container
+            span.DropzoneContents.mega-octicon.octicon-circuit-board
+              span.Heading= ' drop your gerbers here'
+            .DropzoneContents
+              label(for='upload-select')#upload-select-btn.Btn.Dropzone--btn
+                = 'or select files'
+              button(type='button')#url-paste-btn.Dropzone--btn.Btn
+                = 'or paste urls'
+            input#upload-select(type='file' name='upload-select' multiple)
 
-      output(for='upload')#file-list.UploadList
-        ul.List-unstyled
-          li.UploadList--item.is-js-template
-            span.UploadList--filename= 'potentially-long-filname.gerber.gerber.gbr '
-            span.UploadList--select
-              span.UploadList--text.mega-octicon.octicon-chevron-right
-                = ' layer type: '
-              select.UploadList--text.is-js-template
-                each val, key in layerTypes
-                  option(value=key)= val
+        output(for='upload')#file-list.UploadList
+          ul.List-unstyled
+            li.Box.UploadList--item.is-js-template
+              span.UploadList--filename.Heading
+                = 'potentially-long-filname.gerber.gerber.gbr '
+              span.UploadList--select
+                span.mega-octicon.octicon-chevron-right
+                span.UploadList--text.Heading= ' layer type: '
+                select.UploadList--text.is-js-template
+                  option(value='oth') other (ignore)
 
-      button(type='button' disabled='disabled')#convert-btn.Btn
-        = 'svg!'
+        button(type='button' disabled='disabled')#convert-btn.Btn
+          = 'svg!'
 
-    mixin layerContainerContents(longLayer, shortLayer)
-      h2.LayerHeading= longLayer
-      div.LayerDrawing(id=shortLayer)
-        p File not uploaded for this layer
-        img(src='http://placekitten.com/g/300/300').LayerImage
-      button(type='button' disabled='disabled').Btn.Btn--download.is-disabled
-        a(download="#{shortLayer}.svg" href-lang='image/svg+xml' href='#')
+      mixin layerContainerContents(name, abrev)
+        h2.LayerHeading= name
+        div.LayerDrawing(id=abrev)
+          img(src='http://placekitten.com/g/300/300').LayerImage
+        a(download="#{abrev}.svg" href-lang='image/svg+xml' href='#').Btn.is-disabled
           = 'download svg'
 
-    output(for='file-list')#board-output.Container.is-hidden
-      .BoardContainer.is-js-template
-        +layerContainerContents('board-template', 'temp1')
+      .Row#board-output-row
+        output(for='file-list')#board-output.Container.is-hidden
+          .BoardContainer.is-js-template
+            +layerContainerContents('board-template', 'temp1')
 
-    output(for='file-list')#layer-output.Container.is-hidden
-      .LayerContainer.is-js-template
-        +layerContainerContents('layer-template', 'temp2')
+      .Row#layer-output-row
+        output(for='file-list')#layer-output.Container.is-hidden
+          .LayerContainer.is-js-template
+            +layerContainerContents('layer-template', 'temp2')
 
     footer.Foot
       .Foot--links
