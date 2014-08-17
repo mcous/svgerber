@@ -4,7 +4,8 @@
 edit()
 
 // mobile breakpoint
-BP = 680px
+BP_1 = 43em
+BP_2 = 31em
 
 // fontstants
 SIZE = 16
@@ -25,8 +26,9 @@ padding-tb(n)
 // defaults and pagewide styling
 body
   font-family sans-serif
-  font-size FONT
+  font-size SIZE
   line-height LINE
+  text-align center
   padding 0
   margin 0
 
@@ -61,7 +63,6 @@ h1, h2, h3, h4, h5, h6, p
   col(.95)
   shift(.025)
   margin-tb 1em
-  text-align center
 
 // main nav
 navHt = 3em
@@ -78,7 +79,7 @@ navLinkPad = ( navHt - navLinkHt )/( 2 * navLinkHt )
   li
     position relative
     height 100%
-    span(1/4)
+    span(1/5)
 
 .Nav--link
   width 100%
@@ -86,7 +87,7 @@ navLinkPad = ( navHt - navLinkHt )/( 2 * navLinkHt )
   padding-top navLinkPad
   padding-bottom navLinkPad
   span
-    +below(BP)
+    +below(BP_1)
       display none
 // end main nav
 
@@ -96,14 +97,14 @@ navLinkPad = ( navHt - navLinkHt )/( 2 * navLinkHt )
 #information
   col(1/3)
   shift(1/3)
-  +below(BP)
+  +below(BP_1)
     unshift()
     stack()
 
 #caution
   col(1/3)
   shift(-1/3)
-  +below(BP)
+  +below(BP_1)
     unshift()
     stack()
   ul
@@ -111,7 +112,7 @@ navLinkPad = ( navHt - navLinkHt )/( 2 * navLinkHt )
 
 #sample
   col(1/3)
-  +below(BP)
+  +below(BP_1)
     stack()
 // end top row
 
@@ -127,7 +128,7 @@ navLinkPad = ( navHt - navLinkHt )/( 2 * navLinkHt )
   label
     font-style sans
   position relative
-  height 16em
+  height 20em
   .Container
     align()
 
@@ -153,6 +154,7 @@ navLinkPad = ( navHt - navLinkHt )/( 2 * navLinkHt )
 .UploadList--filename
   float left
   font-size 1.75em
+  text-align left
 
 .UploadList--select
   float right
@@ -174,16 +176,19 @@ select.UploadList--text
 // end uploaded file list
 
 // board output
-// #board-output
-//   col(.8)
-//   shift(.1)
+#board-output
+  col(.8)
+  shift(.1)
 
 .BoardContainer
-  col(.4)
-  shift(.1)
+  col(.5)
+  +below(BP_2)
+    col()
 
 .LayerContainer
   col(1/4)
+  +below(BP_2)
+    col(1/2)
 
 .LayerImage
   width 100%
