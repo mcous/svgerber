@@ -31,9 +31,7 @@ TEMPLATE = './jade/index.jade'
 STYLE    = './stylus/app.styl'
 
 # vendor files
-VENDOR_JS = [
-  './bower_components/jquery/dist/jquery.min.js'
-]
+VENDOR_JS = ''
 VENDOR_CSS = [
   './bower_components/octicons/octicons/octicons.css'
 ]
@@ -84,7 +82,7 @@ gulp.task 'template', ->
 
 # compile and bundle coffee with browserify
 gulp.task 'script', ->
-  browserify SCRIPT
+  browserify SCRIPT, { debug: !argv.production }
     .bundle().on 'error', gutil.log
     .pipe source path.basename gutil.replaceExtension SCRIPT, '.js'
     # minify if production build
@@ -101,6 +99,7 @@ gulp.task 'build', [ 'vendor', 'style', 'template', 'script' ]
 # watch files with coffee files with watchify and others with gulp.watch
 gulp.task 'watch', ->
   bundler = watchify browserify SCRIPT, {
+    debug: !argv.production
     cache: {}
     packageCache: {}
     fullPaths: {}

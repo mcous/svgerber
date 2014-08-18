@@ -1,8 +1,88 @@
 # main svgerber site application
+# jquery
+$ = require 'jquery'
+# gerber to svg plotter
+gerberToSvg = require 'gerber-to-svg'
 
-# # gerber to svg plotter
-# gerber2svg = require 'gerber-to-svg'
-#
+# layer types
+LAYERS = {
+  tcu: { desc: 'top copper',        match: /(\.gtl)|(\.cmp)$/i }
+  tsm: { desc: 'top soldermask',    match: /(\.gts)|(\.stc)$/i }
+  tss: { desc: 'top silkscreen',    match: /(\.gto)|(\.plc)$/i }
+  bcu: { desc: 'bottom copper',     match: /(\.gbl)|(\.sol)$/i }
+  bsm: { desc: 'bottom soldermask', match: /(\.gbs)|(\.sts)$/i }
+  bss: { desc: 'bottom silkscreen', match: /(\.gbo)|(\.pls)$/i }
+  icu: { desc: 'inner copper',      match: /\.gp\d$/i }
+  drw: { desc: 'gerber drawing',    match: /\.gbr$/i }
+  out: { desc: 'board outline',     match: /(\.gko$)|edge/i }
+  drl: {
+    desc: 'drill hits'
+    match: /(\.xln$)|(\.drl$)|(\.txt$)|(\.drd$)/i
+  }
+}
+# layers that may have multiple files
+MULT_LAYERS = [ 'oth', 'icu', 'drw' ]
+# uploaded filename to jquery friendly id map
+fileList = {}
+# layers to process
+layersToProcess = {}
+
+matchLayer = (filename) ->
+  for key, val of LAYERS
+    return key if filename.match val.match
+
+# build the file list
+# the template for list items
+listItemTemplate = $('#file-list').children('ul').children('li.is-js-template')
+populateSelect = do ->
+  select = listItemTemplate.find('select')
+  for short, long of LAYERS
+    select.append "<option value=\"#{short}\">#{long.desc}</option>"
+
+validateLayerSelections = ->
+  layers = []
+  $('.UploadList--SelectMenu').each ->
+    select = $ this
+    list = select.parents('li.UploadList--item')
+      .removeClass('is-valid').removeClass('is-invalid')
+    lyr = select.children("option:selected").attr 'value'
+    # if it's a mult layeer then we don't care
+    if lyr in MULT_LAYERS
+      list.addClass 'is-valid'
+    # if it's already been selected we have a problem
+    else if lyr in layers
+      list.addClass 'is-invalid'
+      list.siblings('li.UploadList--item').find("option:selected[value=#{lyr}]")
+        .parents('li.UploadList--item')
+        .removeClass('is-valid').addClass 'is-invalid'
+    else
+      list.addClass 'is-valid'
+      layers.push lyr
+
+buildFileListOutput = (filenames) ->
+  for f in filenames
+    # replace dots with underscores to make jquery happy
+    id = 'select-' + f.replace '.', '_'
+    fileList[f] = id
+    # get the short layer
+    layer = matchLayer f
+    # clone the list item template, change the filename, and autoselect a layer
+    newItem = listItemTemplate.clone()
+    newItem.removeClass 'is-js-template'
+    newItem.attr 'id', id
+    newItem.children('.UploadList--filename').html f
+    select = newItem.find 'select'
+    # add a change listener to validate selections
+    select.on 'change', validateLayerSelections
+    # auto select an option
+    select.children("option[value=#{layer}]").attr('selected', 'selected')
+    # insert the new item
+    listItemTemplate.before newItem
+  validateLayerSelections()
+
+# test run
+buildFileListOutput [ 'test-front.gtl', 'test-back.gtl' ]
+
 # # (re)start the app
 # restart = ->
 #   console.log "restarting svgerber"
