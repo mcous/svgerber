@@ -66,7 +66,7 @@ html(lang="en")
         #sample
           .Box
             h2 no gerbers handy?
-            button(type='button')#sample-button.Btn.Btn-lg
+            button(type='button')#sample-btn.Btn.Btn-lg
               = 'load a sample set'
             p
               = '(courtesy of '
@@ -82,8 +82,13 @@ html(lang="en")
               label(for='upload-select')#upload-select-btn.Btn.Dropzone--btn
                 = 'or select files'
               button(type='button')#url-paste-btn.Dropzone--btn.Btn
-                = 'or paste urls'
+                = 'or paste github urls'
             input#upload-select(type='file' name='upload-select' multiple)
+          form#url-paste-form.Box.is-hidden
+            - ph = 'paste the urls (one per line) to a gerber file on github\nfor example:\n  https://github.com/mcous/reflow/blob/master/pcb/plotted/gerber/reflow-pcb-F_Cu.gtl'
+            textarea#url-paste(name='url-paste' placeholder=ph cols='45' rows='10')
+            button(name='url-paste-submit-btn' type='button').Btn ok
+            button(name='url-paste-cancel-btn' type='button').Btn cancel
 
         output(for='upload')#file-list.UploadList
           ul.List-unstyled
@@ -99,22 +104,22 @@ html(lang="en")
         button(type='button' disabled='disabled')#convert-btn.Btn
           = 'svg!'
 
-      mixin layerContainerContents(name, abrev)
+      mixin layerContainerContents(name)
         h2.LayerHeading= name
-        div.LayerDrawing(id=abrev)
+        div.LayerDrawing
           img(src='http://placekitten.com/g/300/300').LayerImage
-        a(download="#{abrev}.svg" href-lang='image/svg+xml' href='#').Btn.is-disabled
-          = 'download svg'
+        //- a(download="#{abrev}.svg" href-lang='image/svg+xml' href='#').Btn.is-disabled
+        //-   = 'download svg'
 
       .Row#board-output-row
         output(for='file-list')#board-output.Container.is-hidden
           .BoardContainer.is-js-template
-            +layerContainerContents('board-template', 'temp1')
+            +layerContainerContents('board-template')
 
       .Row#layer-output-row
         output(for='file-list')#layer-output.Container.is-hidden
           .LayerContainer.is-js-template
-            +layerContainerContents('layer-template', 'temp2')
+            +layerContainerContents('layer-template')
 
     footer.Foot
       .Foot--links

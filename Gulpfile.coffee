@@ -25,6 +25,9 @@ webserver  = require 'gulp-webserver'
 # deploy location
 DEPLOY = './public'
 
+# samples location
+SAMPLES = './samples'
+
 # app files
 SCRIPT   = './coffee/app.coffee'
 TEMPLATE = './jade/index.jade'
@@ -62,6 +65,11 @@ gulp.task 'vendorIcon', ->
     .pipe gulp.dest DEPLOY
 gulp.task 'vendor', [ 'vendorCSS', 'vendorJS', 'vendorIcon' ]
 
+# copy samples folder to the deploy folder
+gulp.task 'samples', ->
+  gulp.src "#{SAMPLES}/*"
+    .pipe gulp.dest DEPLOY
+
 # clean out the deploy folder
 gulp.task 'clean', ->
   gulp.src "#{DEPLOY}/*"
@@ -94,7 +102,7 @@ gulp.task 'script', ->
     .pipe gulp.dest DEPLOY
 
 # default task build everything
-gulp.task 'build', [ 'vendor', 'style', 'template', 'script' ]
+gulp.task 'build', [ 'vendor', 'samples', 'style', 'template', 'script' ]
 
 # watch files with coffee files with watchify and others with gulp.watch
 gulp.task 'watch', ->
@@ -124,7 +132,7 @@ gulp.task 'watch', ->
 gulp.task 'deploy', ['build'], ->
   gulp.src DEPLOY
     .pipe deploy {
-      branch: 'gh-pages'
+      branch: if argv.p then 'gh-pages' else 'test-deploy'
       push: argv.p
     }
 
