@@ -328,6 +328,7 @@ select.UploadList--text
 // board output
 #board-output-row
   background-color lighten(black, 75%)
+  padding-bottom 2em
 
 #board-output
   col(.8)
@@ -337,7 +338,7 @@ select.UploadList--text
   width 100%
 
 .BoardContainer
-  col(.5)
+  col(0.5, cycle: 2)
   +below(BP)
     col()
   .LayerDrawing
@@ -357,13 +358,10 @@ select.UploadList--text
   border-radius 1em
 
 // board colors
-.Board--fr4
-  fill yellow
-  color yellow
+
 // end board output
 
 // layer output
-
 
 // end layer output
 

@@ -92,7 +92,7 @@ module.exports = (name, layers) ->
         width: bbox[2]-bbox[0]
         height: bbox[3]-bbox[1]
         class: 'Board--mask'
-        fill: 'indigo'
+        fill: 'olivedrab'
         opacity: '0.7'
         mask: "url(##{id})"
       }
@@ -142,9 +142,13 @@ module.exports = (name, layers) ->
     # push mask to the defs
     boardDefs.defs._.push mask
   # now we should be done, so recalculate that transform
-  boardGroup.g.transform = """
-  translate(0,#{bbox[1]+bbox[3]}) scale(1,-1)
-  """
+  s = 'scale('
+  s += if name is 'top' then '1' else '-1'
+  s += ',-1)'
+  t = 'translate('
+  t += if name is 'top' then '0' else "#{bbox[0]+bbox[2]}"
+  t += ",#{bbox[1]+bbox[3]})"
+  boardGroup.g.transform = "#{t} #{s}"
   # finally add a little red bow
   width = bbox[2] - bbox[0]
   height = bbox[3] - bbox[1]

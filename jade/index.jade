@@ -108,16 +108,14 @@ html(lang="en")
         h2.LayerHeading= name
         div.LayerDrawing
           img(src='http://placekitten.com/g/300/300').LayerImage
-        //- a(download="#{abrev}.svg" href-lang='image/svg+xml' href='#').Btn.is-disabled
-        //-   = 'download svg'
 
       .Row#board-output-row
-        output(for='file-list')#board-output.Container.is-hidden
+        output(for='file-list')#board-output.is-hidden
           .BoardContainer.is-js-template
             +layerContainerContents('board-template')
 
       .Row#layer-output-row
-        output(for='file-list')#layer-output.Container.is-hidden
+        output(for='file-list')#layer-output.is-hidden
           .LayerContainer.is-js-template
             +layerContainerContents('layer-template')
 
@@ -128,7 +126,5 @@ html(lang="en")
         +aNew('http://cousins.io')
           = 'built by mike cousins'
 
-    // vendor bundle (jQuery)
-    //script(src='vendor.js')
     // app bundle
     script(src='app.js')
