@@ -73,7 +73,7 @@ restart = ->
   processed = false
   # clear out the internal lists
   fileList = {}
-  layersToProcess = {}
+  layersList = {}
   # remove the file listings from the DOM
   docFileList.children('ul').children().not('.is-js-template').remove()
   # remove the board renders

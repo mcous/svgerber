@@ -149,8 +149,7 @@ button:disabled, .Btn.is-disabled
 
 // general spacing
 .Container
-  col(.95)
-  shift(.025)
+  col(.95, offset: 0.025)
   margin-tb 1em
 
 .Row
@@ -258,7 +257,7 @@ button:disabled, .Btn.is-disabled
   position relative
   height 20em
   // align the container inside
-  .Container, #url-paste-form
+  .AlignedContainer, #url-paste-form
     align()
 
 #url-paste-form
@@ -328,11 +327,13 @@ select.UploadList--text
 // board output
 #board-output-row
   background-color lighten(black, 75%)
-  padding-bottom 2em
 
 #board-output
-  col(.8)
-  shift(.1)
+  col(.8, offset: .1)
+  margin-bottom 2em
+
+#layer-output
+  col(.9, offset: 0.05)
 
 .LayerImage
   width 100%
