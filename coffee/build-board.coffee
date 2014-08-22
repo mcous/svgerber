@@ -1,167 +1,186 @@
-# build a board from layers (as svg objects)
-# require lodashes deep cloner
+# new borad builder
+# hopefully less janky than the first one
+
+# clone some objects
 cloneDeep = require 'lodash.clonedeep'
-uniqueid = require 'lodash.uniqueid'
+# make sure we don't have overlapping ids
+unique = 0
+uniqueId = -> unique++
 
-module.exports = (name, layers) ->
-  # we need at least copper and edge cuts
-  if not (layers.cu? and layers.edge?) then return {}
-  # result
-  boardDefs = { defs: { _: [] } }
-  boardGroup = { g: { _: [] } }
+# default style
+DEFAULT_STYLE = {
+  style: {
+    class: 'Board--style'
+    _: '''
+      .Board--board { color: dimgrey; }
+      .Board--cu { color: lightgrey; }
+      .Board--finish { color: goldenrod; }
+      .Board--sm { color: #3e683e; opacity: 0.75; }
+      .Board--ss { color: white; }
+      .Board--sp { color: silver; }
+      .Board--out { color: black; }
+    '''
+  }
+}
+
+# empty return object
+EMPTY = { svg: {} }
+
+# board combine function
+# takes the board name and board layers
+module.exports = (name, layers = {}) ->
+  # we need at least a copper layer to do this
+  unless layers.cu? then return {}
+  # resulting svg is going to have attributes, a def section, a drawing, and a
+  # bounding box
+  attr = {}
+  defs = []
+  draw = []
   bbox = [ Infinity, Infinity, -Infinity, -Infinity ]
-  addBbox = (b) ->
-    if b[0] < bbox[0] then bbox[0] = b[0]
-    if b[1] < bbox[1] then bbox[1] = b[1]
-    if b[2] > bbox[2] then bbox[2] = b[2]
-    if b[3] > bbox[3] then bbox[3] = b[3]
+  units = 'px'
+  addVboxToBbox = (v) ->
+    xMax = v[2] + v[0]
+    yMax = v[3] + v[1]
+    if v[0] < bbox[0] then bbox[0] = v[0]
+    if v[1] < bbox[1] then bbox[1] = v[1]
+    if xMax > bbox[2] then bbox[2] = xMax
+    if yMax > bbox[3] then bbox[3] = yMax
+  getVboxFromBbox = -> [ bbox[0], bbox[1], bbox[2]-bbox[0], bbox[3]-bbox[1] ]
 
-  groups = { cu: null, sm: null, ss: null, sp: null, edge: null, drill: [] }
-  # collect defs and gather bboxes
-  units = null
+  # gather all the layers to combine there defs, bboxes, and attributes
+  # we're also going to push the layers themselves to the defs
   for ly, obj of layers
-    add = (o) ->
-      # get defs and group
-      defs = []
-      for item in o.svg._
-        if item.defs? then defs = item.defs._
-        else if item.g?
-          if ly is 'drill' then groups.drill.push item
-          else groups[ly] = item
-      # do a unit check
-      if o.svg.width.match /in/
-        if not units? then units = 'in'
-        else if units isnt 'in' then throw new Error "unit mismatch"
-      else if o.svg.width.match /mm/
-        if not units? then units = 'mm'
-        else if units isnt 'mm' then throw new Error "unit mismatch"
-      # add the bounding box
-      v = o.svg.viewBox
-      addBbox [ v[0], v[1], v[2]+v[0], v[3]+v[1] ]
-      # add the defs
-      for d in defs
-        boardDefs.defs._.push d
-    # drill files come in as an array
+    # this function will do everything i just said
+    collect = (xmlObj) ->
+      # clone it
+      xml = cloneDeep xmlObj
+      # collect the bbox
+      addVboxToBbox xml.svg.viewBox
+      # grab the units
+      u = xml.svg.width.match(/(in)|(mm)/)?[0]
+      if units is 'px' then units = u
+      else if u isnt units
+        console.warn 'units mismatch in full board stackup'; return EMPTY
+      # toss the viewBox as well as the width, height and id
+      delete xml.svg.viewBox
+      delete xml.svg.width
+      delete xml.svg.height
+      delete xml.svg.id
+      # gather the rest of the attributes
+      for key, val of xml.svg
+        attr[key] = val if not attr[key]? and key isnt '_'
+      # collect the defs and group
+      # hopefully a group and defs will be the only children of the svg node
+      layerId = "#{name}-#{ly}_#{uniqueId()}"
+      for node in xml.svg._
+        # collect the defs
+        if node.defs? then defs.push d for d in node.defs._
+        # collect the group
+        else if node.g?
+          # delete the transform and any fill or stroke properties
+          delete node.g.transform
+          # add a better id
+          node.g.id = layerId
+          defs.push node
+      # return the layer id
+      layerId
+    # now, it is possible that there will be multiple drill files. deal with it
     if Array.isArray obj
-      add o for o in obj
-    else add obj
-  # start with the board itself
-  boardGroup.g._.push {
-    rect: {
-      class: 'Board--fr4'
-      x: bbox[0]
-      y: bbox[1]
-      width: bbox[2]-bbox[0]
-      height: bbox[3]-bbox[1]
-      fill: 'dimgrey'
-    }
-  }
-  # now add the copper (delete the transform first)
-  cu = cloneDeep groups.cu
-  delete cu.g.transform
-  cu.g.class = 'Board--copper'
-  cu.g.color = 'goldenrod'
-  boardGroup.g._.push cu
-  # then comes the soldermask
-  if groups.sm?
-    # get an id for the mask
-    id = uniqueid "board-#{name}-mask-"
-    # start a mask with a rect to cover the bbox
-    mask = { mask: { id: id, _: [] } }
-    mask.mask._.push {
+      obj[i] = collect drl for drl, i in obj
+    else
+      layers[ly] = collect obj
+
+  # viewbox and covering rectangle convenience function
+  vbox = getVboxFromBbox()
+  bboxRect = (cls = 'Board--cover', fill='currentColor') ->
+    {
       rect: {
-        x: bbox[0]
-        y: bbox[1]
-        width: bbox[2]-bbox[0]
-        height: bbox[3]-bbox[1]
-        fill: '#fff'
+        class: cls
+        fill: fill
+        x: vbox[0]
+        y: vbox[1]
+        width: vbox[2]
+        height: vbox[3]
       }
     }
-    # clone the solder mask layer, delete the transform, and color it to keep
-    sm = cloneDeep groups.sm
-    delete sm.g.transform
-    sm.g.color = '#000'
-    mask.mask._.push sm
+
+  # the first layer of the board stackup is the board itself
+  draw.push bboxRect('Board--board')
+
+  # the second layer is the copper
+  draw.push { use: { class: 'Board--cu', 'xlink:href': "##{layers.cu}" } }
+
+  # if we've got a soldermask
+  if layers.sm?
+    # mask it with the copper for copper finish
+    cuFinishId = "#{name}-sm_#{uniqueId()}"
+    defs.push {
+      mask: {
+        id: cuFinishId
+        color: '#fff'
+        _: [ { use: { 'xlink:href': "##{layers.cu}" } } ]
+      }
+    }
+    draw.push {
+      use: {
+        class: 'Board--finish'
+        mask: "url(##{cuFinishId})"
+        'xlink:href': "##{layers.sm}"
+      }
+    }
+    # now build group for the color and the silkscreen (if it exists) and
+    # mask away the soldermask holes
+    smId = "#{name}-sm_#{uniqueId()}"
+    defs.push { mask: { id: smId, color: '#000', _: [
+          bboxRect null, '#fff'
+          { use: { 'xlink:href': "##{layers.sm}" } }
+        ]
+      }
+    }
+    smPos = { g: { mask: "url(##{smId})", _: [ bboxRect 'Board--sm' ] } }
+    # add the silkscreen if it exists
+    if layers.ss? then smPos.g._.push {
+      use: { class: 'Board--ss', 'xlink:href': "##{layers.ss}" }
+    }
+    # push the soldermask to the stack
+    draw.push smPos
+
+  # if we've got solderpaste, push it to the drawing
+  if layers.sp? then draw.push {
+    use: { class: 'Board--sp', 'xlink:href': "##{layers.sp}" }
+  }
+
+  # add edge cuts if we gottem
+  if layers.out? then draw.push {
+    use: { class: 'Board--out', 'xlink:href': "##{layers.out}" }
+  }
+
+  # finally, we may have some drills
+  drlId = null
+  if layers.drill?
+    drlId = "#{name}-drl_#{uniqueId()}"
+    drlMask = { mask: { id: drlId, color: '#000', _: [bboxRect null, '#fff'] } }
+    for d in layers.drill
+      drlMask.mask._.push { use: { 'xlink:href': "##{d}" } }
     # push the mask to the defs
-    boardDefs.defs._.push mask
-    # create a rect to add the the group
-    boardGroup.g._.push {
-      rect: {
-        x: bbox[0]
-        y: bbox[1]
-        width: bbox[2]-bbox[0]
-        height: bbox[3]-bbox[1]
-        class: 'Board--mask'
-        fill: 'olivedrab'
-        opacity: '0.7'
-        mask: "url(##{id})"
-      }
-    }
-  # then the silkscreen
-  if groups.ss?
-    ss = cloneDeep groups.ss
-    delete ss.g.transform
-    ss.g.class = 'Board--silk'
-    ss.g.color = 'white'
-    boardGroup.g._.push ss
-  # then the paste
-  if groups.sp?
-    sp = cloneDeep groups.sp
-    delete sp.g.transform
-    sp.g.class = 'Board--paste'
-    sp.g.color = 'silver'
-    boardGroup.g._.push sp
-  # then the edge cuts
-  out = cloneDeep groups.edge
-  delete out.g.transform
-  out.g.class = 'Board--outline'
-  boardGroup.g._.push out
-  # then the drill hits
-  if groups.drill?.length
-    # group up everyone again
-    id = uniqueid "board-#{name}-drill-"
-    # wrap the current group
-    boardGroup.g.mask = "url(##{id})"
-    boardGroup = { g: { _: [ boardGroup ] } }
-    mask = { mask: { id: id, class: 'Board--drill', color: '#000', _: [] } }
-    # bbox rect
-    mask.mask._.push {
-      rect: {
-        x: bbox[0]
-        y: bbox[1]
-        width: bbox[2]-bbox[0]
-        height: bbox[3]-bbox[1]
-        fill: '#fff'
-      }
-    }
-    for d in groups.drill
-      drl = cloneDeep d
-      delete drl.g.transform
-      drl.g.class = 'Board--drill'
-      mask.mask._.push drl
-    # push mask to the defs
-    boardDefs.defs._.push mask
-  # now we should be done, so recalculate that transform
-  s = 'scale('
-  s += if name is 'top' then '1' else '-1'
-  s += ',-1)'
-  t = 'translate('
-  t += if name is 'top' then '0' else "#{bbox[0]+bbox[2]}"
-  t += ",#{bbox[1]+bbox[3]})"
-  boardGroup.g.transform = "#{t} #{s}"
-  # finally add a little red bow
-  width = bbox[2] - bbox[0]
-  height = bbox[3] - bbox[1]
-  xml = {
-    svg: {
-      xmlns: 'http://www.w3.org/2000/svg'
-      version: '1.1'
-      'xmlns:xlink': 'http://www.w3.org/1999/xlink'
-      width: "#{width}#{units}"
-      height: "#{height}#{units}"
-      viewBox: [ bbox[0], bbox[1], width, height ]
-      id: uniqueid "board-#{name}-"
-      _: [ boardDefs, boardGroup]
-    }
-  }
-  xml
+    defs.push drlMask
+
+  # return object
+  # flip vertically always and horizontally as well if bottom of board
+  if name is 'bottom' then trans = """
+    translate(#{bbox[2]+bbox[0]},#{bbox[3]+bbox[1]}) scale(-1,-1)
+  """
+  else trans = "translate(0,#{bbox[3]+bbox[1]}) scale(1,-1)"
+  # drawing
+  draw = { g: { transform: trans, _: draw } }
+  if drlId then draw.g.mask = "url(##{drlId})"
+  # svg
+  svg = attr
+  svg.viewBox = getVboxFromBbox()
+  svg.width = "#{svg.viewBox[2] - svg.viewBox[0]}#{units}"
+  svg.height = "#{svg.viewBox[3] - svg.viewBox[1]}#{units}"
+  svg._ = [ DEFAULT_STYLE ]
+  svg._.push { defs: { _: defs } } if defs.length
+  svg._.push draw if draw.g._.length
+  # return
+  { svg: svg }

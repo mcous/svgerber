@@ -4,7 +4,7 @@ $ = require 'jquery'
 # gerber to svg plotter
 gerberToSvg = require 'gerber-to-svg'
 # board builder
-buildBoard = require './build-board.coffee'
+buildBoard = require './build-board'
 
 # layer types
 LAYERS = {
@@ -64,8 +64,8 @@ matchLayer = (filename) ->
 # remove layer output
 removeLayerOutput = ->
   $('#board-output, #layer-output')
-    .addClass 'is-hidden'
     .children().not('.is-js-template').remove()
+    .addClass 'is-hidden'
 
 # (re)start the app
 restart = ->
@@ -73,7 +73,7 @@ restart = ->
   processed = false
   # clear out the internal lists
   fileList = {}
-  layersList = {}
+  layerList = {}
   # remove the file listings from the DOM
   docFileList.children('ul').children().not('.is-js-template').remove()
   # remove the board renders
@@ -169,6 +169,7 @@ handleFileSelect = (e) ->
         if event.target.readyState is FileReader.DONE
           unless fileList[f.name]? then fileList[f.name] = {}
           fileList[f.name].string = event.target.result
+          event.target.result = null
       # read the file as text
       reader.readAsText f
   # return false to stop propagation
@@ -292,35 +293,41 @@ convertLayers = ->
   if layerList.tsm? then topLayers.sm = layerList.tsm
   if layerList.tss? then topLayers.ss = layerList.tss
   if layerList.tsp? then topLayers.sp = layerList.tsp
-  if layerList.drl? then topLayers.drill = layerList.drl
-  if layerList.out? then topLayers.edge = layerList.out
+  if layerList.drl? then topLayers.drill = (d for d in layerList.drl)
+  if layerList.out? then topLayers.out = layerList.out
   bottomLayers = {}
   if layerList.bcu? then bottomLayers.cu = layerList.bcu
   if layerList.bsm? then bottomLayers.sm = layerList.bsm
   if layerList.bss? then bottomLayers.ss = layerList.bss
   if layerList.bsp? then bottomLayers.sp = layerList.bsp
-  if layerList.drl? then bottomLayers.drill = layerList.drl
-  if layerList.out? then bottomLayers.edge = layerList.out
+  if layerList.drl? then bottomLayers.drill = (d for d in layerList.drl)
+  if layerList.out? then bottomLayers.out = layerList.out
 
   # find the board template
   boardTemplate = $('#board-output').children('.is-js-template')
   # top
-  if topLayers.cu? and topLayers.edge?
+  if topLayers.cu?
     topBoard = buildBoard 'top', topLayers
     topContainer = boardTemplate.clone().removeClass 'is-js-template'
     topContainer.children('h2.LayerHeading').html 'board top'
-    svg64 = "data:image/svg+xml;base64,#{btoa gerberToSvg topBoard}"
-    topContainer.find('img.LayerImage').attr 'src', svg64
+    svg = gerberToSvg topBoard
+    #svg64 = "data:image/svg+xml;base64,#{btoa svg}"
+    topContainer.find('img.LayerImage').after svg
     boardTemplate.before topContainer
   # bottom
-  if bottomLayers.cu? and bottomLayers.edge?
+  if bottomLayers.cu?
     bottomBoard = buildBoard 'bottom', bottomLayers
     bottomContainer = boardTemplate.clone().removeClass 'is-js-template'
     bottomContainer.children('h2.LayerHeading').html 'board bottom'
-    svg64 = "data:image/svg+xml;base64,#{btoa gerberToSvg bottomBoard}"
-    bottomContainer.find('img.LayerImage').attr 'src', svg64
+    svg = gerberToSvg bottomBoard
+    #svg64 = "data:image/svg+xml;base64,#{btoa svg}"
+    bottomContainer.find('img.LayerImage').after svg
     boardTemplate.before bottomContainer
 
+  # done with these objects, so clear them out
+  # topLayers = {}
+  # bottomLayers = {}
+  # layerList = {}
 
   # unhide the output
   $('#board-output, #layer-output').removeClass 'is-hidden'
