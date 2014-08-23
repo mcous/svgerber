@@ -26,16 +26,19 @@ html(lang="en")
           +a('#').Nav--link.Nav--brand.mega-octicon.octicon-jump-up
             span.Heading= ' svgerber'
         li#nav-upload.Nav--linkButton.is-active
-          +a('#upload-input').mega-octicon.octicon-cloud-upload.Nav--link
+          +a('#information').mega-octicon.octicon-cloud-upload.Nav--link
             span.Heading= ' upload'
         li#nav-filelist.Nav--linkButton.is-disabled
           +a('#file-list').mega-octicon.octicon-list-unordered.Nav--link
-            span.Heading= ' layers'
+            span.Heading= ' files'
         li#nav-output.Nav--linkButton.is-disabled
-          +a('#layer-output').mega-octicon.octicon-circuit-board.Nav--link
-            span.Heading= ' svgs'
+          +a('#board-output').mega-octicon.octicon-circuit-board.Nav--link
+            span.Heading= ' boards'
+        li#nav-layers.Nav--linkButton.is-disabled
+          +a('#layer-output').mega-octicon.octicon-versions.Nav--link
+            span.Heading= ' layers'
         li#nav-about.Nav--linkButton
-          +aNew(github).mega-octicon.octicon-info.Nav--link
+          +aNew(github).mega-octicon.octicon-info.Nav--link.Nav--noScroll
             span.Heading= ' about'
 
     .Content
@@ -60,8 +63,10 @@ html(lang="en")
             h2 let's do this thing
               small.SubHeading <br>(but it could get weird)
             ul
-              li older files could confuse the library
-              li step and repeat probably won't work
+              li= 'old files could confuse '
+                +aNew('http://github.com/mcous/gerber-to-svg')
+                  = 'the gerber library'
+              li step/repeats with overlapping clears will produce an incorrect image
 
         #sample
           .Box
@@ -90,7 +95,7 @@ html(lang="en")
             button(name='url-paste-submit-btn' type='button').Btn ok
             button(name='url-paste-cancel-btn' type='button').Btn cancel
 
-        output(for='upload')#file-list.UploadList
+        output(for='upload')#file-list.UploadList.is-hidden
           ul.List-unstyled
             li.Box.UploadList--item.is-js-template
               span.UploadList--filename.Heading
@@ -101,8 +106,8 @@ html(lang="en")
                 select.UploadList--SelectMenu.UploadList--text
                   option(value='oth') other (ignore)
 
-        button(type='button' disabled='disabled')#convert-btn.Btn
-          = 'svg!'
+          button(type='button' disabled='disabled')#convert-btn.Btn
+            = 'svg!'
 
       mixin layerContainerContents(name)
         h2.LayerHeading= name
@@ -118,10 +123,11 @@ html(lang="en")
         #board-output-color.Container.is-retracted
           #board-download.Box
             h3 download
-            a(download='top.svg' href-lang='image/svg+xml' href='#')#download-top-btn.Btn.is-disabled
-              = 'top'
-            a(download='bottom.svg' href-lang='image/svg+xml' href='#')#download-bottom-btn.Btn.is-disabled
-              = 'bottom'
+            #board-download-buttons.Container
+              a(download='top.svg' href-lang='image/svg+xml' href='#')#download-top-btn.Btn.is-disabled
+                = 'top'
+              a(download='bottom.svg' href-lang='image/svg+xml' href='#')#download-bottom-btn.Btn.is-disabled
+                = 'bottom'
           #board-cu-color.Box.ColorPicker
             h3 copper finish
             #board-cu-color-buttons.Container

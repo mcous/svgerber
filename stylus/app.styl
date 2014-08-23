@@ -8,18 +8,17 @@
 BODY_COLOR    = whitesmoke
 BODY_GRAD     = linear-gradient(135deg, whitesmoke, gainsboro)
 
-BTN_BG        = whitesmoke
+BTN_BG        = white
 BTN_TEXT      = black
 
-//NAV_COLOR     = darken(#6000CC, 50%)
 NAV_COLOR     = lighten(black, 25%)
 NAVLINK_COLOR = whitesmoke
 
-BOX_COLOR     = lighten(black, 50%)
+BOX_COLOR     = lighten(black, 67%)
 BOX_BORDER    = darken(BOX_COLOR, 50%)
 BOXTEXT_COLOR = whitesmoke
 
-FOOT_BG       = lighten(black, 75%)
+FOOT_BG       = lighten(black, 67%)
 FOOR_TEXT     = whitesmoke
 
 // mobile breakpoint
@@ -64,11 +63,15 @@ padding-lr(n)
 *
   box-sizing border-box
 
+html
+  background-color FOOT_BG
+
 html, body
   width 100%
   min-height 100%
 
 body
+  cf()
   font-family Karma, serif
   font-size SIZE
   line-height LINE
@@ -98,7 +101,9 @@ p
 
 a
   text-decoration none
-  color desaturate(lighten(blue, 10%), 30%)
+  color darken(blue, 20%)
+  &:hover
+    color darken(blue, 50%)
 
 .List-unstyled
   margin 0
@@ -106,7 +111,9 @@ a
   list-style none
 
 .is-hidden, .is-js-template
-  display none
+  display none !important
+  position absolute
+  z-index 1
 
 .is-retracted
   max-height 0 !important
@@ -129,12 +136,14 @@ ul
   border-color black
   border-width 0
   border-radius 0.5em
+  // shadows on hover
+  transition box-shadow 0.2s
   &:hover
     box-shadow 0.05em 0.05em 0.2em black
   &:active
     outline none
     box-shadow 0 0 0.1em black
-  // shadow
+  // default shadow
   box-shadow 0.1em 0.1em 0.4em black
   // spacing
   padding 0.5em 1em 0.5em 1em
@@ -156,10 +165,10 @@ a.Btn
   max-width 16em
 
 button:disabled, .Btn.is-disabled
-  color lighten(black, 33%)
-  border-color lighten(black, 33%)
-  border-width 1px
-  box-shadow none
+  color lighten(black, 50%) !important
+  //border-color lighten(black, 33%)
+  //border-width 1px
+  box-shadow 0 0 1px black !important
   pointer-events none
   cursor default
 
@@ -171,7 +180,6 @@ button:disabled, .Btn.is-disabled
 .Row
   col()
   cf()
-  //width 100%
 
 // content boxes
 .Box
@@ -204,7 +212,7 @@ button:disabled, .Btn.is-disabled
   li
     position relative
     height 100%
-    span(1/5)
+    span(1/6)
 
 .Nav--link
   width 100%
@@ -213,9 +221,12 @@ button:disabled, .Btn.is-disabled
   padding-top navLinkPad
   padding-bottom navLinkPad
   color inherit
+  &:hover
+    color inherit
   span
     +below(BP)
       display none
+
 
 .Nav--linkButton
   // link color
@@ -274,6 +285,7 @@ button:disabled, .Btn.is-disabled
   height 20em
   // align the container inside
   .AlignedContainer, #url-paste-form
+    left 0
     align()
 
 #url-paste-form
@@ -342,10 +354,10 @@ select.UploadList--text
 
 // board output
 #board-output-row
-  background-color lighten(black, 75%)
+  background-color FOOT_BG
 
 #board-output
-  col(.8, offset: .1)
+  center(pad: 5%)
   margin-bottom 2em
 
 #board-output-color
@@ -356,6 +368,7 @@ select.UploadList--text
   //height auto
   overflow hidden
   .Box
+    background-color NAV_COLOR
     col(1/4, cycle: 4)
     +below(BP)
       stack()
@@ -365,45 +378,42 @@ select.UploadList--text
 .ColorPicker--btn
   col(1/2, cycle: 2)
   +below(BP)
-    unshift()
+    col(1/4, uncycle: 2, cycle: 4)
 
 #layer-output
-  col(.9, offset: 0.05)
+  cf()
+  center(pad: 10%)
+
+.LayerDrawing
+  background-color whitesmoke
+  border-radius 1em
+  height 0
+  width 100%
+  padding-bottom 100%
+  position relative
 
 .LayerImage, .Board
-  width 100%
+  width 95%
+  height 95%
+  left 0
+  align()
 
 .Board
-  min-height 30em
+  //min-height 30em
 
 .BoardContainer
-  col(0.5, cycle: 2)
+  col(1/2, cycle: 2)
   +below(BP)
-    col()
+    col(uncycle: 2)
   .LayerDrawing
     background-color NAV_COLOR
 
 .LayerContainer
   col(1/3, cycle: 3)
   +below(BP)
-    col(1/2, cycle: 2)
+    stack()
   .LayerImage
-    max-width 100%
     max-height 24em
-
-.LayerDrawing
-  padding 1em
-  background-color whitesmoke
-  border-radius 1em
-
-// board colors
-
-// end board output
-
-// layer output
-
-// end layer output
-
 
 // footer
 footer

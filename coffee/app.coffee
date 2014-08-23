@@ -32,7 +32,8 @@ COLORS = {
     black:  { bg: 'black',  txt: 'white' }
     white:  { bg: 'white',  txt: 'black' }
   }
-  built: false;
+  built: false
+  defaults: { cu: 'gold', sm: 'green', ss: 'white' }
 }
 
 # layer types
@@ -45,7 +46,7 @@ LAYERS = {
   bsm: { desc: 'bottom soldermask', match: /\.(gbs)|(sts)$/i }
   bss: { desc: 'bottom silkscreen', match: /\.(gbo)|(pls)$/i }
   bsp: { desc: 'bottom solderpaste',match: /\.(gbp)|(crs)$/i }
-  icu: { desc: 'inner copper',      match: /\.gp\d$/i }
+  icu: { desc: 'inner copper',      match: /\.(gp\d+)|(g\d+l)$/i }
   out: { desc: 'board outline',     match: /(\.(gko)|(mil)$)|edge/i }
   drw: { desc: 'gerber drawing',    match: /\.gbr$/i }
   drl: {
@@ -82,11 +83,24 @@ docPasteText = $ '#url-paste'
 # sample load button
 docSampleBtn = $ '#sample-btn'
 
+# board output
+boardOutput = $ '#board-output'
 # board color picker buttons
 boardColorMainBtn = $ 'button[name="board-color-btn"]'
 boardColorContainer = $ '#board-output-color'
 # color picker buttons
 boardColorPickerBtn = $ '.ColorPicker--btn'
+
+# layer output
+layerOutput = $ '#layer-output'
+
+# nav links
+nav = $ '#main-nav'
+navHome = $('#nav-top').children 'a.Nav--brand'
+navFiles = $ '#nav-filelist'
+navSvgs = $ '#nav-output, #nav-layers'
+# nav buttons
+navButtons = $ 'Nav--linkButton'
 
 changeIcon = (element, newIcon) ->
   element.removeClass( (i, c) -> c.match(/octicon-\S+/g)?.join ' ')
@@ -103,6 +117,8 @@ removeLayerOutput = ->
   # clear out the download links
   $('#download-top-btn, #download-bottom-btn').addClass('is-disabled')
     .attr 'href', '#'
+  # disable the nav link
+  navSvgs.addClass 'is-disabled'
 
 # (re)start the app
 restart = ->
@@ -111,12 +127,15 @@ restart = ->
   # clear out the internal lists
   fileList = {}
   layerList = {}
-  # remove the file listings from the DOM
+  # remove the file listings from the DOM and hide the section
+  docFileList.addClass 'is-hidden'
   docFileList.children('ul').children().not('.is-js-template').remove()
   # remove the board renders
   removeLayerOutput()
   # rehide to color selector
   boardColorContainer.addClass('is-retracted').removeClass 'is-extended'
+  # remove the restart icon from the home nav link
+  changeIcon navHome, 'octicon-jump-up'
 
 # build the file list
 # populate select menu in the template for list items
@@ -183,6 +202,14 @@ buildFileListOutput = (filenames) ->
     # insert the new item
     docFileItemTemplate.before newItem
   validateLayerSelections()
+  # show the file list and enable the nav icon
+  docFileList.removeClass 'is-hidden'
+  navFiles.removeClass 'is-disabled'
+  # add the restart icon to the home nav link
+  changeIcon navHome, 'octicon-sync'
+  # scroll to the filelist
+  scrollTo docFileList
+
 
 # take care of a file event
 handleFileSelect = (e) ->
@@ -297,6 +324,7 @@ buildColorPicker = ->
         newBtn = temp.clone().removeClass 'is-js-template'
         newBtn.css('background-color', code.bg).css 'color', code.txt
         newBtn.html c
+        if c is COLORS.defaults[elem] then newBtn.prop 'disabled', true
         temp.before newBtn
     # color picker buttons
     boardColorPickerBtn = $ '.ColorPicker--btn'
@@ -341,6 +369,10 @@ changeColor = (clicked) ->
     opacity = styleString.match(/opacity:.*;/)?[0]
     newStyle = ".Board--sm { color: #{color}; #{opacity} }"
     reStyle = /\.Board--sm {.*}/
+  # clear any disables
+  boardColorPickerBtn.prop 'disabled', false
+  # disabled current
+  clicked.prop 'disabled', true
   # replace the style
   style.html styleString.replace reStyle, newStyle
   # encode new
@@ -357,85 +389,92 @@ convertLayers = ->
   resetPaste()
   # disable the button
   docConvertBtn.attr 'disabled', 'disabled'
-  # for files in filelist
-  for filename, val of fileList
-    # get the layer type
-    select = $("li.UploadList--item##{val.id}").find('select')
-    option = select.children('option:selected')
-    type = option.attr 'value'
-    unless type is 'oth'
-      # CONVERT THE MOTHERFLIPPING GERBER
-      success = true
-      try
-        svg = gerberToSvg val.string, { object: true, drill: type is 'drl' }
-      catch e
-        console.warn "error with #{filename}:"
-        console.warn e.message
-        success = false
-      if success
-        if type in MULT_LAYERS
-          unless layerList[type]? then layerList[type] = []
-          layerList[type].push svg
-        else
-          layerList[type] = svg
-        # CONVERT THE MOTHERFLIPPING SVG TO BINARY64
-        svg64 = "data:image/svg+xml;base64,#{btoa gerberToSvg svg}"
-        # set the image
-        layer = docLayerTemplate.clone().removeClass 'is-js-template'
-        layer.children('h2.LayerHeading').html option.html()
-        layer.find('img.LayerImage').attr 'src', svg64
-        # put it in the DOM
-        docLayerTemplate.before layer
 
-  # board output
-  topLayers = {}
-  if layerList.tcu? then topLayers.cu = layerList.tcu
-  if layerList.tsm? then topLayers.sm = layerList.tsm
-  if layerList.tss? then topLayers.ss = layerList.tss
-  if layerList.tsp? then topLayers.sp = layerList.tsp
-  if layerList.drl? then topLayers.drill = (d for d in layerList.drl)
-  if layerList.out? then topLayers.out = layerList.out
-  bottomLayers = {}
-  if layerList.bcu? then bottomLayers.cu = layerList.bcu
-  if layerList.bsm? then bottomLayers.sm = layerList.bsm
-  if layerList.bss? then bottomLayers.ss = layerList.bss
-  if layerList.bsp? then bottomLayers.sp = layerList.bsp
-  if layerList.drl? then bottomLayers.drill = (d for d in layerList.drl)
-  if layerList.out? then bottomLayers.out = layerList.out
+  # slight delay to debounce button disable, then convert
+  setTimeout () ->
+    # for files in filelist
+    for filename, val of fileList
+      # get the layer type
+      select = $("li.UploadList--item##{val.id}").find('select')
+      option = select.children('option:selected')
+      type = option.attr 'value'
+      unless type is 'oth'
+        # CONVERT THE MOTHERFLIPPING GERBER
+        success = true
+        try
+          svg = gerberToSvg val.string, { object: true, drill: type is 'drl' }
+        catch e
+          console.warn "error with #{filename}:"
+          console.warn e.message
+          success = false
+        if success
+          if type in MULT_LAYERS
+            unless layerList[type]? then layerList[type] = []
+            layerList[type].push svg
+          else
+            layerList[type] = svg
+          # CONVERT THE MOTHERFLIPPING SVG TO BINARY64
+          svg64 = "data:image/svg+xml;base64,#{btoa gerberToSvg svg}"
+          # set the image
+          layer = docLayerTemplate.clone().removeClass 'is-js-template'
+          layer.children('h2.LayerHeading').html option.html()
+          layer.find('img.LayerImage').attr 'src', svg64
+          # put it in the DOM
+          docLayerTemplate.before layer
+    # board output
+    topLayers = {}
+    if layerList.tcu? then topLayers.cu = layerList.tcu
+    if layerList.tsm? then topLayers.sm = layerList.tsm
+    if layerList.tss? then topLayers.ss = layerList.tss
+    if layerList.tsp? then topLayers.sp = layerList.tsp
+    if layerList.drl? then topLayers.drill = (d for d in layerList.drl)
+    if layerList.out? then topLayers.out = layerList.out
+    bottomLayers = {}
+    if layerList.bcu? then bottomLayers.cu = layerList.bcu
+    if layerList.bsm? then bottomLayers.sm = layerList.bsm
+    if layerList.bss? then bottomLayers.ss = layerList.bss
+    if layerList.bsp? then bottomLayers.sp = layerList.bsp
+    if layerList.drl? then bottomLayers.drill = (d for d in layerList.drl)
+    if layerList.out? then bottomLayers.out = layerList.out
+    # find the board template
+    boardTemplate = $('#board-output').children('.is-js-template')
+    # top
+    if topLayers.cu?
+      topBoard = buildBoard 'top', topLayers
+      topContainer = boardTemplate.clone().removeClass 'is-js-template'
+      topContainer.attr 'id', 'board-top-render'
+      topContainer.children('h2.LayerHeading').html 'board top'
+      svg = gerberToSvg topBoard
+      #svg64 = "data:image/svg+xml;base64,#{btoa svg}"
+      topContainer.find('img.LayerImage').replaceWith svg
+      boardTemplate.before topContainer
+    # bottom
+    if bottomLayers.cu?
+      bottomBoard = buildBoard 'bottom', bottomLayers
+      bottomContainer = boardTemplate.clone().removeClass 'is-js-template'
+      bottomContainer.attr 'id', 'board-bottom-render'
+      bottomContainer.children('h2.LayerHeading').html 'board bottom'
+      svg = gerberToSvg bottomBoard
+      #svg64 = "data:image/svg+xml;base64,#{btoa svg}"
+      bottomContainer.find('img.LayerImage').replaceWith svg
+      boardTemplate.before bottomContainer
 
-  # find the board template
-  boardTemplate = $('#board-output').children('.is-js-template')
-  # top
-  if topLayers.cu?
-    topBoard = buildBoard 'top', topLayers
-    topContainer = boardTemplate.clone().removeClass 'is-js-template'
-    topContainer.attr 'id', 'board-top-render'
-    topContainer.children('h2.LayerHeading').html 'board top'
-    svg = gerberToSvg topBoard
-    #svg64 = "data:image/svg+xml;base64,#{btoa svg}"
-    topContainer.find('img.LayerImage').replaceWith svg
-    boardTemplate.before topContainer
-  # bottom
-  if bottomLayers.cu?
-    bottomBoard = buildBoard 'bottom', bottomLayers
-    bottomContainer = boardTemplate.clone().removeClass 'is-js-template'
-    bottomContainer.attr 'id', 'board-bottom-render'
-    bottomContainer.children('h2.LayerHeading').html 'board bottom'
-    svg = gerberToSvg bottomBoard
-    #svg64 = "data:image/svg+xml;base64,#{btoa svg}"
-    bottomContainer.find('img.LayerImage').replaceWith svg
-    boardTemplate.before bottomContainer
+    # build color pickers if necessary and unhide the bourd output
+    if bottomLayers.cu? or topLayers.cu?
+      buildColorPicker()
+      encodeForDownload()
+      $('#board-output-row').removeClass 'is-hidden'
 
-  # build color pickers if necessary
-  if bottomLayers.cu? or topLayers.cu?
-    buildColorPicker()
-    encodeForDownload()
-
-  # unhide the output
-  $('#board-output-row, #layer-output-row').removeClass 'is-hidden'
-  # return false
-  false
-
+    # unhide the layer output
+    $('#layer-output-row').removeClass 'is-hidden'
+    # scroll to the board output
+    scrollTo boardOutput, ->
+      # enable the nav links
+      navSvgs.removeClass 'is-disabled'
+    # return false
+    false
+  # timeout debounce delay
+  , 50
 
 # attach event listeners to get everything going
 # file drop and select
@@ -459,56 +498,55 @@ docSampleBtn.on 'click', loadSamples
 boardColorMainBtn.on 'click', -> boardColorContainer.toggleClass 'is-retracted'
 # color button
 
+# navigation sugar
+navHeight = nav.height()
+# scroll to
+scrollTo = (selector, cb) ->
+  console.log "scroll to fire"
+  $('html, body').animate {
+    scrollTop: if selector then $( selector ).offset().top-1.15*navHeight else 0
+  }, 300, cb
 
+$('a.Nav--link').not('.Nav--noScroll').on 'click', (event) ->
+  event.stopPropagation()
+  event.preventDefault()
+  a = $ @
+  p =  a.parent()
+  unless p.hasClass 'disabled'
+    link = a.attr('href').split('#')[1]
+    if link then link = '#'+link
+    # restart if the link was empty
+    scrollTo link, (unless link then restart)
 
+# attach an event listener on the window scroll event to set active
+w = $ window
+w.scroll () ->
+  # find the middle of the window
+  s = w.scrollTop() + w.height()/2
 
-# # also attach event listeners on the navlinks to scroll
-# navLinks = $ 'a.nav-link'
-# $('a.nav-link').on 'click', (event) ->
-#   event.stopPropagation()
-#   event.preventDefault()
-#   a = $ this
-#   p = a.parent()
-#   unless p.hasClass 'disabled'
-#     link = a.attr('href').split('#')[1]
-#     # scroll to the appropriate section
-#     $('html, body').animate {
-#       scrollTop: $("##{link}").offset().top - $('#top-nav').height() - 10
-#     }, 250
-#
-# # event listener on main title to restart the app and scroll to the top
-# $('#title').on 'click', (event) ->
-#   event.stopPropagation()
-#   event.preventDefault()
-#   a = $(this).children('a')
-#   # restart the app
-#   restart()
-#   # scroll to top
-#   $('html, body').animate {
-#     scrollTop: 0
-#   }, 250
-#
-# # attach an event listener on the window scroll event to set active
-# w = $ window
-# w.scroll () ->
-#   # find the middle of the window
-#   s = w.scrollTop() + w.height()/2
-#
-#   # by default, assume upload is active
-#   unless (li = $('#nav-upload')).hasClass 'active'
-#     li.siblings().removeClass 'active'
-#     li.addClass 'active'
-#
-#   # check if we're in layer output territory
-#   if s >= $('#upload-list').offset().top - $('#top-nav').height() - 10
-#     unless (li = $('#nav-layers')).hasClass 'disabled' or li.hasClass 'active'
-#       console.log "#nav-layers is not disabled"
-#       li.siblings().removeClass 'active'
-#       li.addClass 'active'
-#
-#   # finally check if we're in svg territory
-#   if s >= $('#individual-layer-output').offset().top - $('#top-nav').height() - 10
-#     unless (li = $('#nav-svgs')).hasClass 'disabled' or li.hasClass 'active'
-#       console.log "#nav-svgs is not disabled"
-#       li.siblings().removeClass 'active'
-#       li.addClass 'active'
+  # by default, assume upload is active
+  li = $ '#nav-upload'
+  unless li.hasClass 'is-active'
+    li.siblings().removeClass 'is-active'
+    li.addClass 'is-active'
+
+  # then check if we're in file list territory
+  li = $ '#nav-filelist'
+  if not li.hasClass 'is-disabled' and not li.hasClass 'is-active'
+    if s >= docFileList.offset().top - nav.height()
+      li.siblings().removeClass 'is-active'
+      li.addClass 'is-active'
+
+  # then check if we're in board territory
+  li = $ '#nav-output'
+  if not li.hasClass 'is-disabled' and not li.hasClass 'is-active'
+    if s >= boardOutput.offset().top - nav.height()
+      li.siblings().removeClass 'is-active'
+      li.addClass 'is-active'
+
+  # check if we're in layer territory
+  li = $ '#nav-layers'
+  if not li.hasClass 'is-disabled' and not li.hasClass 'is-active'
+    if s >= layerOutput.offset().top - nav.height()
+      li.siblings().removeClass 'is-active'
+      li.addClass 'is-active'
