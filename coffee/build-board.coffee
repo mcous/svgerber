@@ -176,6 +176,7 @@ module.exports = (name, layers = {}) ->
   if drlId then draw.g.mask = "url(##{drlId})"
   # svg
   svg = attr
+  svg.class = 'Board'
   svg.viewBox = getVboxFromBbox()
   svg.width = "#{svg.viewBox[2] - svg.viewBox[0]}#{units}"
   svg.height = "#{svg.viewBox[3] - svg.viewBox[1]}#{units}"

@@ -109,13 +109,34 @@ html(lang="en")
         div.LayerDrawing
           img.LayerImage
 
-      .Row#board-output-row
-        output(for='file-list')#board-output.is-hidden
+      #board-output-row.Row.is-hidden
+        output(for='file-list')#board-output
           .BoardContainer.is-js-template
             +layerContainerContents('board-template')
+        button(name='board-color-btn' type='button').Btn.Btn-lg
+          = 'download boards / change colors'
+        #board-output-color.Container.is-retracted
+          #board-download.Box
+            h3 download
+            a(download='top.svg' href-lang='image/svg+xml' href='#')#download-top-btn.Btn.is-disabled
+              = 'top'
+            a(download='bottom.svg' href-lang='image/svg+xml' href='#')#download-bottom-btn.Btn.is-disabled
+              = 'bottom'
+          #board-cu-color.Box.ColorPicker
+            h3 copper finish
+            #board-cu-color-buttons.Container
+              button(type='button').Btn.ColorPicker--btn.is-js-template color
+          #board-sm-color.Box.ColorPicker
+            h3 soldermask
+            #board-sm-color-buttons.Container
+              button(type='button').Btn.ColorPicker--btn.is-js-template color
+          #board-ss-color.Box.ColorPicker
+            h3 silkscreen
+            #board-ss-color-buttons.Container
+              button(type='button').Btn.ColorPicker--btn.is-js-template color
 
-      .Row#layer-output-row
-        output(for='file-list')#layer-output.is-hidden
+      #layer-output-row.Row.is-hidden
+        output(for='file-list')#layer-output
           .LayerContainer.is-js-template
             +layerContainerContents('layer-template')
 

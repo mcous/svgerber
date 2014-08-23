@@ -6,18 +6,47 @@ gerberToSvg = require 'gerber-to-svg'
 # board builder
 buildBoard = require './build-board'
 
+# board colors
+COLORS = {
+  cu: {
+    bare:    { bg: '#C87533',       txt: 'white' }
+    gold:    { bg: 'goldenrod',     txt: 'white' }
+    'Ni/Au': { bg: 'whitesmoke',    txt: 'black' }
+    hasl:    { bg: 'silver',        txt: 'black' }
+  }
+  sm: {
+    red:    { bg: 'darkred',    txt: 'white' }
+    orange: { bg: 'darkorange', txt: 'black' }
+    yellow: { bg: '#FFFF66',    txt: 'black' }
+    green:  { bg: 'darkgreen',  txt: 'white' }
+    blue:   { bg: 'navy',       txt: 'white' }
+    purple: { bg: 'indigo',     txt: 'white' }
+    black:  { bg: 'black',      txt: 'white' }
+    white:  { bg: 'white',      txt: 'black' }
+  }
+  ss: {
+    red:    { bg: 'red',    txt: 'white' }
+    yellow: { bg: 'yellow', txt: 'black' }
+    green:  { bg: 'green',  txt: 'white' }
+    blue:   { bg: 'blue',   txt: 'white' }
+    black:  { bg: 'black',  txt: 'white' }
+    white:  { bg: 'white',  txt: 'black' }
+  }
+  built: false;
+}
+
 # layer types
 LAYERS = {
-  tcu: { desc: 'top copper',        match: /(\.gtl)|(\.cmp)$/i }
-  tsm: { desc: 'top soldermask',    match: /(\.gts)|(\.stc)$/i }
-  tss: { desc: 'top silkscreen',    match: /(\.gto)|(\.plc)$/i }
-  tsp: { desc: 'top solderpaste',   match: /(\.gtp)|(\.crc)$/i }
-  bcu: { desc: 'bottom copper',     match: /(\.gbl)|(\.sol)$/i }
-  bsm: { desc: 'bottom soldermask', match: /(\.gbs)|(\.sts)$/i }
-  bss: { desc: 'bottom silkscreen', match: /(\.gbo)|(\.pls)$/i }
-  bsp: { desc: 'bottom solderpaste',match: /(\.gbp)|(\.crs)$/i }
+  tcu: { desc: 'top copper',        match: /\.(gtl)|(cmp)$/i }
+  tsm: { desc: 'top soldermask',    match: /\.(gts)|(stc)$/i }
+  tss: { desc: 'top silkscreen',    match: /\.(gto)|(plc)$/i }
+  tsp: { desc: 'top solderpaste',   match: /\.(gtp)|(crc)$/i }
+  bcu: { desc: 'bottom copper',     match: /\.(gbl)|(sol)$/i }
+  bsm: { desc: 'bottom soldermask', match: /\.(gbs)|(sts)$/i }
+  bss: { desc: 'bottom silkscreen', match: /\.(gbo)|(pls)$/i }
+  bsp: { desc: 'bottom solderpaste',match: /\.(gbp)|(crs)$/i }
   icu: { desc: 'inner copper',      match: /\.gp\d$/i }
-  out: { desc: 'board outline',     match: /(\.gko$)|edge/i }
+  out: { desc: 'board outline',     match: /(\.(gko)|(mil)$)|edge/i }
   drw: { desc: 'gerber drawing',    match: /\.gbr$/i }
   drl: {
     desc: 'drill hits'
@@ -53,6 +82,12 @@ docPasteText = $ '#url-paste'
 # sample load button
 docSampleBtn = $ '#sample-btn'
 
+# board color picker buttons
+boardColorMainBtn = $ 'button[name="board-color-btn"]'
+boardColorContainer = $ '#board-output-color'
+# color picker buttons
+boardColorPickerBtn = $ '.ColorPicker--btn'
+
 changeIcon = (element, newIcon) ->
   element.removeClass( (i, c) -> c.match(/octicon-\S+/g)?.join ' ')
     .addClass newIcon
@@ -63,9 +98,11 @@ matchLayer = (filename) ->
 
 # remove layer output
 removeLayerOutput = ->
-  $('#board-output, #layer-output')
-    .children().not('.is-js-template').remove()
-    .addClass 'is-hidden'
+  $('#board-output, #layer-output').children().not('.is-js-template').remove()
+  $('#board-output-row, #layer-output-row').addClass 'is-hidden'
+  # clear out the download links
+  $('#download-top-btn, #download-bottom-btn').addClass('is-disabled')
+    .attr 'href', '#'
 
 # (re)start the app
 restart = ->
@@ -78,6 +115,8 @@ restart = ->
   docFileList.children('ul').children().not('.is-js-template').remove()
   # remove the board renders
   removeLayerOutput()
+  # rehide to color selector
+  boardColorContainer.addClass('is-retracted').removeClass 'is-extended'
 
 # build the file list
 # populate select menu in the template for list items
@@ -247,6 +286,67 @@ loadSamples = ->
           data = null
       }
 
+# build the color selectors for the board output
+buildColorPicker = ->
+  unless COLORS.built
+    # loop through copper, soldermask, and silkscreen
+    for elem in [ 'cu', 'sm', 'ss' ]
+      # find the copper color button template
+      temp = $("#board-#{elem}-color-buttons").children('button.is-js-template')
+      for c, code of COLORS[elem]
+        newBtn = temp.clone().removeClass 'is-js-template'
+        newBtn.css('background-color', code.bg).css 'color', code.txt
+        newBtn.html c
+        temp.before newBtn
+    # color picker buttons
+    boardColorPickerBtn = $ '.ColorPicker--btn'
+    # attach event listener
+    boardColorPickerBtn.on 'click', changeColor
+    # set the built flag
+    COLORS.built = true
+
+# encode for download
+encodeForDownload = ->
+  containers = $('.BoardContainer').not('.is-js-template')
+  for c in containers
+    c = $ c
+    svg = c.find('.Board')
+    svg = svg[0].outerHTML
+    svg64 = "data:image/svg+xml;base64,#{btoa svg}"
+    if c.attr('id') is 'board-top-render'
+      btn = $('#download-top-btn')
+    else if c.attr('id') is 'board-bottom-render'
+      btn = $('#download-bottom-btn')
+    btn.attr 'href', svg64
+    btn.removeClass 'is-disabled'
+
+
+changeColor = (clicked) ->
+  # get the elements for board stlyes
+  style = $ '.Board--style'
+  styleString = style.html()
+  # get the element that we're changing to color
+  clicked = $ clicked.target
+  clickId = clicked.parent().attr 'id'
+  if clickId.match /cu/
+    color = COLORS.cu[clicked.html()].bg
+    newStyle = ".Board--finish { color: #{color}; }"
+    reStyle = /\.Board--finish {.*}/
+  else if clickId.match /ss/
+    color = COLORS.ss[clicked.html()].bg
+    newStyle = ".Board--ss { color: #{color}; }"
+    reStyle = /\.Board--ss {.*}/
+  else if clickId.match /sm/
+    color = COLORS.sm[clicked.html()].bg
+    opacity = styleString.match(/opacity:.*;/)?[0]
+    newStyle = ".Board--sm { color: #{color}; #{opacity} }"
+    reStyle = /\.Board--sm {.*}/
+  # replace the style
+  style.html styleString.replace reStyle, newStyle
+  # encode new
+  encodeForDownload()
+
+
 # convert the layers to svgs
 convertLayers = ->
   # set the processed flag
@@ -309,28 +409,30 @@ convertLayers = ->
   if topLayers.cu?
     topBoard = buildBoard 'top', topLayers
     topContainer = boardTemplate.clone().removeClass 'is-js-template'
+    topContainer.attr 'id', 'board-top-render'
     topContainer.children('h2.LayerHeading').html 'board top'
     svg = gerberToSvg topBoard
     #svg64 = "data:image/svg+xml;base64,#{btoa svg}"
-    topContainer.find('img.LayerImage').after svg
+    topContainer.find('img.LayerImage').replaceWith svg
     boardTemplate.before topContainer
   # bottom
   if bottomLayers.cu?
     bottomBoard = buildBoard 'bottom', bottomLayers
     bottomContainer = boardTemplate.clone().removeClass 'is-js-template'
+    bottomContainer.attr 'id', 'board-bottom-render'
     bottomContainer.children('h2.LayerHeading').html 'board bottom'
     svg = gerberToSvg bottomBoard
     #svg64 = "data:image/svg+xml;base64,#{btoa svg}"
-    bottomContainer.find('img.LayerImage').after svg
+    bottomContainer.find('img.LayerImage').replaceWith svg
     boardTemplate.before bottomContainer
 
-  # done with these objects, so clear them out
-  # topLayers = {}
-  # bottomLayers = {}
-  # layerList = {}
+  # build color pickers if necessary
+  if bottomLayers.cu? or topLayers.cu?
+    buildColorPicker()
+    encodeForDownload()
 
   # unhide the output
-  $('#board-output, #layer-output').removeClass 'is-hidden'
+  $('#board-output-row, #layer-output-row').removeClass 'is-hidden'
   # return false
   false
 
@@ -353,6 +455,12 @@ docPasteCancelBtn.on 'click', resetPaste
 docPasteSubmitBtn.on 'click', handlePaste
 # load samples button
 docSampleBtn.on 'click', loadSamples
+# slide out color drawer
+boardColorMainBtn.on 'click', -> boardColorContainer.toggleClass 'is-retracted'
+# color button
+
+
+
 
 # # also attach event listeners on the navlinks to scroll
 # navLinks = $ 'a.nav-link'
