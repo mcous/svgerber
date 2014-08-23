@@ -139,7 +139,7 @@ gulp.task 'deploy', ['build'], ->
     }
 
 # dev server is default task
-gulp.task 'default', [ 'watch' ], ->
+gulp.task 'default', [  'watch' ], ->
   gulp.src DEPLOY
     .pipe webserver {
       livereload: true

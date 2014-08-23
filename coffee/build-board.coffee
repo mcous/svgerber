@@ -15,7 +15,7 @@ DEFAULT_STYLE = {
       .Board--board { color: dimgrey; }
       .Board--cu { color: lightgrey; }
       .Board--finish { color: goldenrod; }
-      .Board--sm { color: #3e683e; opacity: 0.75; }
+      .Board--sm { color: darkgreen; opacity: 0.75; }
       .Board--ss { color: white; }
       .Board--sp { color: silver; }
       .Board--out { color: black; }
