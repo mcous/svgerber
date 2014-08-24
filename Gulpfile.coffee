@@ -47,6 +47,12 @@ VENDOR_ICON = [
   './bower_components/octicons/octicons/octicons.svg'
 ]
 
+# files to deploy
+DEPLOY_FILES = [
+  "#{DEPLOY}/*"
+  'CNAME'
+]
+
 # arguments (checks for production build)
 argv = require('minimist') process.argv.slice(2), {
   default: { p: false }
@@ -135,7 +141,7 @@ gulp.task 'watch', ->
 
 # deploy to gh-pages
 gulp.task 'deploy', ['build'], ->
-  gulp.src "#{DEPLOY}/*"
+  gulp.src DEPLOY_FILES
     .pipe deploy {
       branch: if argv.p then 'gh-pages' else 'test-deploy'
       push: argv.p
