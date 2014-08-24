@@ -135,7 +135,7 @@ gulp.task 'watch', ->
 
 # deploy to gh-pages
 gulp.task 'deploy', ['build'], ->
-  gulp.src DEPLOY
+  gulp.src "#{DEPLOY}/*"
     .pipe deploy {
       branch: if argv.p then 'gh-pages' else 'test-deploy'
       push: argv.p
