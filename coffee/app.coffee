@@ -1,6 +1,6 @@
 # main svgerber site application
 # jquery
-$ = require 'jquery'
+#$ = require 'jquery'
 # gerber to svg plotter
 gerberToSvg = require 'gerber-to-svg'
 # board builder

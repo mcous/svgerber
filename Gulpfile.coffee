@@ -34,7 +34,9 @@ TEMPLATE = './jade/index.jade'
 STYLE    = './stylus/app.styl'
 
 # vendor files
-VENDOR_JS = ''
+VENDOR_JS = [
+  './node_modules/jquery/dist/jquery.min.js'
+]
 VENDOR_CSS = [
   './bower_components/octicons/octicons/octicons.css'
 ]
@@ -143,6 +145,7 @@ gulp.task 'deploy', ['build'], ->
 gulp.task 'default', [ 'watch' ], ->
   gulp.src DEPLOY
     .pipe webserver {
+      host: '0.0.0.0'
       livereload: true
       open: true
     }
