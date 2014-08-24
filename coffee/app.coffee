@@ -134,8 +134,9 @@ restart = ->
   removeLayerOutput()
   # rehide to color selector
   boardColorContainer.addClass('is-retracted').removeClass 'is-extended'
-  # remove the restart icon from the home nav link
+  # remove the restart icon from the home nav link and disable filelist link
   changeIcon navHome, 'octicon-jump-up'
+  navFiles.addClass 'is-disabled'
 
 # build the file list
 # populate select menu in the template for list items
@@ -203,13 +204,13 @@ buildFileListOutput = (filenames) ->
     docFileItemTemplate.before newItem
   validateLayerSelections()
   # show the file list and enable the nav icon
-  docFileList.removeClass 'is-hidden'
-  navFiles.removeClass 'is-disabled'
-  # add the restart icon to the home nav link
-  changeIcon navHome, 'octicon-sync'
-  # scroll to the filelist
-  scrollTo docFileList
-
+  if docFileList.hasClass 'is-hidden'
+    docFileList.removeClass 'is-hidden'
+    navFiles.removeClass 'is-disabled'
+    # add the restart icon to the home nav link
+    changeIcon navHome, 'octicon-sync'
+    # scroll to the filelist
+    scrollTo docFileList
 
 # take care of a file event
 handleFileSelect = (e) ->
@@ -352,7 +353,8 @@ encodeForDownload = ->
 changeColor = (clicked) ->
   # get the elements for board stlyes
   style = $ '.Board--style'
-  styleString = style.html()
+  # use text because svg is xml, not html (and makes safari unhappy)
+  styleString = style.first().text()
   # get the element that we're changing to color
   clicked = $ clicked.target
   clickId = clicked.parent().attr 'id'
@@ -370,11 +372,11 @@ changeColor = (clicked) ->
     newStyle = ".Board--sm { color: #{color}; #{opacity} }"
     reStyle = /\.Board--sm {.*}/
   # clear any disables
-  boardColorPickerBtn.prop 'disabled', false
+  clicked.siblings().prop 'disabled', false
   # disabled current
   clicked.prop 'disabled', true
   # replace the style
-  style.html styleString.replace reStyle, newStyle
+  style.text styleString.replace reStyle, newStyle
   # encode new
   encodeForDownload()
 
@@ -502,7 +504,6 @@ boardColorMainBtn.on 'click', -> boardColorContainer.toggleClass 'is-retracted'
 navHeight = nav.height()
 # scroll to
 scrollTo = (selector, cb) ->
-  console.log "scroll to fire"
   $('html, body').animate {
     scrollTop: if selector then $( selector ).offset().top-1.15*navHeight else 0
   }, 300, cb
@@ -517,36 +518,3 @@ $('a.Nav--link').not('.Nav--noScroll').on 'click', (event) ->
     if link then link = '#'+link
     # restart if the link was empty
     scrollTo link, (unless link then restart)
-
-# attach an event listener on the window scroll event to set active
-w = $ window
-w.scroll () ->
-  # find the middle of the window
-  s = w.scrollTop() + w.height()/2
-
-  # by default, assume upload is active
-  li = $ '#nav-upload'
-  unless li.hasClass 'is-active'
-    li.siblings().removeClass 'is-active'
-    li.addClass 'is-active'
-
-  # then check if we're in file list territory
-  li = $ '#nav-filelist'
-  if not li.hasClass 'is-disabled' and not li.hasClass 'is-active'
-    if s >= docFileList.offset().top - nav.height()
-      li.siblings().removeClass 'is-active'
-      li.addClass 'is-active'
-
-  # then check if we're in board territory
-  li = $ '#nav-output'
-  if not li.hasClass 'is-disabled' and not li.hasClass 'is-active'
-    if s >= boardOutput.offset().top - nav.height()
-      li.siblings().removeClass 'is-active'
-      li.addClass 'is-active'
-
-  # check if we're in layer territory
-  li = $ '#nav-layers'
-  if not li.hasClass 'is-disabled' and not li.hasClass 'is-active'
-    if s >= layerOutput.offset().top - nav.height()
-      li.siblings().removeClass 'is-active'
-      li.addClass 'is-active'
