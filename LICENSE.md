@@ -25,16 +25,11 @@ THE SOFTWARE.
 ## everything that isn't code or documentation
 Shared under the terms of the [Creative Commons Attribution-ShareAlike 4.0 License](https://creativecommons.org/licenses/by-sa/4.0/).
 
-# bootstrap
-This site uses [Bootstrap](http://getbootstrap.com). Copyright 2011-2014 by Twitter, Inc, and shared under the terms of the MIT License.
+# jeet
+This site uses [Jeet](http://jeet.gs/). Copyright 2014 by MojoTech, and shared under the terms of the MIT License.
 
 # jquery
 This site uses [jQuery](http://jquery.com/). Copyright 2014 by the jQuery Foundation and other contributors, and shared under the terms of the MIT License.
-
-# svg.js
-This project uses [svg.js](http://www.svgjs.com/).
-
-© 2012 - 2014 Wout Fierens - svg.js is released under the terms of the MIT license.
 
 # octicons
 This project uses [GitHub's Octicons](http://octicons.github.com/).
