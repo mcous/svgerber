@@ -1,4 +1,4 @@
-# svgerber
+# svgerber (beta!)
 giving gerber files the web-based vector love they deserve
 
 ## what?
