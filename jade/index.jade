@@ -47,26 +47,28 @@ html(lang="en")
           .Box
             h2 what is this?
             p
-              = 'This page will take your '
+              = 'This is a '
               strong: +aNew('http://en.wikipedia.org/wiki/Gerber_format') Gerber
               = ' and '
               strong: +aNew('http://en.wikipedia.org/wiki/Excellon') drill
-              = ' files and convert them to '
+              = ' file viewer that works by converting your files to '
               strong: +aNew('http://en.wikipedia.org/wiki/Scalable_Vector_Graphics')
                 = 'SVGs'
-              = ' for viewing/download. Run into problems™? '
+              = ' for examination / download. Problems™? '
               +aNew('https://github.com/mcous/svgerber/issues')= 'Open an issue'
-              = ' with the file attached.'
+              = ' with the file attached!'
 
         #caution
           .Box
             h2 let's do this thing
               small.SubHeading <br>(but it could get weird)
-            ul
-              li= 'old files could confuse '
-                +aNew('http://github.com/mcous/gerber-to-svg')
-                  = 'the gerber library'
-              li step/repeats with overlapping clears will produce an incorrect image
+            p
+              strong= 'Beta software! '
+              +aNew('http://github.com/mcous/gerber-to-svg')
+                = 'The gerber to svg library'
+              = ' should produce the correct image, but it might not.'
+
+
 
         #sample
           .Box
@@ -107,7 +109,7 @@ html(lang="en")
                   option(value='oth') other (ignore)
 
           button(type='button' disabled='disabled')#convert-btn.Btn
-            = 'svg!'
+            = 'convert!'
 
       mixin layerContainerContents(name)
         h2.LayerHeading= name
@@ -118,8 +120,6 @@ html(lang="en")
         output(for='file-list')#board-output
           .BoardContainer.is-js-template
             +layerContainerContents('board-template')
-        button(name='board-color-btn' type='button').Btn.Btn-lg
-          = 'download boards / change colors'
         #board-output-color.Container.is-retracted
           #board-download.Box
             h3 download
@@ -140,6 +140,8 @@ html(lang="en")
             h3 silkscreen
             #board-ss-color-buttons.Container
               button(type='button').Btn.ColorPicker--btn.is-js-template color
+        button(name='board-color-btn' type='button').Btn.Btn-lg
+          = 'download boards / change colors'
 
       #layer-output-row.Row.is-hidden
         output(for='file-list')#layer-output

@@ -117,6 +117,8 @@ a
 
 .is-retracted
   max-height 0 !important
+  margin-top 0 !important
+  margin-bottom 0 !important
   overflow hidden
 
 ul
@@ -355,13 +357,15 @@ select.UploadList--text
 // board output
 #board-output-row
   background-color FOOT_BG
+  padding-tb 1em
 
 #board-output
   center(pad: 5%)
   margin-bottom 2em
 
 #board-output-color
-  transition max-height 0.5s
+  transition max-height 0.5s, margin 0.5s
+  margin-top 0
   max-height 20em
   +below(BP)
     max-height 60em
@@ -381,6 +385,7 @@ select.UploadList--text
     col(1/4, uncycle: 2, cycle: 4)
 
 #layer-output
+  padding-tb 1em
   cf()
   center(pad: 10%)
 
