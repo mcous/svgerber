@@ -87,7 +87,7 @@ gulp.task 'clean', ->
 gulp.task 'style', ->
   gulp.src STYLE
     .pipe stylus( { use: [ jeet(), rupture() ] } ).on 'error', gutil.log
-#    .pipe prefix '> 5%', 'last 3 versions', 'Firefox ESR', 'Opera 12.1'
+    .pipe prefix '> 5%', 'last 3 versions', 'Firefox ESR', 'Opera 12.1'
     .pipe if argv.p then minifycss() else gutil.noop()
     .pipe gulp.dest DEPLOY
 
