@@ -6,6 +6,11 @@ gerberToSvg = require 'gerber-to-svg'
 # board builder
 buildBoard = require './build-board'
 
+# btoa polyfill
+unless typeof window.btoa is 'function'
+  window.btoa = (require 'Base64').btoa
+
+
 # board colors
 COLORS = {
   cu: {
