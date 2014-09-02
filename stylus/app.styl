@@ -338,7 +338,6 @@ button:disabled, .Btn.is-disabled
 
 .UploadList--text
   line-height LINE
-  background-color inherit
   color inherit
 
 span.UploadList--text
@@ -352,6 +351,14 @@ select.UploadList--text
   border-width 0
   border-radius 0
   vertical-align bottom
+  background-color transparent
+  // remove ugly default appearance
+  cursor pointer
+  -moz-appearance none
+  -webkit-appearance none
+  // try to get text color to black when expanded
+  option
+    color black
 // end uploaded file list
 
 // board output
