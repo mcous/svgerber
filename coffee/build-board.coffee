@@ -10,8 +10,10 @@ uniqueId = -> unique++
 # default style
 DEFAULT_STYLE = {
   style: {
+    type: 'text/css'
     class: 'Board--style'
     _: '''
+    <![CDATA[
       .Board--board { color: dimgrey; }
       .Board--cu { color: lightgrey; }
       .Board--finish { color: goldenrod; }
@@ -19,6 +21,7 @@ DEFAULT_STYLE = {
       .Board--ss { color: white; }
       .Board--sp { color: silver; }
       .Board--out { color: black; }
+    ]]>
     '''
   }
 }

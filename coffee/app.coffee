@@ -342,10 +342,10 @@ buildColorPicker = ->
 # encode for download
 encodeForDownload = ->
   containers = $('.BoardContainer').not('.is-js-template')
-  for c in containers
-    c = $ c
-    svg = c.find('.Board')
-    svg = svg[0].outerHTML
+  containers.each ->
+    c = $ this
+    drawDiv = c.children('.LayerDrawing')
+    svg = drawDiv.html()
     svg64 = "data:image/svg+xml;base64,#{btoa svg}"
     if c.attr('id') is 'board-top-render'
       btn = $('#download-top-btn')
