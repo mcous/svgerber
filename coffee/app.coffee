@@ -10,6 +10,13 @@ buildBoard = require './build-board'
 unless typeof window.btoa is 'function'
   window.btoa = (require 'Base64').btoa
 
+# converter worker
+# converter = new Worker './gerber-worker.coffee'
+# converter.addEventListener 'message', (e) ->
+#   console.log "worker said: "
+#   console.log e.data
+# , false
+# converter.postMessage 'hello faja'
 
 # board colors
 COLORS = {
@@ -401,33 +408,37 @@ convertLayers = ->
   setTimeout () ->
     # for files in filelist
     for filename, val of fileList
-      # get the layer type
-      select = $("li.UploadList--item##{val.id}").find('select')
-      option = select.children('option:selected')
-      type = option.attr 'value'
-      unless type is 'oth'
-        # CONVERT THE MOTHERFLIPPING GERBER
-        success = true
-        try
-          svg = gerberToSvg val.string, { object: true, drill: type is 'drl' }
-        catch e
-          console.warn "error with #{filename}:"
-          console.warn e.message
-          success = false
-        if success
-          if type in MULT_LAYERS
-            unless layerList[type]? then layerList[type] = []
-            layerList[type].push svg
-          else
-            layerList[type] = svg
-          # CONVERT THE MOTHERFLIPPING SVG TO BINARY64
-          svg64 = "data:image/svg+xml;base64,#{btoa gerberToSvg svg}"
-          # set the image
-          layer = docLayerTemplate.clone().removeClass 'is-js-template'
-          layer.children('h2.LayerHeading').html option.html()
-          layer.find('img.LayerImage').attr 'src', svg64
-          # put it in the DOM
-          docLayerTemplate.before layer
+      do (filename, val) ->
+        # get the layer type
+        select = $("li.UploadList--item##{val.id}").find('select')
+        option = select.children('option:selected')
+        type = option.attr 'value'
+        unless type is 'oth'
+          # CONVERT THE MOTHERFLIPPING GERBER
+          converter = new Worker './gerber-worker.coffee'
+          # on error
+          converter.addEventListener 'error', (e) ->
+            console.warn "error with #{filename}: #{e.message}"
+          , false
+          # on success
+          converter.addEventListener 'message', (e) ->
+            svg = e.data
+            # check if the layer type can have multiple layers of the same type
+            if type in MULT_LAYERS
+              unless layerList[type]? then layerList[type] = []
+              layerList[type].push svg
+            else
+              layerList[type] = svg
+            # CONVERT THE MOTHERFLIPPING SVG TO BINARY64
+            svg64 = "data:image/svg+xml;base64,#{btoa gerberToSvg svg}"
+            # set the image
+            layer = docLayerTemplate.clone().removeClass 'is-js-template'
+            layer.children('h2.LayerHeading').html option.html()
+            layer.find('img.LayerImage').attr 'src', svg64
+            # put it in the DOM
+            docLayerTemplate.before layer
+          # send the gerber to the worker
+          converter.postMessage val.string
     # board output
     topLayers = {}
     if layerList.tcu? then topLayers.cu = layerList.tcu

@@ -8,7 +8,8 @@
   },
   "browserify": {
     "transform": [
-      "coffeeify"
+      "coffeeify",
+      "workerify"
     ]
   },
   "devDependencies": {
