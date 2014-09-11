@@ -88,7 +88,7 @@ body
   padding-top navHt
   cf()
 
-h1, h2, h3, h4, h5, h6, strong, .Btn, .Heading
+h1, h2, h3, h4, h5, h6, strong, .Btn, .Heading, li
   font-family Lato, sans-serif
   font-weight 700
 
@@ -116,6 +116,11 @@ a
   display none !important
   position absolute
   z-index 1
+
+// .is-invisible
+//   visibility hidden
+//   opacity 0
+//   transition visibility 0s 0.5s, opacity 0.5s linear
 
 .is-retracted
   max-height 0 !important
@@ -209,7 +214,7 @@ button:disabled, .Btn.is-disabled
   // fixed to top
   width 100%
   position fixed
-  z-index 1
+  z-index 10
 
 .Nav-list
   height 100%
@@ -318,13 +323,55 @@ button:disabled, .Btn.is-disabled
   center(56em)
 
 .UploadList--item
-  overflow hidden
+  cf()
+  position relative
   margin-bottom 0.5em
   padding 0.5em
   &.is-valid
     background-color desaturate(lighten(green, 10%), 75%)
   &.is-invalid
     background-color desaturate(lighten(red, 10%), 75%)
+  &.is-in-progress
+    background-size 4em 4em
+    background-image linear-gradient(45deg, rgba(255, 255, 255, .15) 25%,
+      transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%,
+      rgba(255, 255, 255, .15) 75%, transparent 75%, transparent)
+    animation animate-stripes 2s linear infinite
+  // show buttons on hover
+  &:hover
+    button
+      opacity 1
+
+@keyframes animate-stripes
+  from
+    background-position 0 0
+  to
+    background-position 8em 0
+
+.UploadList--itemDelete
+  // cursor
+  cursor pointer
+  // color and border
+  color desaturate(lighten(red, 10%), 75%)
+  border none
+  border-radius 0.2em
+  background-color rgba(255, 255, 255, 0.6)
+  // hover effect
+  opacity 0.1
+  &:hover
+    opacity 1
+  transition opacity 0.1s ease 0.05s
+  // positioning
+  display inline-block
+  align(vertical)
+  text-align center
+  height 90%
+  margin-right 100.5%
+  right 0
+  +below(64em)
+    opacity 0.5
+    width 10%
+    margin-right 45%
 
 .UploadList--filename
   float left
@@ -346,6 +393,7 @@ span.UploadList--text
   font-size 1.25em
 
 select.UploadList--text
+  font-family Lato, sans-serif
   font-size 1em
   height 1.25em * LINE
   margin 0
@@ -355,6 +403,7 @@ select.UploadList--text
   background-color transparent
   // remove ugly default appearance
   cursor pointer
+  appearance none
   -moz-appearance none
   -webkit-appearance none
   // try to get text color to black when expanded

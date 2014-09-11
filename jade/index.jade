@@ -99,7 +99,9 @@ html(lang="en")
 
         output(for='upload')#file-list.UploadList.is-hidden
           ul.List-unstyled
-            li.Box.UploadList--item.is-js-template
+            li.UploadList--item.Box.is-in-progress.is-js-template
+              button.UploadList--itemDelete.mega-octicon.octicon-trashcan
+              //div.UploadList--itemProgress
               span.UploadList--filename.Heading
                 = 'potentially-long-filname.gerber.gerber.gbr '
               span.UploadList--select

@@ -175,11 +175,11 @@ validateLayerSelections = ->
       )
       # add the invalid class and change the icon to a no-go
       list.addClass 'is-invalid'
-      changeIcon list.find('.mega-octicon'), 'octicon-circle-slash'
+      changeIcon list.find('span.mega-octicon'), 'octicon-circle-slash'
 
     else
       # set icons and valid or ignore
-      changeIcon list.find('.mega-octicon'), 'octicon-chevron-right'
+      changeIcon list.find('span.mega-octicon'), 'octicon-chevron-right'
       list.addClass (if ly is 'oth' then 'is-ignored' else 'is-valid')
       # if it's a mult layer then we don't care
       unless ly in MULT_LAYERS then layers.push ly
