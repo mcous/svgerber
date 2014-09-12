@@ -33,17 +33,6 @@ navHt = 3em
 navLinkHt = 1.5em
 navLinkPad = ( navHt - navLinkHt )/( 2 * navLinkHt )
 
-// messing around with board colors
-.Board--fr4
-  fill lighten(black, 10%)
-.Board--copper
-  color dimgrey
-.Board--silk
-  color white
-.Board--mask
-  fill indigo
-  opacity 0.7
-
 // top bottom and left right margin and padding mixins
 margin-tb(n)
   margin-top n
@@ -360,7 +349,7 @@ button:disabled, .Btn.is-disabled
   opacity 0.1
   &:hover
     opacity 1
-  transition opacity 0.1s ease 0.05s
+  transition opacity 50ms linear 20ms
   // positioning
   display inline-block
   align(vertical)
@@ -447,6 +436,7 @@ select.UploadList--text
   center(pad: 10%)
 
 .LayerDrawing
+  color lighten(black, 15%)
   background-color whitesmoke
   border-radius 1em
   height 0
@@ -454,11 +444,10 @@ select.UploadList--text
   padding-bottom 100%
   position relative
   overflow hidden
-
-.LayerImage, .Board
-  align()
-  width 95%
-  height 95%
+  svg
+    align()
+    width 95%
+    height 95%
 
 .Board
   //min-height 30em
@@ -474,8 +463,6 @@ select.UploadList--text
   col(1/2, cycle: 2)
   +below(BP)
     stack()
-  .LayerImage
-    max-height 24em
 
 // footer
 footer

@@ -3,40 +3,29 @@
 gerberToSvg = require 'gerber-to-svg'
 
 # convert to xml object function
-convertGerberToObj = (filename, gerberString) ->
+convertGerber = (filename, gerber) ->
   # try it as a gerber first
-  obj = {}
-  try
-    obj = gerberToSvg gerberString, { object: true }
-  catch e
-    # if that errors, try it as a drill
+  if typeof gerber is 'object' then obj = gerber
+  else
     try
-      obj = gerberToSvg gerberString, { drill: true, object: true}
-    catch e2
-      #if that errors, too, return the original error message
-      throw new Error {
-        filename: filename, error: "#{e.message} or #{e2.message}"
-      }
+      obj = gerberToSvg gerber, { object: true }
+    catch e
+      # if that errors, try it as a drill
+      try
+        obj = gerberToSvg gerber, { drill: true, object: true}
+      catch e2
+        #if that errors, too, return the original error message
+        throw new Error {
+          filename: filename, error: "#{e.message} or #{e2.message}"
+        }
+  # take the xmlObject and get the string
+  string = gerberToSvg obj
   # return the message
-  { filename: filename, xmlObj: obj }
-
-# convert xml object to svg string
-convertObjToSvg = (xmlObj) ->
-  message = ''
-  try
-    message = gerberToSvg xmlObj
-  catch e
-    throw new Error "obj to svg error: #{e.message}"
-  # return the message
-  message
+  { filename: filename, svgObj: obj, svgString: string }
 
 self.addEventListener 'message', (e) ->
   data = e.data.gerber
   filename = e.data.filename
-  # if the message data is a string, treat it as a gerber string
-  if typeof data is 'string' then message = convertGerberToObj filename, data
-  else if typeof data is 'object' then message = convertObjToSvg filename, data
-  else throw new Error 'invalid data input'
   # post the message
-  self.postMessage message
+  self.postMessage convertGerber filename, data
 , false

@@ -1,8 +1,5 @@
 # main svgerber site application
-# jquery
-#$ = require 'jquery'
-# gerber to svg plotter
-gerberToSvg = require 'gerber-to-svg'
+
 # board builder
 buildBoard = require './build-board'
 
@@ -63,7 +60,6 @@ MULT_LAYERS = [ 'oth', 'icu', 'drw', 'drl' ]
 # uploaded filename to jquery friendly id map
 fileList = {}
 # layers to process
-layerList = {}
 processed = false
 
 # document elements
@@ -132,7 +128,6 @@ restart = ->
   processed = false
   # clear out the internal lists
   fileList = {}
-  layerList = {}
   # remove the file listings from the DOM and hide the section
   docFileList.addClass 'is-hidden'
   docFileList.children('ul').children().not('.is-js-template').remove()
@@ -191,18 +186,21 @@ removeFile = (id) ->
   $("##{id}").remove()
   for key, val of fileList
     delete fileList[key] if val.id is id
+  # validate layer selections because layers have changed
+  validateLayerSelections()
 
 # MOTHERFLIPPING GERBER CONVERTER
 converter = new Worker './gerber-worker.coffee'
-converter.addEventListener 'error', (e) ->
+# functions to keep callback refs
+converterError = (e) ->
   console.warn "#{e.message.error}"
   # remove the processing animation from the list item
   item = $ "##{fileList[e.message.filename].id}"
   item.removeClass 'is-in-progress'
-, false
-# on success
-converter.addEventListener 'message', (e) ->
-  fileList[e.data.filename].svg = e.data.xmlObj
+converterMessage = (e) ->
+  # if we got an object back
+  fileList[e.data.filename].svgObj = e.data.svgObj
+  fileList[e.data.filename].svgString = e.data.svgString
   # remove the processing animation from the list item
   item = $ "##{fileList[e.data.filename].id}"
   item.removeClass 'is-in-progress'
@@ -244,7 +242,12 @@ addToFileList = (filename) ->
 
 # build the file list output and internal filelist object
 buildFileListOutput = (filenames) ->
-  addToFileList f for f in filenames
+  # on error, log to console
+  converter.addEventListener 'error', converterError, false
+  # on success
+  converter.addEventListener 'message', converterMessage, false
+
+  addToFileList f, converter for f in filenames
   validateLayerSelections()
   # show the file list and enable the nav icon
   if docFileList.hasClass 'is-hidden'
@@ -430,10 +433,17 @@ convertLayers = ->
   processed = true
   # remove any existing layers
   removeLayerOutput()
+  # remove event listeners on the converter worker
+  converter.removeEventListener 'error', converterError, false
+  converter.removeEventListener 'message', converterMessage, false
   # reset the paste area for safety
   resetPaste()
   # disable the button
   docConvertBtn.attr 'disabled', 'disabled'
+  # list of layers
+  layerList = {}
+
+  # board converter callback function
 
   # slight delay to debounce button disable, then convert
   setTimeout () ->
@@ -444,19 +454,20 @@ convertLayers = ->
       option = select.children('option:selected')
       type = option.attr 'value'
       unless type is 'oth'
-        svg = val.svg
+        svgString = val.svgString
+        svgObj = val.svgObj
         # check if the layer type can have multiple layers of the same type
         if type in MULT_LAYERS
           unless layerList[type]? then layerList[type] = []
-          layerList[type].push svg
+          layerList[type].push svgObj
         else
-          layerList[type] = svg
+          layerList[type] = svgObj
         # CONVERT THE MOTHERFLIPPING SVG TO BINARY64
-        svg64 = "data:image/svg+xml;base64,#{btoa gerberToSvg svg}"
+        #svg64 = "data:image/svg+xml;base64,#{btoa svg}"
         # set the image
         layer = docLayerTemplate.clone().removeClass 'is-js-template'
         layer.children('h2.LayerHeading').html option.html()
-        layer.find('img.LayerImage').attr 'src', svg64
+        layer.find('img.LayerImage').replaceWith svgString
         # put it in the DOM
         docLayerTemplate.before layer
     # board output
@@ -476,26 +487,32 @@ convertLayers = ->
     if layerList.out? then bottomLayers.out = layerList.out
     # find the board template
     boardTemplate = $('#board-output').children('.is-js-template')
+    # get the converter ready
+    boardConverter = new Worker './gerber-worker.coffee'
+    boardConverter.addEventListener 'message', (e) ->
+      if e.data.filename is 'board-top'
+        topContainer.find('img.LayerImage').replaceWith e.data.svgString
+        boardTemplate.before topContainer
+      else if e.data.filename is 'board-bottom'
+        bottomContainer.find('img.LayerImage').replaceWith e.data.svgString
+        boardTemplate.before bottomContainer
+
     # top
     if topLayers.cu?
       topBoard = buildBoard 'top', topLayers
       topContainer = boardTemplate.clone().removeClass 'is-js-template'
       topContainer.attr 'id', 'board-top-render'
       topContainer.children('h2.LayerHeading').html 'board top'
-      svg = gerberToSvg topBoard
-      #svg64 = "data:image/svg+xml;base64,#{btoa svg}"
-      topContainer.find('img.LayerImage').replaceWith svg
-      boardTemplate.before topContainer
+      # post the board object to the converter
+      boardConverter.postMessage { filename: 'board-top', gerber: topBoard }
     # bottom
     if bottomLayers.cu?
       bottomBoard = buildBoard 'bottom', bottomLayers
       bottomContainer = boardTemplate.clone().removeClass 'is-js-template'
       bottomContainer.attr 'id', 'board-bottom-render'
       bottomContainer.children('h2.LayerHeading').html 'board bottom'
-      svg = gerberToSvg bottomBoard
-      #svg64 = "data:image/svg+xml;base64,#{btoa svg}"
-      bottomContainer.find('img.LayerImage').replaceWith svg
-      boardTemplate.before bottomContainer
+      # post the board object to the converter
+      boardConverter.postMessage { filename: 'board-bottom', gerber: bottomBoard }
 
     # build color pickers if necessary and unhide the bourd output
     if bottomLayers.cu? or topLayers.cu?
@@ -512,7 +529,7 @@ convertLayers = ->
     # return false
     false
   # timeout debounce delay
-  , 50
+  , 10
 
 # attach event listeners to get everything going
 # file drop and select
