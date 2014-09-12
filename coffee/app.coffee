@@ -10,14 +10,6 @@ buildBoard = require './build-board'
 unless typeof window.btoa is 'function'
   window.btoa = (require 'Base64').btoa
 
-# converter worker
-# converter = new Worker './gerber-worker.coffee'
-# converter.addEventListener 'message', (e) ->
-#   console.log "worker said: "
-#   console.log e.data
-# , false
-# converter.postMessage 'hello faja'
-
 # board colors
 COLORS = {
   cu: {
@@ -121,6 +113,8 @@ changeIcon = (element, newIcon) ->
 matchLayer = (filename) ->
   for key, val of LAYERS
     return key if filename.match val.match
+  # return other if no match
+  'oth'
 
 # remove layer output
 removeLayerOutput = ->
@@ -193,27 +187,64 @@ validateLayerSelections = ->
         docConvertBtn.attr('disabled', 'disabled')
         docConvertBtn.html convertBtnMsg.error
 
+removeFile = (id) ->
+  $("##{id}").remove()
+  for key, val of fileList
+    delete fileList[key] if val.id is id
+
+# MOTHERFLIPPING GERBER CONVERTER
+converter = new Worker './gerber-worker.coffee'
+converter.addEventListener 'error', (e) ->
+  console.warn "#{e.message.error}"
+  # remove the processing animation from the list item
+  item = $ "##{fileList[e.message.filename].id}"
+  item.removeClass 'is-in-progress'
+, false
+# on success
+converter.addEventListener 'message', (e) ->
+  fileList[e.data.filename].svg = e.data.xmlObj
+  # remove the processing animation from the list item
+  item = $ "##{fileList[e.data.filename].id}"
+  item.removeClass 'is-in-progress'
+
+# convert the file
+processFile = (filename) ->
+  # hook up the delete button
+  item = $ "##{fileList[filename].id}"
+  item.find('.UploadList--itemDelete').on 'click', (e) ->
+    id = $(@).parents('li.UploadList--item').attr 'id'
+    removeFile id
+  # send the gerber to the worker
+  converter.postMessage {
+    filename: filename, gerber: fileList[filename].string
+  }
+
+addToFileList = (filename) ->
+  # replace dots with underscores to make jquery happy
+  id = 'item-' + filename.replace /[\.\$]/g, '_'
+  # create the key if it doesn't exist already and set the id
+  unless fileList[filename]? then fileList[filename] = {}
+  fileList[filename].id = id
+  # get the short layer
+  layer = matchLayer filename
+  # clone the list item template, change the filename, and autoselect a layer
+  newItem = docFileItemTemplate.clone()
+  newItem.removeClass 'is-js-template'
+  newItem.attr 'id', id
+  newItem.children('.UploadList--filename').html filename
+  select = newItem.find 'select'
+  # add a change listener to validate selections
+  select.on 'change', validateLayerSelections
+  # auto select an option
+  select.children("option[value=#{layer}]").attr('selected', 'selected')
+  # insert the new item
+  docFileItemTemplate.before newItem
+  # process the file
+  processFile filename
+
 # build the file list output and internal filelist object
 buildFileListOutput = (filenames) ->
-  for f in filenames
-    # replace dots with underscores to make jquery happy
-    id = 'select-' + f.replace /[\.\$]/g, '_'
-    unless fileList[f]? then fileList[f] = {}
-    fileList[f].id = id
-    # get the short layer
-    layer = matchLayer f
-    # clone the list item template, change the filename, and autoselect a layer
-    newItem = docFileItemTemplate.clone()
-    newItem.removeClass 'is-js-template'
-    newItem.attr 'id', id
-    newItem.children('.UploadList--filename').html f
-    select = newItem.find 'select'
-    # add a change listener to validate selections
-    select.on 'change', validateLayerSelections
-    # auto select an option
-    select.children("option[value=#{layer}]").attr('selected', 'selected')
-    # insert the new item
-    docFileItemTemplate.before newItem
+  addToFileList f for f in filenames
   validateLayerSelections()
   # show the file list and enable the nav icon
   if docFileList.hasClass 'is-hidden'
@@ -408,37 +439,26 @@ convertLayers = ->
   setTimeout () ->
     # for files in filelist
     for filename, val of fileList
-      do (filename, val) ->
-        # get the layer type
-        select = $("li.UploadList--item##{val.id}").find('select')
-        option = select.children('option:selected')
-        type = option.attr 'value'
-        unless type is 'oth'
-          # CONVERT THE MOTHERFLIPPING GERBER
-          converter = new Worker './gerber-worker.coffee'
-          # on error
-          converter.addEventListener 'error', (e) ->
-            console.warn "error with #{filename}: #{e.message}"
-          , false
-          # on success
-          converter.addEventListener 'message', (e) ->
-            svg = e.data
-            # check if the layer type can have multiple layers of the same type
-            if type in MULT_LAYERS
-              unless layerList[type]? then layerList[type] = []
-              layerList[type].push svg
-            else
-              layerList[type] = svg
-            # CONVERT THE MOTHERFLIPPING SVG TO BINARY64
-            svg64 = "data:image/svg+xml;base64,#{btoa gerberToSvg svg}"
-            # set the image
-            layer = docLayerTemplate.clone().removeClass 'is-js-template'
-            layer.children('h2.LayerHeading').html option.html()
-            layer.find('img.LayerImage').attr 'src', svg64
-            # put it in the DOM
-            docLayerTemplate.before layer
-          # send the gerber to the worker
-          converter.postMessage val.string
+      # get the layer type
+      select = $("li.UploadList--item##{val.id}").find('select')
+      option = select.children('option:selected')
+      type = option.attr 'value'
+      unless type is 'oth'
+        svg = val.svg
+        # check if the layer type can have multiple layers of the same type
+        if type in MULT_LAYERS
+          unless layerList[type]? then layerList[type] = []
+          layerList[type].push svg
+        else
+          layerList[type] = svg
+        # CONVERT THE MOTHERFLIPPING SVG TO BINARY64
+        svg64 = "data:image/svg+xml;base64,#{btoa gerberToSvg svg}"
+        # set the image
+        layer = docLayerTemplate.clone().removeClass 'is-js-template'
+        layer.children('h2.LayerHeading').html option.html()
+        layer.find('img.LayerImage').attr 'src', svg64
+        # put it in the DOM
+        docLayerTemplate.before layer
     # board output
     topLayers = {}
     if layerList.tcu? then topLayers.cu = layerList.tcu
