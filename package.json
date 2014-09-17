@@ -1,6 +1,6 @@
 {
   "name": "svgerber.cousins.io",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Client-side Gerber file to SVG converter",
   "repository": {
     "type": "git",
@@ -18,7 +18,7 @@
     "coffeeify": "*",
     "gulp": "*",
     "gulp-autoprefixer": "*",
-    "gulp-concat": "^2.3.4",
+    "gulp-concat": "*",
     "gulp-gh-pages": "*",
     "gulp-ignore": "*",
     "gulp-jade": "*",
@@ -29,18 +29,20 @@
     "gulp-stylus": "*",
     "gulp-uglifyjs": "*",
     "gulp-util": "*",
-    "gulp-webserver": "^0.6.0",
+    "gulp-webserver": "*",
     "jasmine-node": "*",
     "minimist": "*",
     "vinyl-source-stream": "*",
-    "watchify": "*"
+    "watchify": "*",
+    "workerify": "*"
   },
   "dependencies": {
     "Base64": "^0.3.0",
+    "backbone": "^1.1.2",
     "gerber-to-svg": "*",
     "jeet": "^6.0.0",
     "jquery": "^2.1.1",
-    "lodash.clonedeep": "^2.4.1",
+    "lodash": "^2.4.1",
     "rupture": "^0.3.0"
   }
 }

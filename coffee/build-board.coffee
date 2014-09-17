@@ -2,7 +2,7 @@
 # hopefully less janky than the first one
 
 # clone some objects
-cloneDeep = require 'lodash.clonedeep'
+cloneDeep = _.cloneDeep
 # make sure we don't have overlapping ids
 unique = 0
 uniqueId = -> unique++
