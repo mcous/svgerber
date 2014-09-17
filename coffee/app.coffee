@@ -192,11 +192,6 @@ removeFile = (id) ->
 # MOTHERFLIPPING GERBER CONVERTER
 converter = new Worker './gerber-worker.coffee'
 # functions to keep callback refs
-converterError = (e) ->
-  console.warn "#{e.message.error}"
-  # remove the processing animation from the list item
-  item = $ "##{fileList[e.message.filename].id}"
-  item.removeClass 'is-in-progress'
 converterMessage = (e) ->
   # if we got an object back
   fileList[e.data.filename].svgObj = e.data.svgObj
@@ -242,8 +237,6 @@ addToFileList = (filename) ->
 
 # build the file list output and internal filelist object
 buildFileListOutput = (filenames) ->
-  # on error, log to console
-  converter.addEventListener 'error', converterError, false
   # on success
   converter.addEventListener 'message', converterMessage, false
 
@@ -270,7 +263,7 @@ handleFileSelect = (e) ->
   unless importFiles? then importFiles = e.target.files
   #e.target.files = null
   # build the file list
-  buildFileListOutput (f.name for f in importFiles)
+  #buildFileListOutput (f.name for f in importFiles)
   # read the files to the file list
   for f in importFiles
     do (f) ->
@@ -282,6 +275,7 @@ handleFileSelect = (e) ->
         if event.target.readyState is FileReader.DONE
           unless fileList[f.name]? then fileList[f.name] = {}
           fileList[f.name].string = event.target.result
+          buildFileListOutput [ f.name ]
           event.target.result = null
       # read the file as text
       reader.readAsText f
@@ -434,7 +428,6 @@ convertLayers = ->
   # remove any existing layers
   removeLayerOutput()
   # remove event listeners on the converter worker
-  converter.removeEventListener 'error', converterError, false
   converter.removeEventListener 'message', converterMessage, false
   # reset the paste area for safety
   resetPaste()

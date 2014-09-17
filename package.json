@@ -38,7 +38,7 @@
   "dependencies": {
     "Base64": "^0.3.0",
     "gerber-to-svg": "*",
-    "jeet": "^5.3.0",
+    "jeet": "^6.0.0",
     "jquery": "^2.1.1",
     "lodash.clonedeep": "^2.4.1",
     "rupture": "^0.3.0"

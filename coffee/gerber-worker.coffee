@@ -15,11 +15,9 @@ convertGerber = (filename, gerber) ->
         obj = gerberToSvg gerber, { drill: true, object: true}
       catch e2
         #if that errors, too, return the original error message
-        throw new Error {
-          filename: filename, error: "#{e.message} or #{e2.message}"
-        }
+        obj = {}
   # take the xmlObject and get the string
-  string = gerberToSvg obj
+  if obj.svg? then string = gerberToSvg obj else string = ''
   # return the message
   { filename: filename, svgObj: obj, svgString: string }
 

@@ -23,6 +23,7 @@ FOOR_TEXT     = whitesmoke
 
 // mobile breakpoint
 BP = 43em
+FILELIST_BP = 64em
 
 // fontstants
 SIZE = 16
@@ -204,6 +205,7 @@ button:disabled, .Btn.is-disabled
   width 100%
   position fixed
   z-index 10
+  transform none !important
 
 .Nav-list
   height 100%
@@ -357,10 +359,16 @@ button:disabled, .Btn.is-disabled
   height 90%
   margin-right 100.5%
   right 0
-  +below(64em)
+  +below(FILELIST_BP)
+    transform none
+    float left
+    clear none
+    margin-right 0.5em
+    position static
     opacity 0.5
-    width 10%
-    margin-right 45%
+    padding 0
+    padding-lr 0.25em
+    font-size 1.25em * LINE
 
 .UploadList--filename
   float left
