@@ -54,6 +54,8 @@ module.exports = Backbone.View.extend {
             layers.add {
               filename: f.name
               gerber: event.target.result
+            }, {
+              validate: true
             }
         # read the file as text
         reader.readAsText f

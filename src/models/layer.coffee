@@ -1,14 +1,14 @@
 # gerber layer model
 
 # available layer types
-layerOptions = require '../layer-options'
+layerOpts = require '../layer-options'
 
 module.exports = Backbone.Model.extend {
   defaults: {
     filename: ''
     gerber: ''
     type: 'oth'
-    svg: {}
+    svg: null
   }
 
   # on creation, get a default layer type
@@ -16,10 +16,23 @@ module.exports = Backbone.Model.extend {
     @setLayerType()
 
   setLayerType: ->
-    console.log 'filename has changed: setting layer type'
     type = 'oth'
-    for opt in layerOptions
+    for opt in layerOpts
       if opt.match.test @get 'filename'
         type = opt.val; break
     @set 'type', type
+
+  # validation
+  # checks to make sure that if its layer type is singular, that no other models
+  # in the collection identify as the same layer
+  validate: (attrs, options) ->
+    # if the type isn't other and the selected layer type must be singular
+    if attrs.type isnt 'oth' and not _.find(layerOpts, {val: attrs.type}).mult
+      # pull all the models from the collection with the same layer type
+      layers = @collection.where { type: attrs.type }
+      return "duplicate layer selection" if layers.length isnt 1
+    # return nothing if valid
+    return null
+
+
 }
