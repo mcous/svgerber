@@ -1,4 +1,8 @@
 # gerber layer model
+
+# available layer types
+layerOptions = require '../layer-options'
+
 module.exports = Backbone.Model.extend {
   defaults: {
     filename: ''
@@ -7,9 +11,15 @@ module.exports = Backbone.Model.extend {
     svg: {}
   }
 
-  events: {
-    # on filename change, get the layer type
+  # on creation, get a default layer type
+  initialize: ->
+    @setLayerType()
 
-    # on gerber change, update the svg object
-  }
+  setLayerType: ->
+    console.log 'filename has changed: setting layer type'
+    type = 'oth'
+    for opt in layerOptions
+      if opt.match.test @get 'filename'
+        type = opt.val; break
+    @set 'type', type
 }

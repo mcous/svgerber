@@ -14,11 +14,9 @@ module.exports = Backbone.View.extend {
   events: {
     # delete button
     'click .UploadList--itemDelete': 'removeLayer'
+    # layer select
+    'change .UploadList--SelectMenu': 'changeLayerType'
   }
-
-  # initialize by attaching a listener to the layer model
-  initialize: ->
-    @listenTo @model, 'change', @render
 
   # render method
   render: ->
@@ -27,6 +25,8 @@ module.exports = Backbone.View.extend {
       type: @model.get 'type'
       options: layerOptions
     }
+    # initially select the correct option
+    @$el.find("option[value='#{@model.get 'type'}']").prop 'selected', true
     # return this
     return @
 
@@ -36,5 +36,9 @@ module.exports = Backbone.View.extend {
     @$el.remove()
     # remove the model from the collection
     @model.collection.remove @model
+
+  # change the layer type
+  changeLayerType: ->
+    @model.set 'type', @$el.find('option:selected').attr 'value'
 
 }
