@@ -17,6 +17,8 @@ module.exports = Backbone.View.extend {
     'drop #dropzone': 'handleFileSelect'
     # manual file select
     'change #upload-select': 'handleFileSelect'
+    # load samples when the sample button is clicked
+    'click #sample-btn': 'loadSamples'
   }
 
   initialize: ->
@@ -24,7 +26,6 @@ module.exports = Backbone.View.extend {
     console.log 'svgerber app started'
     # listen to the layers collection for changes
     @listenTo layers, 'add', @addLayer
-    #@listenTo Layers, 'remove', @removeLayer
 
   # add a gerber layer
   addLayer: ( layer ) ->
@@ -62,4 +63,26 @@ module.exports = Backbone.View.extend {
     # return false to stop propagation
     false
 
+  # laod samples from server
+  loadSamples: ->
+    samples = [
+      'clockblock-hub-B_Cu.gbl'
+      'clockblock-hub-B_Mask.gbs'
+      'clockblock-hub-B_SilkS.gbo'
+      'clockblock-hub-Edge_Cuts.gbr'
+      'clockblock-hub-F_Cu.gtl'
+      'clockblock-hub-F_Mask.gts'
+      'clockblock-hub-F_Paste.gtp'
+      'clockblock-hub-F_SilkS.gto'
+      'clockblock-hub-NPTH.drl'
+      'clockblock-hub.drl'
+    ]
+    for s in samples
+      do (s) ->
+        $.ajax {
+          type: 'GET'
+          url: "./#{s}"
+          dataType: 'text'
+          success: (data) -> layers.add { filename: s, gerber: data }
+        }
 }

@@ -548,7 +548,7 @@ docPasteBtn.on 'click', -> docPasteForm.removeClass 'is-hidden'
 docPasteCancelBtn.on 'click', resetPaste
 docPasteSubmitBtn.on 'click', handlePaste
 # load samples button
-docSampleBtn.on 'click', loadSamples
+#docSampleBtn.on 'click', loadSamples
 # slide out color drawer
 boardColorMainBtn.on 'click', -> boardColorContainer.toggleClass 'is-retracted'
 # color button

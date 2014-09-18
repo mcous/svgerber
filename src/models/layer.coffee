@@ -17,6 +17,8 @@ module.exports = Backbone.Model.extend {
   # on creation, get a default layer type
   initialize: ->
     @setLayerType()
+    # once we've got an svgObj, we don't need the gerber file anymore
+    @once 'change:svgObj', -> @unset 'gerber'
 
   setLayerType: ->
     type = 'oth'
