@@ -2,13 +2,16 @@
 
 # available layer types
 layerOpts = require '../layer-options'
+# converter
+#Gerber = require '../convert-gerber'
 
 module.exports = Backbone.Model.extend {
   defaults: {
     filename: ''
     gerber: ''
     type: 'oth'
-    svg: null
+    svgObj: null
+    svgString: null
   }
 
   # on creation, get a default layer type

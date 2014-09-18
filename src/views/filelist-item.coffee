@@ -22,20 +22,25 @@ module.exports = Backbone.View.extend {
     # attach event listener to model for validations
     @listenTo @model, 'valid invalid', @renderValidation
     # attach event listener to process and processend events
-    @listenToOnce @model, 'processend', @renderProcessing
+    @listenToOnce @model, 'processEnd', @renderProcessing
 
   renderValidation: ->
-    console.log "#{@model.get 'filename'} validation returned #{@model.validationError}"
     if @model.validationError
-      console.log "rendering invalid"
       @$el.removeClass('is-valid').addClass 'is-invalid'
     else
-      console.log "rendering valid"
       @$el.removeClass('is-invalid').addClass 'is-valid'
 
   renderProcessing: ->
-    if @model.svg? then @$el.removeClass 'is-processing'
-    else @$el.addClass 'is-processing'
+    # default value is null, so if there's an object we're done
+    if @model.get('svgObj')?
+      @$el.removeClass 'is-processing'
+      # if the svg came back, empty, though, there was a processing error
+      if not @model.get 'svgString'
+        @$el.addClass 'is-unprocessable'
+        @$el.find('.UploadList--text').html 'did not process'
+        @$el.find('select.UploadList--SelectMenu').remove()
+    else
+      @$el.addClass 'is-processing'
 
   # render method
   render: ->
@@ -62,7 +67,6 @@ module.exports = Backbone.View.extend {
 
   # change the layer type
   changeLayerType: ->
-    #console.log "filelist controller changing value"
     @model.set 'type', @$el.find('option:selected').attr 'value'
 
 }

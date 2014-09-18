@@ -197,7 +197,7 @@ removeFile = (id) ->
   validateLayerSelections()
 
 # MOTHERFLIPPING GERBER CONVERTER
-converter = new Worker './gerber-worker.coffee'
+#converter = new Worker './gerber-worker.coffee'
 # functions to keep callback refs
 converterMessage = (e) ->
   # if we got an object back
@@ -245,7 +245,7 @@ addToFileList = (filename) ->
 # build the file list output and internal filelist object
 buildFileListOutput = (filenames) ->
   # on success
-  converter.addEventListener 'message', converterMessage, false
+  #converter.addEventListener 'message', converterMessage, false
 
   addToFileList f, converter for f in filenames
   validateLayerSelections()
