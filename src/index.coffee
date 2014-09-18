@@ -4,7 +4,7 @@
 # requires jquery, backbone, and lodash
 
 # application views
-AppView = require './views/app-view'
+AppView = require './views/app'
 appView = new AppView()
 
 # board builder
@@ -71,7 +71,7 @@ processed = false
 
 # document elements
 # the file list
-docFileList = $ 'output#file-list'
+docFileList = $ 'output#filelist-output'
 docFileItemTemplate = docFileList.children('ul').children 'li.is-js-template'
 docConvertBtn = $ 'button#convert-btn'
 convertBtnMsg = {
@@ -279,11 +279,11 @@ handleFileSelect = (e) ->
       reader.onloadend = (e) ->
         e.stopPropagation(); e.preventDefault()
         # add to the file list object
-        if event.target.readyState is FileReader.DONE
+        if e.target.readyState is FileReader.DONE
           unless fileList[f.name]? then fileList[f.name] = {}
-          fileList[f.name].string = event.target.result
+          fileList[f.name].string = e.target.result
           buildFileListOutput [ f.name ]
-          event.target.result = null
+          #event.target.result = null
       # read the file as text
       reader.readAsText f
   # return false to stop propagation
@@ -538,9 +538,9 @@ dz.on 'dragenter', (e) -> e.preventDefault(); e.stopPropagation()
 dz.on 'dragover', (e) ->
   e.preventDefault(); e.stopPropagation()
   e.originalEvent.dataTransfer.dropEffect = 'copy'
-dz.on 'drop', handleFileSelect
+#dz.on 'drop', handleFileSelect
 fs = $ '#upload-select'
-fs.on 'change', handleFileSelect
+#fs.on 'change', handleFileSelect
 # convert button
 docConvertBtn.on 'click', convertLayers
 # url paste buttons

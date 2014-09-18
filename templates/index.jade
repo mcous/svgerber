@@ -41,7 +41,7 @@ html(lang="en")
           +aNew(github).mega-octicon.octicon-info.Nav--link.Nav--noScroll
             span.Heading= ' about'
 
-    .Content
+    #svgerber-app.Content
       .Container
         #information
           .Box
@@ -95,18 +95,18 @@ html(lang="en")
             button(name='url-paste-submit-btn' type='button').Btn ok
             button(name='url-paste-cancel-btn' type='button').Btn cancel
 
-        output(for='upload')#file-list.UploadList.is-hidden
-          ul.List-unstyled
-            li.UploadList--item.Box.is-in-progress.is-js-template
-              button.UploadList--itemDelete.mega-octicon.octicon-trashcan
-              //div.UploadList--itemProgress
-              span.UploadList--filename.Heading
-                = 'potentially-long-filname.gerber.gerber.gbr '
-              span.UploadList--select
-                span.mega-octicon.octicon-chevron-right
-                span.UploadList--text.Heading= ' layer type: '
-                select.UploadList--SelectMenu.UploadList--text
-                  option(value='oth') other (ignore)
+        output(for='upload')#filelist-output.UploadList
+          ul#filelist.List-unstyled
+            //- li.UploadList--item.Box.is-in-progress.is-js-template
+            //-   button.UploadList--itemDelete.mega-octicon.octicon-trashcan
+            //-   //div.UploadList--itemProgress
+            //-   span.UploadList--filename.Heading
+            //-     = 'potentially-long-filname.gerber.gerber.gbr '
+            //-   span.UploadList--select
+            //-     span.mega-octicon.octicon-chevron-right
+            //-     span.UploadList--text.Heading= ' layer type: '
+            //-     select.UploadList--SelectMenu.UploadList--text
+            //-       option(value='oth') other (ignore)
 
           button(type='button' disabled='disabled')#convert-btn.Btn
             = 'convert!'
