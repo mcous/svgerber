@@ -1,6 +1,12 @@
 # main svgerber site application
 # svgerber.cousins.io
 
+# requires jquery, backbone, and lodash
+
+# application views
+AppView = require './views/app-view'
+appView = new AppView()
+
 # board builder
 buildBoard = require './build-board'
 
