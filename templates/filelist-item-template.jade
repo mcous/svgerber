@@ -1,0 +1,18 @@
+// template for an item in the filelist
+script(type='text/template')#filelist-item-template
+  li.UploadList--item.Box.is-in-progress.is-js-template
+    // delete button
+    button.UploadList--itemDelete.mega-octicon.octicon-trashcan
+    // filename
+    span.UploadList--filename.Heading <%= filename %>
+    // layer type select
+    span.UploadList--select
+      span.mega-octicon.octicon-chevron-right
+      span.UploadList--text.Heading= ' layer type: '
+      select.UploadList--SelectMenu.UploadList--text
+        // default other option
+        option(value='oth') other (ignore)
+        // options populated by app
+        <% _.forEach(options, function(val, text) { %>
+        option(value!='<%= val %>') <%= text %>
+        <% }); %>
