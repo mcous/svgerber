@@ -20,6 +20,7 @@ rimraf     = require 'gulp-rimraf'
 deploy     = require 'gulp-gh-pages'
 ignore     = require 'gulp-ignore'
 concat     = require 'gulp-concat'
+rename     = require 'gulp-rename'
 webserver  = require 'gulp-webserver'
 
 # deploy location
@@ -29,9 +30,9 @@ DEPLOY = './public'
 SAMPLES = './samples'
 
 # app files
-SCRIPT   = './coffee/app.coffee'
-TEMPLATE = './jade/index.jade'
-STYLE    = './stylus/app.styl'
+SCRIPT   = './src/index.coffee'
+TEMPLATE = './templates/index.jade'
+STYLE    = './styles/index.styl'
 
 # vendor files
 VENDOR_JS = [
@@ -91,6 +92,7 @@ gulp.task 'style', ->
     .pipe stylus( { use: [ jeet(), rupture() ] } ).on 'error', gutil.log
     .pipe prefix '> 1%', 'last 3 versions', 'Firefox ESR', 'Opera 12.1'
     .pipe if argv.p then minifycss() else gutil.noop()
+    .pipe rename 'app.css'
     .pipe gulp.dest DEPLOY
 
 # compile jade
@@ -106,9 +108,9 @@ gulp.task 'build', [ 'vendor', 'samples', 'style', 'template', 'script' ]
 gulp.task 'watch', ->
   global.watching = true
   # watch stylus
-  gulp.watch './stylus/*.styl', ['style']
+  gulp.watch './styles/*.styl', [ 'style' ]
   # watch jade
-  gulp.watch './jade/*.jade', ['template']
+  gulp.watch './templates/*.jade', [ 'template' ]
 
 # watch files with coffee files with watchify and others with gulp.watch
 gulp.task 'script', (done) ->
@@ -123,7 +125,7 @@ gulp.task 'script', (done) ->
     bundler.bundle()
       .on 'error', (e) ->
         gutil.log 'browserify error', e
-      .pipe source path.basename gutil.replaceExtension SCRIPT, '.js'
+      .pipe source 'app.js'
       # minify if in production mode
       .pipe if argv.p then streamify uglify {
         preamble: '/* view source at github.com/mcous/svgerber */'
