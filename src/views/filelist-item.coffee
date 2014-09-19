@@ -19,6 +19,8 @@ module.exports = Backbone.View.extend {
   }
 
   initialize: ->
+    # delete self on model deletion
+    @listenTo @model, 'remove', @remove
     # attach event listener to model for validations
     @listenTo @model, 'valid invalid', @renderValidation
     # attach event listener to process and processend events
@@ -60,8 +62,8 @@ module.exports = Backbone.View.extend {
 
   # remove layer
   removeLayer: ->
-    # delete the dom element
-    @$el.remove()
+    # detach event listeners
+    @undelegateEvents()
     # remove the model from the collection
     @model.collection.remove @model
 

@@ -2,6 +2,7 @@
 
 # require our other views
 FilelistItemView = require './filelist-item.coffee'
+BoardLayerView = require './board-layer.coffee'
 
 # create a layers collection
 LayerList = require '../collections/layers'
@@ -24,14 +25,22 @@ module.exports = Backbone.View.extend {
   initialize: ->
     # log so I don't go insane
     console.log 'svgerber app started'
-    # listen to the layers collection for changes
-    @listenTo layers, 'add', @addLayer
+    # listen to the layers collection for additions
+    @listenTo layers, 'add', @addFilelistItem
+    # listen to the layers collection for rendered layers
+    @listenTo layers, 'processEnd', @addBoardLayer
 
-  # add a gerber layer
-  addLayer: ( layer ) ->
+  # add a filelist item to the filelist
+  addFilelistItem: (layer) ->
     # add to the filelist
     view = new FilelistItemView { model: layer }
     $('#filelist').append view.render().el
+
+  # add a board layer
+  addBoardLayer: (layer) ->
+    if layer.get 'svgString'
+      view = new BoardLayerView { model: layer }
+      $('#layer-output').append view.render().el
 
   # handle a file select
   # take care of a file event

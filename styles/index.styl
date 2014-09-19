@@ -346,7 +346,7 @@ button:disabled, .Btn.is-disabled
   // color and border
   color desaturate(lighten(red, 10%), 75%)
   border none
-  border-radius 0.2em
+  //border-radius 0.2em
   background-color rgba(255, 255, 255, 0.6)
   // hover effect
   opacity 0.1
@@ -368,7 +368,7 @@ button:disabled, .Btn.is-disabled
     position static
     opacity 0.5
     padding 0
-    padding-lr 0.25em
+    padding-lr 0.1em
     font-size 1.25em * LINE
 
 .UploadList--filename
@@ -440,14 +440,14 @@ select.UploadList--text
     col(1/4, uncycle: 2, cycle: 4)
 
 #layer-output
-  padding-tb 1em
+  //padding-tb 1em
   cf()
   center(pad: 10%)
 
 .LayerDrawing
   color lighten(black, 15%)
   background-color whitesmoke
-  border-radius 1em
+  //border-radius 1em
   height 0
   width 100%
   padding-bottom 100%
@@ -469,6 +469,7 @@ select.UploadList--text
     background-color NAV_COLOR
 
 .LayerContainer
+  margin-top 1em
   col(1/2, cycle: 2)
   +below(BP)
     stack()
@@ -476,7 +477,7 @@ select.UploadList--text
 // footer
 footer
   col()
-  margin 1em 0 0 0
+  margin 2em 0 0 0
   background-color FOOT_BG
 .Foot--links
   a

@@ -29,7 +29,7 @@ module.exports = Backbone.Collection.extend {
       layer = _this.findWhere { filename: e.data.filename }
       layer.set 'svgObj', e.data.svgObj
       layer.set 'svgString', e.data.svgString
-      layer.trigger 'processEnd'
+      layer.trigger 'processEnd', layer
     converter.addEventListener 'message', handler, false
 
 }

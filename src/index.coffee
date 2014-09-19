@@ -113,22 +113,6 @@ changeIcon = (element, newIcon) ->
   element.removeClass( (i, c) -> c.match(/octicon-\S+/g)?.join ' ')
     .addClass newIcon
 
-matchLayer = (filename) ->
-  for key, val of LAYERS
-    return key if filename.match val.match
-  # return other if no match
-  'oth'
-
-# remove layer output
-removeLayerOutput = ->
-  $('#board-output, #layer-output').children().not('.is-js-template').remove()
-  $('#board-output-row, #layer-output-row').addClass 'is-hidden'
-  # clear out the download links
-  $('#download-top-btn, #download-bottom-btn').addClass('is-disabled')
-    .attr 'href', '#'
-  # disable the nav link
-  navSvgs.addClass 'is-disabled'
-
 # (re)start the app
 restart = ->
   # reset the processed flag
@@ -146,106 +130,8 @@ restart = ->
   changeIcon navHome, 'octicon-jump-up'
   navFiles.addClass 'is-disabled'
 
-# build the file list
-# populate select menu in the template for list items
-populateSelect = do ->
-  select = docFileItemTemplate.find('select')
-  for short, long of LAYERS
-    select.append "<option value=\"#{short}\">#{long.desc}</option>"
-
-validateLayerSelections = ->
-  layers = []
-  valid = true
-  selectMenus = $('.UploadList--SelectMenu')
-  selectMenus.each (index)->
-    select = $ this
-    list = select.parents('li.UploadList--item')
-      .removeClass('is-valid is-invalid is-ignored')
-    ly = select.children("option:selected").attr 'value'
-    # if it's already been selected we have a problem
-    if ly in layers
-      valid = false
-      # gather all the bad lists
-      list = list.add(
-        list.siblings().find("option:selected[value=#{ly}]").parents('li')
-      )
-      # add the invalid class and change the icon to a no-go
-      list.addClass 'is-invalid'
-      changeIcon list.find('span.mega-octicon'), 'octicon-circle-slash'
-
-    else
-      # set icons and valid or ignore
-      changeIcon list.find('span.mega-octicon'), 'octicon-chevron-right'
-      list.addClass (if ly is 'oth' then 'is-ignored' else 'is-valid')
-      # if it's a mult layer then we don't care
-      unless ly in MULT_LAYERS then layers.push ly
-
-    # if we're checked all of them, either enable or disable the process button
-    if index is selectMenus.length - 1
-      if valid
-        docConvertBtn.removeAttr('disabled')
-        docConvertBtn.html convertBtnMsg.before
-      else
-        docConvertBtn.attr('disabled', 'disabled')
-        docConvertBtn.html convertBtnMsg.error
-
-removeFile = (id) ->
-  $("##{id}").remove()
-  for key, val of fileList
-    delete fileList[key] if val.id is id
-  # validate layer selections because layers have changed
-  validateLayerSelections()
-
-# MOTHERFLIPPING GERBER CONVERTER
-#converter = new Worker './gerber-worker.coffee'
-# functions to keep callback refs
-converterMessage = (e) ->
-  # if we got an object back
-  fileList[e.data.filename].svgObj = e.data.svgObj
-  fileList[e.data.filename].svgString = e.data.svgString
-  # remove the processing animation from the list item
-  item = $ "##{fileList[e.data.filename].id}"
-  item.removeClass 'is-in-progress'
-
-# convert the file
-processFile = (filename) ->
-  # hook up the delete button
-  item = $ "##{fileList[filename].id}"
-  item.find('.UploadList--itemDelete').on 'click', (e) ->
-    id = $(@).parents('li.UploadList--item').attr 'id'
-    removeFile id
-  # send the gerber to the worker
-  converter.postMessage {
-    filename: filename, gerber: fileList[filename].string
-  }
-
-addToFileList = (filename) ->
-  # replace dots with underscores to make jquery happy
-  id = 'item-' + filename.replace /[\.\$]/g, '_'
-  # create the key if it doesn't exist already and set the id
-  unless fileList[filename]? then fileList[filename] = {}
-  fileList[filename].id = id
-  # get the short layer
-  layer = matchLayer filename
-  # clone the list item template, change the filename, and autoselect a layer
-  newItem = docFileItemTemplate.clone()
-  newItem.removeClass 'is-js-template'
-  newItem.attr 'id', id
-  newItem.children('.UploadList--filename').html filename
-  select = newItem.find 'select'
-  # add a change listener to validate selections
-  select.on 'change', validateLayerSelections
-  # auto select an option
-  select.children("option[value=#{layer}]").attr('selected', 'selected')
-  # insert the new item
-  docFileItemTemplate.before newItem
-  # process the file
-  processFile filename
-
 # build the file list output and internal filelist object
 buildFileListOutput = (filenames) ->
-  # on success
-  #converter.addEventListener 'message', converterMessage, false
 
   addToFileList f, converter for f in filenames
   validateLayerSelections()
@@ -257,37 +143,6 @@ buildFileListOutput = (filenames) ->
     changeIcon navHome, 'octicon-sync'
     # scroll to the filelist
     scrollTo docFileList
-
-# take care of a file event
-handleFileSelect = (e) ->
-  e.preventDefault()
-  e.stopPropagation()
-  # restart the app if files have already been processed
-  if processed then restart()
-  # take care of a drop or file select
-  importFiles = e.originalEvent?.dataTransfer?.files
-  #if importFiles? then e.originalEvent.dataTransfer.files = null
-  unless importFiles? then importFiles = e.target.files
-  #e.target.files = null
-  # build the file list
-  #buildFileListOutput (f.name for f in importFiles)
-  # read the files to the file list
-  for f in importFiles
-    do (f) ->
-      # create a file reader and attach a load end listener
-      reader = new FileReader()
-      reader.onloadend = (e) ->
-        e.stopPropagation(); e.preventDefault()
-        # add to the file list object
-        if e.target.readyState is FileReader.DONE
-          unless fileList[f.name]? then fileList[f.name] = {}
-          fileList[f.name].string = e.target.result
-          buildFileListOutput [ f.name ]
-          #event.target.result = null
-      # read the file as text
-      reader.readAsText f
-  # return false to stop propagation
-  false
 
 
 # parse a standard github url into an github api url
@@ -333,33 +188,6 @@ handlePaste = ->
   processUrls urls
   false
 
-# load samples from server
-loadSamples = ->
-  # restart app
-  restart()
-  samples = [
-    'clockblock-hub-B_Cu.gbl'
-    'clockblock-hub-B_Mask.gbs'
-    'clockblock-hub-B_SilkS.gbo'
-    'clockblock-hub-Edge_Cuts.gbr'
-    'clockblock-hub-F_Cu.gtl'
-    'clockblock-hub-F_Mask.gts'
-    'clockblock-hub-F_Paste.gtp'
-    'clockblock-hub-F_SilkS.gto'
-    'clockblock-hub-NPTH.drl'
-    'clockblock-hub.drl'
-  ]
-  for s in samples
-    do (s) ->
-      $.ajax {
-        type: 'GET'
-        url: "./#{s}"
-        dataType: 'text'
-        success: (data) ->
-          fileList[s] = { string: data }
-          buildFileListOutput [ s ]
-          data = null
-      }
 
 # build the color selectors for the board output
 buildColorPicker = ->

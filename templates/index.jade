@@ -97,19 +97,9 @@ html(lang="en")
 
         output(for='upload')#filelist-output.UploadList
           ul#filelist.List-unstyled
-            //- li.UploadList--item.Box.is-in-progress.is-js-template
-            //-   button.UploadList--itemDelete.mega-octicon.octicon-trashcan
-            //-   //div.UploadList--itemProgress
-            //-   span.UploadList--filename.Heading
-            //-     = 'potentially-long-filname.gerber.gerber.gbr '
-            //-   span.UploadList--select
-            //-     span.mega-octicon.octicon-chevron-right
-            //-     span.UploadList--text.Heading= ' layer type: '
-            //-     select.UploadList--SelectMenu.UploadList--text
-            //-       option(value='oth') other (ignore)
 
-          button(type='button' disabled='disabled')#convert-btn.Btn
-            = 'convert!'
+          //- button(type='button' disabled='disabled')#convert-btn.Btn
+          //-   = 'convert!'
 
       mixin layerContainerContents(name)
         h2.LayerHeading= name
@@ -117,7 +107,7 @@ html(lang="en")
           img.LayerImage
 
       #board-output-row.Row.is-hidden
-        output(for='file-list')#board-output
+        output(for='filelist')#board-output
           .BoardContainer.is-js-template
             +layerContainerContents('board-template')
         #board-output-color.Container.is-retracted
@@ -143,10 +133,8 @@ html(lang="en")
         button(name='board-color-btn' type='button').Btn.Btn-lg
           = 'download boards / change colors'
 
-      #layer-output-row.Row.is-hidden
-        output(for='file-list')#layer-output
-          .LayerContainer.is-js-template
-            +layerContainerContents('layer-template')
+      #layer-output-row.Row
+        output(for='filelist')#layer-output
 
     footer.Foot
       .Foot--links
@@ -157,7 +145,7 @@ html(lang="en")
 
     // templates
     include ./filelist-item-template.jade
-    include ./layer-template.jade
+    include ./board-layer-template.jade
 
     // vendor bundle (jquery)
     script(src='vendor.js')
