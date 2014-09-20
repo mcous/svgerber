@@ -16,10 +16,11 @@ module.exports = Backbone.View.extend {
 
   # render function
   render: ->
+    svg = @model.get 'svg'
     @$el.html @template {
       name: 'board ' + @model.get 'type'
       img: @model.get 'svg'
     }
     # return this
-    @
+    if svg.length then @ else @remove()
 }

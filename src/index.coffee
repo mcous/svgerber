@@ -112,7 +112,7 @@ apiUrl = (url) ->
 
 # get urls
 processUrls = (urls) ->
-  for u, i in urls
+  for u, i in docPasteText.val().split '\n'
     u = apiUrl u
     if u then $.ajax {
       type: 'GET'
@@ -138,7 +138,6 @@ handlePaste = ->
   resetPaste()
   processUrls urls
   false
-
 
 # build the color selectors for the board output
 buildColorPicker = ->
@@ -175,7 +174,6 @@ encodeForDownload = ->
     btn.attr 'href', svg64
     btn.removeClass 'is-disabled'
 
-
 changeColor = (clicked) ->
   # get the elements for board stlyes
   style = $ '.Board--style'
@@ -205,97 +203,6 @@ changeColor = (clicked) ->
   style.text styleString.replace reStyle, newStyle
   # encode new
   encodeForDownload()
-
-
-# convert the layers to svgs
-convertLayers = ->
-  # reset the paste area for safety
-  resetPaste()
-
-  # slight delay to debounce button disable, then convert
-  setTimeout () ->
-    # board output
-    topLayers = {}
-    if layerList.tcu? then topLayers.cu = layerList.tcu
-    if layerList.tsm? then topLayers.sm = layerList.tsm
-    if layerList.tss? then topLayers.ss = layerList.tss
-    if layerList.tsp? then topLayers.sp = layerList.tsp
-    if layerList.drl? then topLayers.drill = (d for d in layerList.drl)
-    if layerList.out? then topLayers.out = layerList.out
-    bottomLayers = {}
-    if layerList.bcu? then bottomLayers.cu = layerList.bcu
-    if layerList.bsm? then bottomLayers.sm = layerList.bsm
-    if layerList.bss? then bottomLayers.ss = layerList.bss
-    if layerList.bsp? then bottomLayers.sp = layerList.bsp
-    if layerList.drl? then bottomLayers.drill = (d for d in layerList.drl)
-    if layerList.out? then bottomLayers.out = layerList.out
-    # find the board template
-    boardTemplate = $('#board-output').children('.is-js-template')
-    # get the converter ready
-    boardConverter = new Worker './gerber-worker.coffee'
-    boardConverter.addEventListener 'message', (e) ->
-      if e.data.filename is 'board-top'
-        topContainer.find('img.LayerImage').replaceWith e.data.svgString
-        boardTemplate.before topContainer
-      else if e.data.filename is 'board-bottom'
-        bottomContainer.find('img.LayerImage').replaceWith e.data.svgString
-        boardTemplate.before bottomContainer
-
-    # top
-    if topLayers.cu?
-      topBoard = buildBoard 'top', topLayers
-      topContainer = boardTemplate.clone().removeClass 'is-js-template'
-      topContainer.attr 'id', 'board-top-render'
-      topContainer.children('h2.LayerHeading').html 'board top'
-      # post the board object to the converter
-      boardConverter.postMessage { filename: 'board-top', gerber: topBoard }
-    # bottom
-    if bottomLayers.cu?
-      bottomBoard = buildBoard 'bottom', bottomLayers
-      bottomContainer = boardTemplate.clone().removeClass 'is-js-template'
-      bottomContainer.attr 'id', 'board-bottom-render'
-      bottomContainer.children('h2.LayerHeading').html 'board bottom'
-      # post the board object to the converter
-      boardConverter.postMessage { filename: 'board-bottom', gerber: bottomBoard }
-
-    # build color pickers if necessary and unhide the bourd output
-    if bottomLayers.cu? or topLayers.cu?
-      buildColorPicker()
-      encodeForDownload()
-      $('#board-output-row').removeClass 'is-hidden'
-
-    # unhide the layer output
-    $('#layer-output-row').removeClass 'is-hidden'
-    # scroll to the board output
-    scrollTo boardOutput, ->
-      # enable the nav links
-      navSvgs.removeClass 'is-disabled'
-    # return false
-    false
-  # timeout debounce delay
-  , 10
-
-# attach event listeners to get everything going
-# file drop and select
-# dz = $ '#dropzone'
-# dz.on 'dragenter', (e) -> e.preventDefault(); e.stopPropagation()
-# dz.on 'dragover', (e) ->
-#   e.preventDefault(); e.stopPropagation()
-#   e.originalEvent.dataTransfer.dropEffect = 'copy'
-# dz.on 'drop', handleFileSelect
-# fs = $ '#upload-select'
-# fs.on 'change', handleFileSelect
-# convert button
-# docConvertBtn.on 'click', convertLayers
-# url paste buttons
-# docPasteBtn.on 'click', -> docPasteForm.removeClass 'is-hidden'
-# docPasteCancelBtn.on 'click', resetPaste
-# docPasteSubmitBtn.on 'click', handlePaste
-# load samples button
-#docSampleBtn.on 'click', loadSamples
-# slide out color drawer
-#boardColorMainBtn.on 'click', -> boardColorContainer.toggleClass 'is-retracted'
-# color button
 
 # navigation sugar
 navHeight = nav.height()

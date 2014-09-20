@@ -1,5 +1,8 @@
 # svgerber backbone app
 
+# utilities
+githubApiUrl = require '../github-api-url'
+
 # require our other views
 FilelistItemView = require './filelist-item.coffee'
 BoardLayerView = require './board-layer.coffee'
@@ -28,6 +31,10 @@ module.exports = Backbone.View.extend {
     'change #upload-select': 'handleFileSelect'
     # load samples when the sample button is clicked
     'click #sample-btn': 'loadSamples'
+    # url paste buttons
+    'click #url-paste-btn': 'showPaste'
+    'click #url-submit-btn': 'processUrls'
+    'click #url-cancel-btn': 'hidePaste'
   }
 
   initialize: ->
@@ -111,4 +118,28 @@ module.exports = Backbone.View.extend {
           dataType: 'text'
           success: (data) -> layers.add { filename: s, gerber: data }
         }
+
+  # show and hide the url paste area
+  showPaste: ->
+    $('#url-paste-form').removeClass 'is-hidden'
+  hidePaste: ->
+    $('#url-paste').val ''
+    $('#url-paste-form').addClass 'is-hidden'
+
+  # get urls
+  processUrls: ->
+    urls = $('#url-paste').val().split '\n'
+    for u in urls
+      u = githubApiUrl u
+      if u then $.ajax {
+        type: 'GET'
+        url: u
+        contentType: 'application/vnd.github.VERSION.raw'
+        dataType: 'json'
+        success: (data) -> layers.add {
+          filename: data.name
+          gerber: atob data.content
+        }
+      }
+    @hidePaste()
 }

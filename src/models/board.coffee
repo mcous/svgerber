@@ -14,7 +14,7 @@ module.exports = Backbone.Model.extend {
 
   initialize: ->
     # listen for changes in the layers, and trigger a new board event
-    @listenTo @get('layers'), 'change', @handleLayersChange
+    @listenTo @get('layers'), 'change add remove', @handleLayersChange
 
   getBoardLayers: ->
     # filter out the layers

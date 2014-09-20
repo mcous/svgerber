@@ -92,8 +92,8 @@ html(lang="en")
           form#url-paste-form.Box.is-hidden
             - ph = 'paste the urls (one per line) to a gerber file on github\nfor example:\n  https://github.com/mcous/reflow/blob/master/pcb/plotted/gerber/reflow-pcb-F_Cu.gtl'
             textarea#url-paste(name='url-paste' placeholder=ph cols='45' rows='10')
-            button(name='url-paste-submit-btn' type='button').Btn ok
-            button(name='url-paste-cancel-btn' type='button').Btn cancel
+            button(name='url-submit' type='button')#url-submit-btn.Btn ok
+            button(name='url-cancel' type='button')#url-cancel-btn.Btn cancel
 
         output(for='upload')#filelist-output.UploadList
           ul#filelist.List-unstyled
