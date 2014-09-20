@@ -110,6 +110,8 @@ module.exports = Backbone.View.extend {
       'clockblock-hub-NPTH.drl'
       'clockblock-hub.drl'
     ]
+    # remove all models from the layers collection
+    layers.remove layers.models
     for s in samples
       do (s) ->
         $.ajax {

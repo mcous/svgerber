@@ -43,8 +43,8 @@ html(lang="en")
 
     #svgerber-app.Content
       .Container
-        #information
-          .Box
+        .Box#information
+          .AlignedContent
             h2 what is this?
             p
               = 'This is a '
@@ -58,8 +58,8 @@ html(lang="en")
               +aNew('https://github.com/mcous/svgerber/issues')= 'Open an issue'
               = ' with the file attached!'
 
-        #caution
-          .Box
+        .Box#caution
+          .AlignedContent
             h2 let's do this thing
               small.SubHeading <br>(but it could get weird)
             p
@@ -68,8 +68,8 @@ html(lang="en")
                 = 'The gerber to svg library'
               = ' should produce the correct image, but it might not.'
 
-        #sample
-          .Box
+        .Box#sample
+          .AlignedContent
             h2 no gerbers handy?
             button(type='button')#sample-btn.Btn.Btn-lg
               = 'load a sample set'
@@ -89,9 +89,9 @@ html(lang="en")
               button(type='button')#url-paste-btn.Dropzone--btn.Btn
                 = 'or paste github urls'
             input#upload-select(type='file' name='upload-select' multiple)
-          form#url-paste-form.Box.is-hidden
+          form#url-paste-form.is-hidden
             - ph = 'paste the urls (one per line) to a gerber file on github\nfor example:\n  https://github.com/mcous/reflow/blob/master/pcb/plotted/gerber/reflow-pcb-F_Cu.gtl'
-            textarea#url-paste(name='url-paste' placeholder=ph cols='45' rows='10')
+            textarea#url-paste(name='url-paste' placeholder=ph cols='50' rows='10')
             button(name='url-submit' type='button')#url-submit-btn.Btn ok
             button(name='url-cancel' type='button')#url-cancel-btn.Btn cancel
 

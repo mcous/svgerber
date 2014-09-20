@@ -13,8 +13,11 @@ module.exports = Backbone.Model.extend {
   }
 
   initialize: ->
+    layers = @get 'layers'
     # listen for changes in the layers, and trigger a new board event
-    @listenTo @get('layers'), 'change add remove', @handleLayersChange
+    @listenTo layers, 'change:type change:svgString', @handleLayersChange
+    # also listen to add and remove events, but debounce them by 10ms
+    @listenTo layers, 'add remove', _.debounce @handleLayersChange, 10
 
   getBoardLayers: ->
     # filter out the layers
@@ -23,10 +26,9 @@ module.exports = Backbone.Model.extend {
       opt = _.find layerOptions, { val: layer.get 'type' }
       # return true if the board side of the option matches the board type
       opt?.side is type or opt?.side is 'both'
-    # set singular layers
+    # set layers
     @set 'boardLayers', _.map boardLayers, (ly) ->
       { type: ly.get('type'), svgObj: ly.get('svgObj') }
-    console.log @get 'boardLayers'
     # set mult layers
     # trigger a build needed event
     @trigger 'buildNeeded', @
@@ -40,5 +42,6 @@ module.exports = Backbone.Model.extend {
       if layers.length is processed.length
         # get the board layers and trigger a build
         @getBoardLayers()
-
+    # return false?
+    false
 }

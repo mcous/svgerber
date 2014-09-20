@@ -15,7 +15,6 @@ module.exports = Backbone.Collection.extend {
     @on 'buildNeeded', @buildBoard
 
   buildBoard: (board) ->
-    console.log "building #{board.get 'type'}"
     builder.postMessage {
       name: board.get 'type'
       layers: board.get 'boardLayers'
