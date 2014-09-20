@@ -64,8 +64,15 @@ module.exports = Backbone.View.extend {
   removeLayer: ->
     # detach event listeners
     @undelegateEvents()
-    # remove the model from the collection
-    @model.collection.remove @model
+    # shrink to zero height and then remove model from the collection
+    model = @model
+    @$el.animate { height: 0 }, {
+      duration: 100
+      queue: false
+      easing: 'linear'
+      # remove the model from the collection
+      complete: -> model.collection.remove model
+    }
 
   # change the layer type
   changeLayerType: ->

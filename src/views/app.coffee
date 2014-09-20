@@ -55,7 +55,9 @@ module.exports = Backbone.View.extend {
 
   # add a board layer
   addBoardLayer: (layer) ->
-    if layer.get 'svgString'
+    if layer.get('svgString').length
+      console.log layer.get 'filename'
+      console.log layer.get 'svgObj'
       view = new BoardLayerView { model: layer }
       $('#layer-output').append view.render().el
 

@@ -36,7 +36,7 @@ module.exports = Backbone.Model.extend {
   handleLayersChange: ->
     layers = @get 'layers'
     # if there are layers and they passes validation
-    if layers.length and layers.validateLayers()
+    if layers.validateLayers()
       # and the lenth of the collection matches the number of processed layers
       processed = (layers.filter (layer) -> layer.get('svgObj')?) ? []
       if layers.length is processed.length

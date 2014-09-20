@@ -26,7 +26,7 @@ module.exports = Backbone.View.extend {
   # render function
   render: ->
     @$el.html @template {
-      name: _.find(layerOptions, { val: @model.get 'type' }).desc
+      name: _.find(layerOptions, { val: @model.get 'type' })?.desc
       img: @model.get 'svgString'
     }
     # return this

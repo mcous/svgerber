@@ -134,16 +134,16 @@ ul
   border-style solid
   border-color black
   border-width 0
-  border-radius 0.5em
+  // border-radius 0.5em
   // shadows on hover
-  transition box-shadow 0.2s
+  transition box-shadow 50ms
   &:hover
-    box-shadow 0.05em 0.05em 0.2em black
+    box-shadow 0.07em 0.07em 0.3em 0.03em black
   &:active
     outline none
     box-shadow 0 0 0.1em black
   // default shadow
-  box-shadow 0.1em 0.1em 0.4em black
+  box-shadow 0.1em 0.1em 0.4em 0.04em black
   // spacing
   padding 0.5em 1em 0.5em 1em
   margin 0.25em
@@ -275,12 +275,12 @@ button:disabled, .Btn.is-disabled
 // file upload
 #dropzone
   // border
-  border-width 2px
-  border-style dashed
+  //border-width 2px
+  //border-style dashed
   border-color black
-  border-radius 1em
+  //border-radius 1em
   // inset shadow
-  box-shadow inset 0.1em 0.1em 0.4em black
+  box-shadow inset 0.1em 0.1em 0.4em 0.1em black
   // spacing
   margin-bottom 1em
   // hide the default file select stuff
@@ -296,12 +296,14 @@ button:disabled, .Btn.is-disabled
 #url-paste-form
   textarea
     display block
-    border-radius 1em
+    resize horizontal
+    //border-radius 1em
     padding 1em
     margin 0.5em
     margin-bottom 0
     text-align left
     font-size 0.75em
+    z-index 2
 
 .DropzoneContents
   margin-tb 0.5em
