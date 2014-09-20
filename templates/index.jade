@@ -101,37 +101,31 @@ html(lang="en")
           //- button(type='button' disabled='disabled')#convert-btn.Btn
           //-   = 'convert!'
 
-      mixin layerContainerContents(name)
-        h2.LayerHeading= name
-        div.LayerDrawing
-          img.LayerImage
-
-      #board-output-row.Row.is-hidden
+      #board-output-row.Row
         output(for='filelist')#board-output
-          .BoardContainer.is-js-template
-            +layerContainerContents('board-template')
-        #board-output-color.Container.is-retracted
-          #board-download.Box
-            h3 download
-            #board-download-buttons.Container
-              a(download='top.svg' href-lang='image/svg+xml' href='#' target='_blank')#download-top-btn.Btn.is-disabled
-                = 'top'
-              a(download='bottom.svg' href-lang='image/svg+xml' href='#' target='_blank')#download-bottom-btn.Btn.is-disabled
-                = 'bottom'
-          #board-cu-color.Box.ColorPicker
-            h3 copper finish
-            #board-cu-color-buttons.Container
-              button(type='button').Btn.ColorPicker--btn.is-js-template color
-          #board-sm-color.Box.ColorPicker
-            h3 soldermask
-            #board-sm-color-buttons.Container
-              button(type='button').Btn.ColorPicker--btn.is-js-template color
-          #board-ss-color.Box.ColorPicker
-            h3 silkscreen
-            #board-ss-color-buttons.Container
-              button(type='button').Btn.ColorPicker--btn.is-js-template color
-        button(name='board-color-btn' type='button').Btn.Btn-lg
-          = 'download boards / change colors'
+
+        //- #board-output-color.Container.is-retracted
+        //-   #board-download.Box
+        //-     h3 download
+        //-     #board-download-buttons.Container
+        //-       a(download='top.svg' href-lang='image/svg+xml' href='#' target='_blank')#download-top-btn.Btn.is-disabled
+        //-         = 'top'
+        //-       a(download='bottom.svg' href-lang='image/svg+xml' href='#' target='_blank')#download-bottom-btn.Btn.is-disabled
+        //-         = 'bottom'
+        //-   #board-cu-color.Box.ColorPicker
+        //-     h3 copper finish
+        //-     #board-cu-color-buttons.Container
+        //-       button(type='button').Btn.ColorPicker--btn.is-js-template color
+        //-   #board-sm-color.Box.ColorPicker
+        //-     h3 soldermask
+        //-     #board-sm-color-buttons.Container
+        //-       button(type='button').Btn.ColorPicker--btn.is-js-template color
+        //-   #board-ss-color.Box.ColorPicker
+        //-     h3 silkscreen
+        //-     #board-ss-color-buttons.Container
+        //-       button(type='button').Btn.ColorPicker--btn.is-js-template color
+        //- button(name='board-color-btn' type='button').Btn.Btn-lg
+        //-   = 'download boards / change colors'
 
       #layer-output-row.Row
         output(for='filelist')#layer-output
@@ -146,6 +140,7 @@ html(lang="en")
     // templates
     include ./filelist-item-template.jade
     include ./board-layer-template.jade
+    //include ./board-render-template.jade
 
     // vendor bundle (jquery)
     script(src='vendor.js')

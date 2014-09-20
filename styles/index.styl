@@ -412,11 +412,11 @@ select.UploadList--text
 // board output
 #board-output-row
   background-color FOOT_BG
-  padding-tb 1em
+  //padding-tb 1em
 
 #board-output
   center(pad: 5%)
-  margin-bottom 2em
+  //margin-bottom 2em
 
 #board-output-color
   transition max-height 0.5s, margin 0.5s
@@ -458,11 +458,9 @@ select.UploadList--text
     width 95%
     height 95%
 
-.Board
-  //min-height 30em
-
 .BoardContainer
-  col(1/2, cycle: 2)
+  col(1/2)
+  margin-bottom 1em
   +below(BP)
     stack()
   .LayerDrawing
@@ -472,6 +470,7 @@ select.UploadList--text
   margin-top 1em
   col(1/2, cycle: 2)
   +below(BP)
+    float none !important
     stack()
 
 // footer

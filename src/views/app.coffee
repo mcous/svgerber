@@ -3,10 +3,18 @@
 # require our other views
 FilelistItemView = require './filelist-item.coffee'
 BoardLayerView = require './board-layer.coffee'
+BoardRenderView = require './board-render.coffee'
 
 # create a layers collection
 LayerList = require '../collections/layers'
 layers = new LayerList()
+# create collection for board renders with the top and the bottom
+BoardList = require '../collections/boards'
+boards = new BoardList()
+boards.add [
+  { type: 'top', layers: layers }
+  { type: 'bottom', layers: layers }
+]
 
 module.exports = Backbone.View.extend {
   el: '#svgerber-app'
@@ -29,6 +37,8 @@ module.exports = Backbone.View.extend {
     @listenTo layers, 'add', @addFilelistItem
     # listen to the layers collection for rendered layers
     @listenTo layers, 'processEnd', @addBoardLayer
+    # create renders for the top and bottom boards
+    @listenTo boards, 'render', @addBoardRender
 
   # add a filelist item to the filelist
   addFilelistItem: (layer) ->
@@ -41,6 +51,13 @@ module.exports = Backbone.View.extend {
     if layer.get 'svgString'
       view = new BoardLayerView { model: layer }
       $('#layer-output').append view.render().el
+
+  # add a board render if needed
+  addBoardRender: (board) ->
+    existing = $('#board-output').find('.LayerHeading').text()
+    if board.get('svg').length and not existing.match(board.get 'type')?
+      view = new BoardRenderView { model: board }
+      $('#board-output').append view.render().el
 
   # handle a file select
   # take care of a file event

@@ -2,7 +2,7 @@
 # hopefully less janky than the first one
 
 # clone some objects
-cloneDeep = _.cloneDeep
+cloneDeep = require 'lodash.clonedeep'
 # make sure we don't have overlapping ids
 unique = 0
 uniqueId = -> unique++
@@ -26,14 +26,24 @@ DEFAULT_STYLE = {
   }
 }
 
-# empty return object
-EMPTY = { svg: {} }
+# board type matching
+reCOPPER = /cu/
+reMASK = /sm/
+reSILK = /ss/
+rePASTE = /sp/
+reEDGE = /out/
+reDRILL = /drl/
 
 # board combine function
 # takes the board name and board layers
-module.exports = (name, layers = {}) ->
-  # we need at least a copper layer to do this
-  unless layers.cu? then return {}
+module.exports = (name, layers = []) ->
+  copper = null
+  mask = null
+  silk = null
+  paste = null
+  edge = null
+  drill = []
+
   # resulting svg is going to have attributes, a def section, a drawing, and a
   # bounding box
   attr = {}
@@ -52,46 +62,49 @@ module.exports = (name, layers = {}) ->
 
   # gather all the layers to combine there defs, bboxes, and attributes
   # we're also going to push the layers themselves to the defs
-  for ly, obj of layers
-    # this function will do everything i just said
-    collect = (xmlObj) ->
-      # clone it
-      xml = cloneDeep xmlObj
-      # collect the bbox
-      addVboxToBbox xml.svg.viewBox
-      # grab the units
-      u = xml.svg.width.match(/(in)|(mm)/)?[0]
-      if units is 'px' then units = u
-      else if u isnt units
-        console.warn 'units mismatch in full board stackup'; return EMPTY
-      # toss the viewBox as well as the width, height and id
-      delete xml.svg.viewBox
-      delete xml.svg.width
-      delete xml.svg.height
-      delete xml.svg.id
-      # gather the rest of the attributes
-      for key, val of xml.svg
-        attr[key] = val if not attr[key]? and key isnt '_'
-      # collect the defs and group
-      # hopefully a group and defs will be the only children of the svg node
-      layerId = "#{name}-#{ly}_#{uniqueId()}"
-      for node in xml.svg._
-        # collect the defs
-        if node.defs? then defs.push d for d in node.defs._
-        # collect the group
-        else if node.g?
-          # delete the transform and any fill or stroke properties
-          delete node.g.transform
-          # add a better id
-          node.g.id = layerId
-          defs.push node
-      # return the layer id
-      layerId
+  for layer in layers
+    # get layer type
+    ly = layer.type
+    # clone the xml object
+    xml = cloneDeep layer.svgObj
+    # collect the bbox
+    addVboxToBbox xml.svg.viewBox
+    # grab the units
+    u = xml.svg.width.match(/(in)|(mm)/)?[0]
+    if units is 'px' then units = u
+    else if u isnt units
+      return {}
+    # toss the viewBox as well as the width, height and id
+    delete xml.svg.viewBox
+    delete xml.svg.width
+    delete xml.svg.height
+    delete xml.svg.id
+    # gather the rest of the attributes
+    for key, val of xml.svg
+      attr[key] = val if not attr[key]? and key isnt '_'
+    # collect the defs and group
+    # hopefully a group and defs will be the only children of the svg node
+    layerId = "#{name}-#{ly}_#{uniqueId()}"
+    for node in xml.svg._
+      # collect the defs
+      if node.defs? then defs.push d for d in node.defs._
+      # collect the group
+      else if node.g?
+        # delete the transform and any fill or stroke properties
+        delete node.g.transform
+        # add a better id
+        node.g.id = layerId
+        defs.push node
     # now, it is possible that there will be multiple drill files. deal with it
-    if Array.isArray obj
-      obj[i] = collect drl for drl, i in obj
-    else
-      layers[ly] = collect obj
+    if reCOPPER.test ly then copper = layerId
+    else if reMASK.test ly then mask = layerId
+    else if reSILK.test ly then silk = layerId
+    else if rePASTE.test ly then paste = layerId
+    else if reEDGE.test ly then edge = layerId
+    else if reDRILL.test ly then drill.push layerId
+
+  # we need at least a copper layer to do this
+  unless copper? then return {}
 
   # viewbox and covering rectangle convenience function
   vbox = getVboxFromBbox()
@@ -111,24 +124,24 @@ module.exports = (name, layers = {}) ->
   draw.push bboxRect('Board--board')
 
   # the second layer is the copper
-  draw.push { use: { class: 'Board--cu', 'xlink:href': "##{layers.cu}" } }
+  draw.push { use: { class: 'Board--cu', 'xlink:href': "##{copper}" } }
 
   # if we've got a soldermask
-  if layers.sm?
+  if mask?
     # mask it with the copper for copper finish
     cuFinishId = "#{name}-sm_#{uniqueId()}"
     defs.push {
       mask: {
         id: cuFinishId
         color: '#fff'
-        _: [ { use: { 'xlink:href': "##{layers.cu}" } } ]
+        _: [ { use: { 'xlink:href': "##{copper}" } } ]
       }
     }
     draw.push {
       use: {
         class: 'Board--finish'
         mask: "url(##{cuFinishId})"
-        'xlink:href': "##{layers.sm}"
+        'xlink:href': "##{mask}"
       }
     }
     # now build group for the color and the silkscreen (if it exists) and
@@ -136,34 +149,34 @@ module.exports = (name, layers = {}) ->
     smId = "#{name}-sm_#{uniqueId()}"
     defs.push { mask: { id: smId, color: '#000', _: [
           bboxRect null, '#fff'
-          { use: { 'xlink:href': "##{layers.sm}" } }
+          { use: { 'xlink:href': "##{mask}" } }
         ]
       }
     }
     smPos = { g: { mask: "url(##{smId})", _: [ bboxRect 'Board--sm' ] } }
     # add the silkscreen if it exists
-    if layers.ss? then smPos.g._.push {
-      use: { class: 'Board--ss', 'xlink:href': "##{layers.ss}" }
+    if silk? then smPos.g._.push {
+      use: { class: 'Board--ss', 'xlink:href': "##{silk}" }
     }
     # push the soldermask to the stack
     draw.push smPos
 
   # if we've got solderpaste, push it to the drawing
-  if layers.sp? then draw.push {
-    use: { class: 'Board--sp', 'xlink:href': "##{layers.sp}" }
+  if paste? then draw.push {
+    use: { class: 'Board--sp', 'xlink:href': "##{paste}" }
   }
 
   # add edge cuts if we gottem
-  if layers.out? then draw.push {
-    use: { class: 'Board--out', 'xlink:href': "##{layers.out}" }
+  if edge? then draw.push {
+    use: { class: 'Board--out', 'xlink:href': "##{edge}" }
   }
 
   # finally, we may have some drills
   drlId = null
-  if layers.drill?
+  if drill.length
     drlId = "#{name}-drl_#{uniqueId()}"
     drlMask = { mask: { id: drlId, color: '#000', _: [bboxRect null, '#fff'] } }
-    for d in layers.drill
+    for d in drill
       drlMask.mask._.push { use: { 'xlink:href': "##{d}" } }
     # push the mask to the defs
     defs.push drlMask

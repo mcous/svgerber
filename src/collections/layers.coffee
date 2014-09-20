@@ -19,14 +19,21 @@ module.exports = Backbone.Collection.extend {
 
   # validate all layer selections
   validateLayers: ->
+    valid = true
     # return true to continue even if isValid return false
-    @forEach (layer) -> if layer.isValid() then layer.trigger 'valid'; true
+    @forEach (layer) ->
+      if layer.isValid() then layer.trigger 'valid'
+      else valid = false
+      # return true to keep validating
+      true
+    # return the validation
+    valid
 
   # convert a gerber to an svg object
   addConverterHandler: ->
-    _this = @
+    _self = @
     handler = (e) ->
-      layer = _this.findWhere { filename: e.data.filename }
+      layer = _self.findWhere { filename: e.data.filename }
       layer.set 'svgObj', e.data.svgObj
       layer.set 'svgString', e.data.svgString
       layer.trigger 'processEnd', layer

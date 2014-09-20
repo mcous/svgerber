@@ -3,12 +3,9 @@
 
 # requires jquery, backbone, and lodash
 
-# application views
+# load the backbone application view to start the app
 AppView = require './views/app'
 appView = new AppView()
-
-# board builder
-buildBoard = require './build-board'
 
 # btoa polyfill
 unless typeof window.btoa is 'function'
@@ -44,62 +41,20 @@ COLORS = {
   defaults: { cu: 'gold', sm: 'green', ss: 'white' }
 }
 
-# layer types
-LAYERS = {
-  tcu: { desc: 'top copper',        match: /\.(gtl)|(cmp)$/i }
-  tsm: { desc: 'top soldermask',    match: /\.(gts)|(stc)$/i }
-  tss: { desc: 'top silkscreen',    match: /\.(gto)|(plc)$/i }
-  tsp: { desc: 'top solderpaste',   match: /\.(gtp)|(crc)$/i }
-  bcu: { desc: 'bottom copper',     match: /\.(gbl)|(sol)$/i }
-  bsm: { desc: 'bottom soldermask', match: /\.(gbs)|(sts)$/i }
-  bss: { desc: 'bottom silkscreen', match: /\.(gbo)|(pls)$/i }
-  bsp: { desc: 'bottom solderpaste',match: /\.(gbp)|(crs)$/i }
-  icu: { desc: 'inner copper',      match: /\.(gp\d+)|(g\d+l)$/i }
-  out: { desc: 'board outline',     match: /(\.(gko)|(mil)$)|edge/i }
-  drw: { desc: 'gerber drawing',    match: /\.gbr$/i }
-  drl: {
-    desc: 'drill hits'
-    match: /(\.xln$)|(\.drl$)|(\.txt$)|(\.drd$)/i
-  }
-}
-# layers that may have multiple files
-MULT_LAYERS = [ 'oth', 'icu', 'drw', 'drl' ]
-# uploaded filename to jquery friendly id map
-fileList = {}
-# layers to process
-processed = false
 
 # document elements
-# the file list
-docFileList = $ 'output#filelist-output'
-docFileItemTemplate = docFileList.children('ul').children 'li.is-js-template'
-docConvertBtn = $ 'button#convert-btn'
-convertBtnMsg = {
-  before: 'convert!'
-  after: 'done!'
-  error: 'error: matching layer selections'
-}
-# the individual layer outputs
-docLayerTemplate = $('#layer-output').children('.LayerContainer.is-js-template')
 # url paste buttons
 docPasteBtn = $ '#url-paste-btn'
 docPasteSubmitBtn = $ 'button[name="url-paste-submit-btn"]'
 docPasteCancelBtn = $ 'button[name="url-paste-cancel-btn"]'
 docPasteForm = $ '#url-paste-form'
 docPasteText = $ '#url-paste'
-# sample load button
-docSampleBtn = $ '#sample-btn'
 
-# board output
-boardOutput = $ '#board-output'
 # board color picker buttons
 boardColorMainBtn = $ 'button[name="board-color-btn"]'
 boardColorContainer = $ '#board-output-color'
 # color picker buttons
 boardColorPickerBtn = $ '.ColorPicker--btn'
-
-# layer output
-layerOutput = $ '#layer-output'
 
 # nav links
 nav = $ '#main-nav'
@@ -132,9 +87,6 @@ restart = ->
 
 # build the file list output and internal filelist object
 buildFileListOutput = (filenames) ->
-
-  addToFileList f, converter for f in filenames
-  validateLayerSelections()
   # show the file list and enable the nav icon
   if docFileList.hasClass 'is-hidden'
     docFileList.removeClass 'is-hidden'
@@ -143,7 +95,6 @@ buildFileListOutput = (filenames) ->
     changeIcon navHome, 'octicon-sync'
     # scroll to the filelist
     scrollTo docFileList
-
 
 # parse a standard github url into an github api url
 apiUrl = (url) ->
@@ -258,46 +209,11 @@ changeColor = (clicked) ->
 
 # convert the layers to svgs
 convertLayers = ->
-  # set the processed flag
-  processed = true
-  # remove any existing layers
-  removeLayerOutput()
-  # remove event listeners on the converter worker
-  converter.removeEventListener 'message', converterMessage, false
   # reset the paste area for safety
   resetPaste()
-  # disable the button
-  docConvertBtn.attr 'disabled', 'disabled'
-  # list of layers
-  layerList = {}
-
-  # board converter callback function
 
   # slight delay to debounce button disable, then convert
   setTimeout () ->
-    # for files in filelist
-    for filename, val of fileList
-      # get the layer type
-      select = $("li.UploadList--item##{val.id}").find('select')
-      option = select.children('option:selected')
-      type = option.attr 'value'
-      unless type is 'oth'
-        svgString = val.svgString
-        svgObj = val.svgObj
-        # check if the layer type can have multiple layers of the same type
-        if type in MULT_LAYERS
-          unless layerList[type]? then layerList[type] = []
-          layerList[type].push svgObj
-        else
-          layerList[type] = svgObj
-        # CONVERT THE MOTHERFLIPPING SVG TO BINARY64
-        #svg64 = "data:image/svg+xml;base64,#{btoa svg}"
-        # set the image
-        layer = docLayerTemplate.clone().removeClass 'is-js-template'
-        layer.children('h2.LayerHeading').html option.html()
-        layer.find('img.LayerImage').replaceWith svgString
-        # put it in the DOM
-        docLayerTemplate.before layer
     # board output
     topLayers = {}
     if layerList.tcu? then topLayers.cu = layerList.tcu
@@ -361,24 +277,24 @@ convertLayers = ->
 
 # attach event listeners to get everything going
 # file drop and select
-dz = $ '#dropzone'
-dz.on 'dragenter', (e) -> e.preventDefault(); e.stopPropagation()
-dz.on 'dragover', (e) ->
-  e.preventDefault(); e.stopPropagation()
-  e.originalEvent.dataTransfer.dropEffect = 'copy'
-#dz.on 'drop', handleFileSelect
-fs = $ '#upload-select'
-#fs.on 'change', handleFileSelect
+# dz = $ '#dropzone'
+# dz.on 'dragenter', (e) -> e.preventDefault(); e.stopPropagation()
+# dz.on 'dragover', (e) ->
+#   e.preventDefault(); e.stopPropagation()
+#   e.originalEvent.dataTransfer.dropEffect = 'copy'
+# dz.on 'drop', handleFileSelect
+# fs = $ '#upload-select'
+# fs.on 'change', handleFileSelect
 # convert button
-docConvertBtn.on 'click', convertLayers
+# docConvertBtn.on 'click', convertLayers
 # url paste buttons
-docPasteBtn.on 'click', -> docPasteForm.removeClass 'is-hidden'
-docPasteCancelBtn.on 'click', resetPaste
-docPasteSubmitBtn.on 'click', handlePaste
+# docPasteBtn.on 'click', -> docPasteForm.removeClass 'is-hidden'
+# docPasteCancelBtn.on 'click', resetPaste
+# docPasteSubmitBtn.on 'click', handlePaste
 # load samples button
 #docSampleBtn.on 'click', loadSamples
 # slide out color drawer
-boardColorMainBtn.on 'click', -> boardColorContainer.toggleClass 'is-retracted'
+#boardColorMainBtn.on 'click', -> boardColorContainer.toggleClass 'is-retracted'
 # color button
 
 # navigation sugar
