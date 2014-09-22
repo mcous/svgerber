@@ -25,7 +25,6 @@ module.exports = Backbone.Collection.extend {
     handler = (e) ->
       board = _self.findWhere { type: e.data.filename }
       board.set 'svg', e.data.svgString
-      board.trigger 'render', board
     converter.addEventListener 'message', handler, false
 
   attachBuilderHandler: ->

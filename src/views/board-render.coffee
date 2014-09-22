@@ -10,7 +10,7 @@ module.exports = Backbone.View.extend {
   # initialize with change listener on model
   initialize: ->
     # listen for type changes
-    @listenTo @model, 'render', @render
+    @listenTo @model, 'change:svg change:style', @render
     # listen for model deletion
     @listenTo @model, 'remove', @remove
 
@@ -21,6 +21,8 @@ module.exports = Backbone.View.extend {
       name: 'board ' + @model.get 'type'
       img: @model.get 'svg'
     }
+    @$el.find('svg').prepend @model.get 'style'
     # return this
     if svg.length then @ else @remove()
+
 }

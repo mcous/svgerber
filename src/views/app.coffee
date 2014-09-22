@@ -7,6 +7,7 @@ githubApiUrl = require '../github-api-url'
 FilelistItemView = require './filelist-item.coffee'
 BoardLayerView = require './board-layer.coffee'
 BoardRenderView = require './board-render.coffee'
+ColorPickerView = require './color-picker.coffee'
 
 # create a layers collection
 LayerList = require '../collections/layers'
@@ -25,8 +26,13 @@ module.exports = Backbone.View.extend {
   # app events
   events: {
     # file upload events
-    # drop in dropzone
+    # dropzone file drop
     'drop #dropzone': 'handleFileSelect'
+    # dropzone dragover - stop browser from opening file and show copy tooltip
+    'dragover #dropzone': (e) ->
+      e.preventDefault()
+      e.stopPropagation()
+      e.originalEvent.dataTransfer.dropEffect = 'copy'
     # manual file select
     'change #upload-select': 'handleFileSelect'
     # load samples when the sample button is clicked
@@ -45,19 +51,25 @@ module.exports = Backbone.View.extend {
     # listen to the layers collection for rendered layers
     @listenTo layers, 'processEnd', @addBoardLayer
     # create renders for the top and bottom boards
-    @listenTo boards, 'render', @addBoardRender
+    @listenTo boards, 'change:svg', @addBoardRender
+    # add or remove color picker if necessary
+    @listenTo boards, 'change:svg', _.debounce @handleColorPicker, 10
+    # listen to the layers collection for adds and removed
+    # adjust nav icons accordingly
+    @listenTo layers, 'add remove', @handleNavIcons
+
+  # remove all models from the layers collection
+  restart: -> layers.remove layers.models
 
   # add a filelist item to the filelist
   addFilelistItem: (layer) ->
-    # add to the filelist
+    # add to the filelist if necessary
     view = new FilelistItemView { model: layer }
     $('#filelist').append view.render().el
 
   # add a board layer
   addBoardLayer: (layer) ->
     if layer.get('svgString').length
-      console.log layer.get 'filename'
-      console.log layer.get 'svgObj'
       view = new BoardLayerView { model: layer }
       $('#layer-output').append view.render().el
 
@@ -67,6 +79,16 @@ module.exports = Backbone.View.extend {
     if board.get('svg').length and not existing.match(board.get 'type')?
       view = new BoardRenderView { model: board }
       $('#board-output').append view.render().el
+
+  # add color picker to the page if it's not there
+  handleColorPicker: (boards) ->
+    # if there's no color picker
+    pickerExists = $('#board-output').siblings('.ColorPicker').length
+    boardsExist = $('#board-output').children().length
+    if not pickerExists and boardsExist
+      view = new ColorPickerView { collection: boards }
+      $('#board-output').after view.render().el
+
 
   # handle a file select
   # take care of a file event
@@ -113,7 +135,8 @@ module.exports = Backbone.View.extend {
       'clockblock-hub.drl'
     ]
     # remove all models from the layers collection
-    layers.remove layers.models
+    @restart()
+    # get the samples from the server
     for s in samples
       do (s) ->
         $.ajax {
@@ -146,4 +169,20 @@ module.exports = Backbone.View.extend {
         }
       }
     @hidePaste()
+
+  # handle navigation icons
+  handleNavIcons: ->
+    if layers.length is 0
+      $('#nav-filelist, #nav-output, #nav-layers').addClass 'is-disabled'
+      @changeIcon $('.Nav--brand'), 'octicon-jump-up'
+      $('#nav-top').off 'click', @restart
+    else
+      $('#nav-filelist, #nav-output, #nav-layers').removeClass 'is-disabled'
+      @changeIcon $('.Nav--brand'), 'octicon-sync'
+      $('#nav-top').on 'click', @restart
+
+  # change icon helper
+  changeIcon: (element, newIcon) ->
+    element.removeClass( (i, c) -> c.match(/octicon-\S+/g)?.join ' ')
+      .addClass newIcon
 }

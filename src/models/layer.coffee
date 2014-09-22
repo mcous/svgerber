@@ -21,7 +21,7 @@ module.exports = Backbone.Model.extend {
     @once 'change:svgObj', -> @unset 'gerber'
 
   setLayerType: ->
-    type = 'oth'
+    type = 'drw'
     for opt in layerOpts
       if opt.match.test @get 'filename'
         type = opt.val; break

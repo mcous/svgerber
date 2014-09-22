@@ -10,8 +10,6 @@ script(type='text/template')#filelist-item-template
     span.mega-octicon.octicon-chevron-right
     span.UploadList--text.Heading= ' layer type: '
     select.UploadList--SelectMenu.UploadList--text
-      // default other option
-      option(value='oth') other (ignore)
       // options populated by app
       <% _.forEach(options, function(opt) { %>
       option(value!='<%= opt.val %>') <%= opt.desc %>

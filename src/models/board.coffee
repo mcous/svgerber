@@ -10,6 +10,17 @@ module.exports = Backbone.Model.extend {
     boardLayers: {}
     type: ''
     svg: ''
+    style: '
+      <style type="text/css">
+      .Board--board { color: dimgrey; }
+      .Board--cu { color: lightgrey; }
+      .Board--cf { color: goldenrod; }
+      .Board--sm { color: darkgreen; opacity: 0.75; }
+      .Board--ss { color: white; }
+      .Board--sp { color: silver; }
+      .Board--out { color: black; }
+      </style>
+    '
   }
 
   initialize: ->
@@ -42,6 +53,4 @@ module.exports = Backbone.Model.extend {
       if layers.length is processed.length
         # get the board layers and trigger a build
         @getBoardLayers()
-    # return false?
-    false
 }

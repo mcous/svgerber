@@ -1,30 +1,9 @@
 # new borad builder
 # hopefully less janky than the first one
 
-# clone some objects
-cloneDeep = require 'lodash.clonedeep'
 # make sure we don't have overlapping ids
 unique = 0
 uniqueId = -> unique++
-
-# default style
-DEFAULT_STYLE = {
-  style: {
-    type: 'text/css'
-    class: 'Board--style'
-    _: '''
-    <![CDATA[
-      .Board--board { color: dimgrey; }
-      .Board--cu { color: lightgrey; }
-      .Board--finish { color: goldenrod; }
-      .Board--sm { color: darkgreen; opacity: 0.75; }
-      .Board--ss { color: white; }
-      .Board--sp { color: silver; }
-      .Board--out { color: black; }
-    ]]>
-    '''
-  }
-}
 
 # board type matching
 reCOPPER = /cu/
@@ -66,7 +45,7 @@ module.exports = (name, layers = []) ->
     # get layer type
     ly = layer.type
     # clone the xml object
-    xml = cloneDeep layer.svgObj
+    xml = layer.svgObj
     # collect the bbox
     addVboxToBbox xml.svg.viewBox
     # grab the units
@@ -139,7 +118,7 @@ module.exports = (name, layers = []) ->
     }
     draw.push {
       use: {
-        class: 'Board--finish'
+        class: 'Board--cf'
         mask: "url(##{cuFinishId})"
         'xlink:href': "##{mask}"
       }
@@ -196,7 +175,7 @@ module.exports = (name, layers = []) ->
   svg.viewBox = getVboxFromBbox()
   svg.width = "#{svg.viewBox[2] - svg.viewBox[0]}#{units}"
   svg.height = "#{svg.viewBox[3] - svg.viewBox[1]}#{units}"
-  svg._ = [ DEFAULT_STYLE ]
+  svg._ = []
   svg._.push { defs: { _: defs } } if defs.length
   svg._.push draw if draw.g._.length
   # return

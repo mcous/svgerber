@@ -18,30 +18,30 @@ html(lang="en")
     // app css
     link(href='app.css' rel='stylesheet')
 
-  body
+  body#svgerber-app
     - github = 'https://github.com/mcous/svgerber/blob/master/README.md'
     nav(roll='navigation')#main-nav.Nav
       ul.List-unstyled.Nav-list
         li#nav-top.Nav--linkButton
-          +a('#').Nav--link.Nav--brand.mega-octicon.octicon-jump-up
+          +a('#restart').Nav--link.Nav--brand.mega-octicon.octicon-jump-up
             span.Heading= ' svgerber'
         li#nav-upload.Nav--linkButton
-          +a('#information').mega-octicon.octicon-cloud-upload.Nav--link
+          +a('#upload-files').mega-octicon.octicon-cloud-upload.Nav--link
             span.Heading= ' upload'
         li#nav-filelist.Nav--linkButton.is-disabled
           +a('#file-list').mega-octicon.octicon-list-unordered.Nav--link
             span.Heading= ' files'
         li#nav-output.Nav--linkButton.is-disabled
-          +a('#board-output').mega-octicon.octicon-circuit-board.Nav--link
+          +a('#board-renders').mega-octicon.octicon-circuit-board.Nav--link
             span.Heading= ' boards'
         li#nav-layers.Nav--linkButton.is-disabled
-          +a('#layer-output').mega-octicon.octicon-versions.Nav--link
+          +a('#layer-drawings').mega-octicon.octicon-versions.Nav--link
             span.Heading= ' layers'
         li#nav-about.Nav--linkButton
           +aNew(github).mega-octicon.octicon-info.Nav--link.Nav--noScroll
             span.Heading= ' about'
 
-    #svgerber-app.Content
+    .Content.restart-anchor
       .Container
         .Box#information
           .AlignedContent
@@ -68,7 +68,7 @@ html(lang="en")
                 = 'The gerber to svg library'
               = ' should produce the correct image, but it might not.'
 
-        .Box#sample
+        .Box#sample.upload-files-anchor
           .AlignedContent
             h2 no gerbers handy?
             button(type='button')#sample-btn.Btn.Btn-lg
@@ -95,14 +95,14 @@ html(lang="en")
             button(name='url-submit' type='button')#url-submit-btn.Btn ok
             button(name='url-cancel' type='button')#url-cancel-btn.Btn cancel
 
-        output(for='upload')#filelist-output.UploadList
+        output(for='upload')#filelist-output.UploadList.file-list-anchor
           ul#filelist.List-unstyled
 
           //- button(type='button' disabled='disabled')#convert-btn.Btn
           //-   = 'convert!'
 
       #board-output-row.Row
-        output(for='filelist')#board-output
+        output(for='filelist')#board-output.board-renders-anchor
 
         //- #board-output-color.Container.is-retracted
         //-   #board-download.Box
@@ -128,7 +128,7 @@ html(lang="en")
         //-   = 'download boards / change colors'
 
       #layer-output-row.Row
-        output(for='filelist')#layer-output
+        output(for='filelist')#layer-output.layer-drawings-anchor
 
     footer.Foot
       .Foot--links
@@ -140,9 +140,9 @@ html(lang="en")
     // templates
     include ./filelist-item-template.jade
     include ./board-layer-template.jade
-    //include ./board-render-template.jade
+    include ./color-picker-template.jade
 
-    // vendor bundle (jquery)
+    // vendor bundle
     script(src='vendor.js')
     // app bundle
     script(src='app.js')

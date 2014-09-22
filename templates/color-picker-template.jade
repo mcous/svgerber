@@ -1,0 +1,23 @@
+script(type='text/template')#color-picker-template
+
+  #board-finish-color.ColorPicker--box
+    .AlignedContent
+      h3 copper finish
+      #board-cf-color-buttons
+        <% _.forIn(cfColors, function(val, color) { %>
+        button(type='button').Btn.ColorPicker--btn <%= color %>
+        <% }); %>
+  #board-sm-color.ColorPicker--box
+    .AlignedContent
+      h3 soldermask
+      #board-sm-color-buttons
+        <% _.forIn(smColors, function(val, color) { %>
+        button(type='button').Btn.ColorPicker--btn <%= color %>
+        <% }); %>
+  #board-ss-color.ColorPicker--box
+    .AlignedContent
+      h3 silkscreen
+      #board-ss-color-buttons
+        <% _.forIn(ssColors, function(val, color) { %>
+        button(type='button').Btn.ColorPicker--btn <%= color %>
+        <% }); %>
