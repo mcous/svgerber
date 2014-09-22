@@ -181,8 +181,8 @@ module.exports = (name, layers = {}) ->
   svg = attr
   svg.class = 'Board'
   svg.viewBox = getVboxFromBbox()
-  svg.width = "#{svg.viewBox[2] - svg.viewBox[0]}#{units}"
-  svg.height = "#{svg.viewBox[3] - svg.viewBox[1]}#{units}"
+  svg.width = "#{svg.viewBox[2]}#{units}"
+  svg.height = "#{svg.viewBox[3]}#{units}"
   svg._ = [ DEFAULT_STYLE ]
   svg._.push { defs: { _: defs } } if defs.length
   svg._.push draw if draw.g._.length
