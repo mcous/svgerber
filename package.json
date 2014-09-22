@@ -15,8 +15,8 @@
   "devDependencies": {
     "bower": "*",
     "browserify": "*",
-    "coffeeify": "*",
     "coffee-script": "*",
+    "coffeeify": "*",
     "gulp": "*",
     "gulp-autoprefixer": "*",
     "gulp-concat": "*",

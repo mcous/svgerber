@@ -126,7 +126,6 @@ gulp.task 'script', (done) ->
       .on 'error', (e) ->
         gutil.log 'browserify error', e
       .pipe source 'app.js'
-      # minify if in production mode
       .pipe if argv.p then streamify uglify {
         preamble: '/* view source at github.com/mcous/svgerber */'
         compress: { drop_console: true }
