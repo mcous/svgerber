@@ -61,7 +61,7 @@ module.exports = [
     desc: 'inner copper'
     match: /\.(gp\d+)|(g\d+l)$/i
     side: 'none'
-    mult: false
+    mult: true
   }
   {
     val: 'out'

@@ -11,12 +11,14 @@ module.exports = Backbone.View.extend {
   events: {
     # color button click
     'click .ColorPicker--btn': 'handleColorChange'
+    # show color picker button
+    'click #show-color-picker-btn': 'toggleColorPicker'
   }
 
   # on initialization, it should listen to the board collection for changes
   initialize: ->
     # listen to the board collection for changes
-    @listenTo @collection, 'buildNeeded change:svg', @handleBoardsChange
+    @listenTo @collection.collection, 'renderRemove', @handleBoardRemoval
 
   render: ->
     @$el.html @template {
@@ -24,6 +26,7 @@ module.exports = Backbone.View.extend {
       smColors: colorOpts.sm
       ssColors: colorOpts.ss
     }
+    @$el.find('.ColorPicker--box').addClass 'is-retracted'
     @$el.find('.ColorPicker--btn').each ->
       btn = $ @
       layer = btn.parent().attr('id')[6..7]
@@ -73,9 +76,26 @@ module.exports = Backbone.View.extend {
     # end delay function
     , 10, @
 
-  handleBoardsChange: ->
+  handleBoardRemoval: ->
     boardsExist = false
     @collection.collection.each (board) ->
       if board.get('svg').length then boardsExist = true
     if not boardsExist then @remove()
+
+  toggleColorPicker: ->
+    picker = $ '.ColorPicker--box'
+    btnIcon = $('#show-color-picker-btn').children('.octicon')
+    # if it's retracted, remove the retracted class and switch the button icon
+    if picker.hasClass 'is-retracted'
+      picker.removeClass 'is-retracted'
+      @changeIcon btnIcon, 'octicon-chevron-up'
+    # else, make sure that the color picker exists
+    else if picker.length
+      picker.addClass 'is-retracted'
+      @changeIcon btnIcon, 'octicon-chevron-down'
+
+  # change icon helper
+  changeIcon: (element, newIcon) ->
+    element.removeClass( (i, c) -> c.match(/octicon-\S+/g)?.join ' ')
+      .addClass newIcon
 }

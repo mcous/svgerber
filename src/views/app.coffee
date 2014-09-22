@@ -53,7 +53,7 @@ module.exports = Backbone.View.extend {
     # create renders for the top and bottom boards
     @listenTo boards, 'change:svg', @addBoardRender
     # add or remove color picker if necessary
-    @listenTo boards, 'change:svg', _.debounce @handleColorPicker, 10
+    @listenTo boards, 'change:svg', @handleColorPicker
     # listen to the layers collection for adds and removed
     # adjust nav icons accordingly
     @listenTo layers, 'add remove', @handleNavIcons
@@ -88,7 +88,6 @@ module.exports = Backbone.View.extend {
     if not pickerExists and boardsExist
       view = new ColorPickerView { collection: boards }
       $('#board-output').after view.render().el
-
 
   # handle a file select
   # take care of a file event
@@ -185,4 +184,5 @@ module.exports = Backbone.View.extend {
   changeIcon: (element, newIcon) ->
     element.removeClass( (i, c) -> c.match(/octicon-\S+/g)?.join ' ')
       .addClass newIcon
+
 }

@@ -22,7 +22,8 @@ module.exports = Backbone.View.extend {
       img: @model.get 'svg'
     }
     @$el.find('svg').prepend @model.get 'style'
+    #@$el.find('svg').attr { width: '100%', height: '100%' }
     # return this
-    if svg.length then @ else @remove()
+    if svg.length then @ else @model.trigger 'renderRemove'; @remove()
 
 }

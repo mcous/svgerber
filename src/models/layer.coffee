@@ -19,6 +19,9 @@ module.exports = Backbone.Model.extend {
     @setLayerType()
     # once we've got an svgObj, we don't need the gerber file anymore
     @once 'change:svgObj', -> @unset 'gerber'
+    # once we an svg string back, check to see if it's empty
+    @once 'change:svgString', ->
+      if not @get('svgString').length then @set 'type', 'oth'
 
   setLayerType: ->
     type = 'drw'

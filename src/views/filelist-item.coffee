@@ -27,10 +27,13 @@ module.exports = Backbone.View.extend {
     @listenToOnce @model, 'processEnd', @renderProcessing
 
   renderValidation: ->
+    icon = @$el.find '.UploadList--selectIcon'
     if @model.validationError
       @$el.removeClass('is-valid').addClass 'is-invalid'
+      @changeIcon icon, 'octicon-circle-slash'
     else
       @$el.removeClass('is-invalid').addClass 'is-valid'
+      @changeIcon icon, 'octicon-chevron-right'
 
   renderProcessing: ->
     # default value is null, so if there's an object we're done
@@ -77,5 +80,10 @@ module.exports = Backbone.View.extend {
   # change the layer type
   changeLayerType: ->
     @model.set 'type', @$el.find('option:selected').attr 'value'
+
+  # change icon helper
+  changeIcon: (element, newIcon) ->
+    element.removeClass( (i, c) -> c.match(/octicon-\S+/g)?.join ' ')
+      .addClass newIcon
 
 }

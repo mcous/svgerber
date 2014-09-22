@@ -21,3 +21,6 @@ script(type='text/template')#color-picker-template
         <% _.forIn(ssColors, function(val, color) { %>
         button(type='button').Btn.ColorPicker--btn <%= color %>
         <% }); %>
+  button(type='button')#show-color-picker-btn.Btn.Btn--lg
+    span.Heading= 'change colors '
+    span.octicon.octicon-chevron-down

@@ -44,8 +44,9 @@ module.exports = (name, layers = []) ->
   for layer in layers
     # get layer type
     ly = layer.type
-    # clone the xml object
+    # xml object and make sure we've got something
     xml = layer.svgObj
+    continue if not xml.svg?
     # collect the bbox
     addVboxToBbox xml.svg.viewBox
     # grab the units
@@ -173,8 +174,8 @@ module.exports = (name, layers = []) ->
   svg = attr
   svg.class = 'Board'
   svg.viewBox = getVboxFromBbox()
-  svg.width = "#{svg.viewBox[2] - svg.viewBox[0]}#{units}"
-  svg.height = "#{svg.viewBox[3] - svg.viewBox[1]}#{units}"
+  svg.width = "#{svg.viewBox[2]}#{units}"
+  svg.height = "#{svg.viewBox[3]}#{units}"
   svg._ = []
   svg._.push { defs: { _: defs } } if defs.length
   svg._.push draw if draw.g._.length
