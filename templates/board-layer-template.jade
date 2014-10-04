@@ -1,4 +1,5 @@
 // template for a gerber layer
 script(type='text/template')#board-layer-template
   h2.LayerHeading <%= name %>
-  div.LayerDrawing <%= img %>
+  a(href!='<%= href %>' download!='<%= type %>.svg' target='_blank').LayerDrawing
+    <%= img %>

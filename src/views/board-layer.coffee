@@ -10,6 +10,10 @@ module.exports = Backbone.View.extend {
   # cached template function
   template: _.template $('#board-layer-template').html()
 
+  events: {
+    'click a.LayerDrawing': 'handleClick'
+  }
+
   # initialize with change listener on model
   initialize: ->
     # listen for type changes
@@ -28,7 +32,23 @@ module.exports = Backbone.View.extend {
     @$el.html @template {
       name: _.find(layerOptions, { val: @model.get 'type' })?.desc
       img: @model.get 'svgString'
+      type: @model.get 'type'
+      href: '#'
     }
     # return this
     @
+
+  # encode for download and trigger download
+  download: ->
+    a = @$el.children 'a.LayerDrawing'
+    a.attr 'href', btoa @model.get 'svgString'
+    console.log a.attr 'href'
+    a.trigger 'click'
+
+  # handle a click
+  handleClick: (e) ->
+    if @$el.children('a.LayerDrawing').attr('href') is '#'
+      e.preventDefault()
+      e.stopPropagation()
+      @download()
 }

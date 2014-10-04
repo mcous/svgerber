@@ -20,6 +20,8 @@ module.exports = Backbone.View.extend {
     @$el.html @template {
       name: 'board ' + @model.get 'type'
       img: @model.get 'svg'
+      type: @model.get 'type'
+      href: '#'
     }
     @$el.find('svg').prepend @model.get 'style'
     #@$el.find('svg').attr { width: '100%', height: '100%' }

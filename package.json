@@ -32,7 +32,6 @@
     "gulp-uglifyjs": "*",
     "gulp-util": "*",
     "gulp-webserver": "*",
-    "jasmine-node": "*",
     "minimist": "*",
     "vinyl-source-stream": "*",
     "watchify": "*",
@@ -42,9 +41,9 @@
     "Base64": "^0.3.0",
     "backbone": "^1.1.2",
     "gerber-to-svg": "*",
-    "jeet": "^6.0.0",
+    "jeet": "^6.1.2",
     "jquery": "^2.1.1",
     "lodash": "^2.4.1",
-    "rupture": "^0.3.0"
+    "rupture": "^0.4.0"
   }
 }
