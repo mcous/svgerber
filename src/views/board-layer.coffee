@@ -39,16 +39,17 @@ module.exports = Backbone.View.extend {
     @
 
   # encode for download and trigger download
-  download: ->
+  download: (a) ->
     a = @$el.children 'a.LayerDrawing'
-    a.attr 'href', btoa @model.get 'svgString'
-    console.log a.attr 'href'
+    a.attr 'href', "data:image/svg+xml;base64,#{btoa @model.get 'svgString'}"
+    console.log "triggering click"
     a.trigger 'click'
 
   # handle a click
   handleClick: (e) ->
-    if @$el.children('a.LayerDrawing').attr('href') is '#'
+    a = @$el.children('a.LayerDrawing')
+    if a.attr('href') is '#'
       e.preventDefault()
       e.stopPropagation()
-      @download()
+      @download a
 }
