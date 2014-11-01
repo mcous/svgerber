@@ -1,35 +1,29 @@
-# require board model, converter worker, and builder worker
+# collection of the top and bottom board 
+# require Renders prototype collection, board model, and builder worker
+Renders = require './renders'
 Board = require '../models/board'
-converter = new Worker './../gerber-worker.coffee'
-builder = new Worker './../board-worker.coffee'
+builder = new Worker './../workers/board-worker.coffee'
 
-module.exports = Backbone.Collection.extend {
+class Boards extends Renders
   model: Board
 
   initialize: ->
-    # attach an event listener to the svg converter
-    @attachConverterHandler()
     # attach an event listener to the board builder
     @attachBuilderHandler()
     # when a board triggers a buildNeeded event, build it
     @on 'buildNeeded', @buildBoard
+    # call the parent initialize
+    super()
 
   buildBoard: (board) ->
     builder.postMessage {
-      name: board.get 'type'
+      name: board.get 'name'
       layers: board.get 'boardLayers'
     }
 
-  attachConverterHandler: ->
-    _self = @
-    handler = (e) ->
-      board = _self.findWhere { type: e.data.filename }
-      board.set 'svg', e.data.svgString
-    converter.addEventListener 'message', handler, false
-
   attachBuilderHandler: ->
-    handler = (e) ->
-      converter.postMessage { filename: e.data.name, gerber: e.data.svgObj }
+    _self = @
+    handler = (e) -> _self.convert e.data.name, e.data.svgObj
     builder.addEventListener 'message', handler, false
 
-}
+module.exports = Boards

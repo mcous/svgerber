@@ -1,7 +1,7 @@
 # webworker to build a board from layers
 # pull in the build board function
 
-build = require './build-board.coffee'
+build = require '../build-board.coffee'
 
 self.addEventListener 'message', (e) ->
   name = e.data.name

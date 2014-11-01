@@ -40,7 +40,7 @@ module.exports = Backbone.View.extend {
     if @model.get('svgObj')?
       @$el.removeClass 'is-processing'
       # if the svg came back, empty, though, there was a processing error
-      if not @model.get 'svgString'
+      if not @model.get 'svg'
         @$el.addClass 'is-unprocessable'
         @$el.find('.UploadList--text').html 'did not process'
         @$el.find('select.UploadList--SelectMenu').remove()
@@ -50,7 +50,7 @@ module.exports = Backbone.View.extend {
   # render method
   render: ->
     @$el.html @template {
-      filename: @model.get 'filename'
+      filename: @model.get 'name'
       type: @model.get 'type'
       options: layerOptions
     }

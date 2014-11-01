@@ -16,8 +16,8 @@ layers = new LayerList()
 BoardList = require '../collections/boards'
 boards = new BoardList()
 boards.add [
-  { type: 'top', layers: layers }
-  { type: 'bottom', layers: layers }
+  { name: 'top', layers: layers }
+  { name: 'bottom', layers: layers }
 ]
 
 module.exports = Backbone.View.extend {
@@ -69,14 +69,14 @@ module.exports = Backbone.View.extend {
 
   # add a board layer
   addBoardLayer: (layer) ->
-    if layer.get('svgString').length
+    if layer.get('svg').length
       view = new BoardLayerView { model: layer }
       $('#layer-output').append view.render().el
 
   # add a board render if needed
   addBoardRender: (board) ->
     existing = $('#board-output').find('.LayerHeading').text()
-    if board.get('svg').length and not existing.match(board.get 'type')?
+    if board.get('svg').length and not existing.match(board.get 'name')?
       view = new BoardRenderView { model: board }
       $('#board-output').append view.render().el
 
@@ -109,7 +109,7 @@ module.exports = Backbone.View.extend {
           # add to the layers collection
           if event.target.readyState is FileReader.DONE
             layers.add {
-              filename: f.name
+              name: f.name
               gerber: event.target.result
             }, {
               validate: true
@@ -142,7 +142,7 @@ module.exports = Backbone.View.extend {
           type: 'GET'
           url: "./#{s}"
           dataType: 'text'
-          success: (data) -> layers.add { filename: s, gerber: data }
+          success: (data) -> layers.add { name: s, gerber: data }
         }
 
   # show and hide the url paste area
@@ -163,7 +163,7 @@ module.exports = Backbone.View.extend {
         contentType: 'application/vnd.github.VERSION.raw'
         dataType: 'json'
         success: (data) -> layers.add {
-          filename: data.name
+          name: data.name
           gerber: atob data.content
         }
       }

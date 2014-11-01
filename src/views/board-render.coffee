@@ -17,10 +17,11 @@ module.exports = Backbone.View.extend {
   # render function
   render: ->
     svg = @model.get 'svg'
+    name = @model.get 'name'
     @$el.html @template {
-      name: 'board ' + @model.get 'type'
-      img: @model.get 'svg'
-      type: @model.get 'type'
+      name: "board #{name}"
+      img: svg
+      type: name
       href: '#'
     }
     @$el.find('svg').prepend @model.get 'style'

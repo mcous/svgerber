@@ -22,8 +22,8 @@ convertGerber = (filename, gerber) ->
   { filename: filename, svgObj: obj, svgString: string }
 
 self.addEventListener 'message', (e) ->
-  data = e.data.gerber
+  gerber = e.data.gerber
   filename = e.data.filename
   # post the message
-  self.postMessage convertGerber filename, data
+  self.postMessage convertGerber filename, gerber
 , false

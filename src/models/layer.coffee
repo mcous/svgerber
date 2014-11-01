@@ -1,18 +1,17 @@
 # gerber layer model
 
+# render prototype
+Render = require './render'
+
 # available layer types
 layerOpts = require '../layer-options'
-# converter
-#Gerber = require '../convert-gerber'
 
-module.exports = Backbone.Model.extend {
-  defaults: {
-    filename: ''
+class Layer extends Render
+  defaults: _.extend {
     gerber: ''
     type: 'oth'
     svgObj: null
-    svgString: null
-  }
+  }, Render.prototype.defaults
 
   # on creation, get a default layer type
   initialize: ->
@@ -20,13 +19,13 @@ module.exports = Backbone.Model.extend {
     # once we've got an svgObj, we don't need the gerber file anymore
     @once 'change:svgObj', -> @unset 'gerber'
     # once we an svg string back, check to see if it's empty
-    @once 'change:svgString', ->
-      if not @get('svgString').length then @set 'type', 'oth'
+    @once 'change:svg', ->
+      if not @get('svg').length then @set 'type', 'oth'
 
   setLayerType: ->
     type = 'drw'
     for opt in layerOpts
-      if opt.match.test @get 'filename'
+      if opt.match.test @get 'name'
         type = opt.val; break
     @set 'type', type
 
@@ -42,5 +41,4 @@ module.exports = Backbone.Model.extend {
     # return nothing if valid
     return null
 
-
-}
+module.exports = Layer

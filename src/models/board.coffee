@@ -1,15 +1,16 @@
 # backbone model of a board stackup
 
+# render prototype
+Render = require './render'
+
 # requires the layer collection and options
 LayerList = require '../collections/layers'
 layerOptions = require '../layer-options'
 
 # watches a layer collection
-module.exports = Backbone.Model.extend {
-  defaults: {
+class Board extends Render
+  defaults: _.extend {
     boardLayers: {}
-    type: ''
-    svg: ''
     style: '
       <style type="text/css">
       .Board--board { color: dimgrey; }
@@ -21,18 +22,18 @@ module.exports = Backbone.Model.extend {
       .Board--out { color: black; }
       </style>
     '
-  }
+  }, Render.prototype.defaults
 
   initialize: ->
     layers = @get 'layers'
     # listen for changes in the layers, and trigger a new board event
-    @listenTo layers, 'change:type change:svgString', @handleLayersChange
+    @listenTo layers, 'change:type change:svg', @handleLayersChange
     # also listen to add and remove events, but debounce them by 10ms
     @listenTo layers, 'add remove', _.debounce @handleLayersChange, 10
 
   getBoardLayers: ->
     # filter out the layers
-    type = @get 'type'
+    type = @get 'name'
     boardLayers = @get('layers').filter (layer) ->
       opt = _.find layerOptions, { val: layer.get 'type' }
       # return true if the board side of the option matches the board type
@@ -53,4 +54,5 @@ module.exports = Backbone.Model.extend {
       if layers.length is processed.length
         # get the board layers and trigger a build
         @getBoardLayers()
-}
+        
+module.exports = Board

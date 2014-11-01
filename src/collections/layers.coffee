@@ -1,42 +1,29 @@
-# backbone collection of all layers
+# collection of all individual layers
+# require Layer model and Renders prototype collection
 Layer = require '../models/layer'
-# gerber converter worker
-converter = new Worker './../gerber-worker.coffee'
+Renders = require './renders'
 
-module.exports = Backbone.Collection.extend {
+class Layers extends Renders
   model: Layer
+  
   # attach an event listener on type change
   initialize: ->
     # validate whole collection when a model's layer type gets changed
     @on 'change:type', @validateLayers
-    # attach an event listener to the converter
-    @addConverterHandler()
     # when a model is added, convert it
-    @on 'add', (layer) -> converter.postMessage {
-      filename: layer.get 'filename'
-      gerber: layer.get 'gerber'
-    }
+    @on 'add', (layer) -> @convert layer.get('name'), layer.get('gerber')
+    # call the super
+    super()
 
   # validate all layer selections
   validateLayers: ->
     valid = true
     # return true to continue even if isValid return false
     @forEach (layer) ->
-      if layer.isValid() then layer.trigger 'valid'
-      else valid = false
+      if layer.isValid() then layer.trigger 'valid' else valid = false
       # return true to keep validating
       true
     # return the validation
     valid
 
-  # convert a gerber to an svg object
-  addConverterHandler: ->
-    _self = @
-    handler = (e) ->
-      layer = _self.findWhere { filename: e.data.filename }
-      layer.set 'svgObj', e.data.svgObj
-      layer.set 'svgString', e.data.svgString
-      layer.trigger 'processEnd', layer
-    converter.addEventListener 'message', handler, false
-
-}
+module.exports = Layers
