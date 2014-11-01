@@ -1,5 +1,10 @@
 // template for a gerber layer
 script(type='text/template')#board-layer-template
-  h2.LayerHeading <%= name %>
-  a(href!='<%= href %>' download!='<%= type %>.svg' target='_blank').LayerDrawing
+  h2.LayerHeading
+    span.LayerTitle!= '<%= name %>'
+    = ' '
+    a(href='#' href-lang='image/svg+xml' download!='<%= name %>.svg').Btn.Btn--download.is-disabled
+      span.mega-octicon.octicon-cloud-download
+  div.LayerDrawing
     <%= img %>
+  

@@ -53,6 +53,6 @@ class Board extends Render
       processed = (layers.filter (layer) -> layer.get('svgObj')?) ? []
       if layers.length is processed.length
         # get the board layers and trigger a build
-        @getBoardLayers()
-        
+        @getBoardLayers()   
+  
 module.exports = Board

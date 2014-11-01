@@ -11,7 +11,7 @@ unless typeof window.atob is 'function' then window.atob = Base64.atob
 # TODO: webworker polyfill? will need to do something for IE9 support
 
 # load the backbone application view to start the app
-AppView = require './views/app'
+AppView = require './views/app-view'
 appView = new AppView()
 # start the router
 Router = require './routers/router'

@@ -11,10 +11,21 @@ class Renders extends Backbone.Collection
     @attachConverterHandler()
     @attachEncoderHandler()
     # encode the svg if the svg string changes
-    @on 'change:svg', @encode
+    @on 'change:svg change:style', @encode
     
   encode: (render) ->
-    encoder.postMessage { name: render.get 'name', string: render.get 'svg' }
+    console.log "encoding"
+    render.set 'svg64', false
+    string = render.get 'svg'
+    style = render.get 'style'
+    if style?
+      # insert the style into the svg string
+      index = string.match(/^.*?>/)[0].length
+      string = string[0...index] + style + string[index..]
+    encoder.postMessage {
+      name: render.get 'name' 
+      string: string
+    }
     
   convert: (name, gerber) ->
     converter.postMessage { filename: name, gerber: gerber }  
