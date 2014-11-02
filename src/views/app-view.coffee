@@ -125,19 +125,16 @@ module.exports = Backbone.View.extend {
     # read the files to the file list
     for f in importFiles
       do (f) ->
+        # add the layer to the collection
+        layers.add { name: f.name }, { validate: true }
         # create a file reader and attach a load end listener
         reader = new FileReader()
         reader.onloadend = (event) ->
           event.stopPropagation()
           event.preventDefault()
-          # add to the layers collection
+          # set the gerber of the layer
           if event.target.readyState is FileReader.DONE
-            layers.add {
-              name: f.name
-              gerber: event.target.result
-            }, {
-              validate: true
-            }
+            (layers.findWhere { name: f.name }).set 'gerber', event.target.result
         # read the file as text
         reader.readAsText f
     # return false to stop propagation
@@ -162,11 +159,14 @@ module.exports = Backbone.View.extend {
     # get the samples from the server
     for s in samples
       do (s) ->
+        # add the layer to the collection
+        layers.add { name: s }, { validate: true }
+        # get the file contents
         $.ajax {
           type: 'GET'
           url: "./#{s}"
           dataType: 'text'
-          success: (data) -> layers.add { name: s, gerber: data }
+          success: (data) -> (layers.findWhere { name: s }).set 'gerber', data
         }
 
   # show and hide the url paste area
@@ -186,10 +186,9 @@ module.exports = Backbone.View.extend {
         url: u
         contentType: 'application/vnd.github.VERSION.raw'
         dataType: 'json'
-        success: (data) -> layers.add {
-          name: data.name
-          gerber: atob data.content
-        }
+        success: (data) ->
+          layers.add { name: data.name }, { validate: true }
+          (layers.findWhere { name: data.name }).set 'gerber', data.content
       }
     @hidePaste()
 

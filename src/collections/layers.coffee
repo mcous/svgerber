@@ -11,7 +11,9 @@ class Layers extends Renders
     # validate whole collection when a model's layer type gets changed
     @on 'change:type', @validateLayers
     # when a model is added, convert it
-    @on 'add', (layer) -> @convert layer.get('name'), layer.get('gerber')
+    @on 'change:gerber', (layer) ->
+      gerber = layer.get 'gerber'
+      if gerber then @convert layer.get('name'), gerber
     # call the super
     super()
 

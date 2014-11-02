@@ -27,9 +27,10 @@ class Board extends Render
   initialize: ->
     layers = @get 'layers'
     # listen for changes in the layers, and trigger a new board event
-    @listenTo layers, 'change:type change:svg', @handleLayersChange
+    @listenTo layers, 'change:type change:svg change:gerber remove',
+      _.debounce @handleLayersChange, 10
     # also listen to add and remove events, but debounce them by 10ms
-    @listenTo layers, 'add remove', _.debounce @handleLayersChange, 10
+    # @listenTo layers, 'change:gerber remove', _.debounce @handleLayersChange, 10
 
   getBoardLayers: ->
     # filter out the layers
@@ -53,6 +54,6 @@ class Board extends Render
       processed = (layers.filter (layer) -> layer.get('svgObj')?) ? []
       if layers.length is processed.length
         # get the board layers and trigger a build
-        @getBoardLayers()   
+        @getBoardLayers()
   
 module.exports = Board
