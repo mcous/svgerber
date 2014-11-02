@@ -11,40 +11,40 @@ html(lang="en")
   head
     meta(charset='utf-8')
     meta(name='viewport' content='width=device-width, initial-scale=1')
-    title svgerber
+    title= 'svgerber'
 
-    // vendor css (octicons)
+    // vendor css
     link(href='vendor.css' rel='stylesheet')
     // app css
     link(href='app.css' rel='stylesheet')
 
-  body
+  body#svgerber-app
     - github = 'https://github.com/mcous/svgerber/blob/master/README.md'
     nav(roll='navigation')#main-nav.Nav
       ul.List-unstyled.Nav-list
         li#nav-top.Nav--linkButton
-          +a('#').Nav--link.Nav--brand.mega-octicon.octicon-jump-up
+          +a('#restart').Nav--link.Nav--brand.mega-octicon.octicon-jump-up
             span.Heading= ' svgerber'
         li#nav-upload.Nav--linkButton
-          +a('#information').mega-octicon.octicon-cloud-upload.Nav--link
+          +a('#upload-files').mega-octicon.octicon-cloud-upload.Nav--link
             span.Heading= ' upload'
         li#nav-filelist.Nav--linkButton.is-disabled
           +a('#file-list').mega-octicon.octicon-list-unordered.Nav--link
             span.Heading= ' files'
         li#nav-output.Nav--linkButton.is-disabled
-          +a('#board-output').mega-octicon.octicon-circuit-board.Nav--link
+          +a('#board-renders').mega-octicon.octicon-circuit-board.Nav--link
             span.Heading= ' boards'
         li#nav-layers.Nav--linkButton.is-disabled
-          +a('#layer-output').mega-octicon.octicon-versions.Nav--link
+          +a('#layer-drawings').mega-octicon.octicon-versions.Nav--link
             span.Heading= ' layers'
         li#nav-about.Nav--linkButton
           +aNew(github).mega-octicon.octicon-info.Nav--link.Nav--noScroll
             span.Heading= ' about'
 
-    .Content
+    .Content.restart-anchor
       .Container
-        #information
-          .Box
+        .Box#information
+          .AlignedContent
             h2 what is this?
             p
               = 'This is a '
@@ -58,8 +58,8 @@ html(lang="en")
               +aNew('https://github.com/mcous/svgerber/issues')= 'Open an issue'
               = ' with the file attached!'
 
-        #caution
-          .Box
+        .Box#caution
+          .AlignedContent
             h2 let's do this thing
               small.SubHeading <br>(but it could get weird)
             p
@@ -68,10 +68,8 @@ html(lang="en")
                 = 'The gerber to svg library'
               = ' should produce the correct image, but it might not.'
 
-
-
-        #sample
-          .Box
+        .Box#sample.upload-files-anchor
+          .AlignedContent
             h2 no gerbers handy?
             button(type='button')#sample-btn.Btn.Btn-lg
               = 'load a sample set'
@@ -91,62 +89,20 @@ html(lang="en")
               button(type='button')#url-paste-btn.Dropzone--btn.Btn
                 = 'or paste github urls'
             input#upload-select(type='file' name='upload-select' multiple)
-          form#url-paste-form.Box.is-hidden
+          form#url-paste-form.is-hidden
             - ph = 'paste the urls (one per line) to a gerber file on github\nfor example:\n  https://github.com/mcous/reflow/blob/master/pcb/plotted/gerber/reflow-pcb-F_Cu.gtl'
-            textarea#url-paste(name='url-paste' placeholder=ph cols='45' rows='10')
-            button(name='url-paste-submit-btn' type='button').Btn ok
-            button(name='url-paste-cancel-btn' type='button').Btn cancel
+            textarea#url-paste(name='url-paste' placeholder=ph cols='50' rows='10')
+            button(name='url-submit' type='button')#url-submit-btn.Btn ok
+            button(name='url-cancel' type='button')#url-cancel-btn.Btn cancel
 
-        output(for='upload')#file-list.UploadList.is-hidden
-          ul.List-unstyled
-            li.Box.UploadList--item.is-js-template
-              span.UploadList--filename.Heading
-                = 'potentially-long-filname.gerber.gerber.gbr '
-              span.UploadList--select
-                span.mega-octicon.octicon-chevron-right
-                span.UploadList--text.Heading= ' layer type: '
-                select.UploadList--SelectMenu.UploadList--text
-                  option(value='oth') other (ignore)
+        output(for='upload')#filelist-output.UploadList.file-list-anchor
+          ul#filelist.List-unstyled
 
-          button(type='button' disabled='disabled')#convert-btn.Btn
-            = 'convert!'
+      #board-output-row.Row
+        output(for='filelist')#board-output.board-renders-anchor
 
-      mixin layerContainerContents(name)
-        h2.LayerHeading= name
-        div.LayerDrawing
-          img.LayerImage
-
-      #board-output-row.Row.is-hidden
-        output(for='file-list')#board-output
-          .BoardContainer.is-js-template
-            +layerContainerContents('board-template')
-        #board-output-color.Container.is-retracted
-          #board-download.Box
-            h3 download
-            #board-download-buttons.Container
-              a(download='top.svg' href-lang='image/svg+xml' href='#' target='_blank')#download-top-btn.Btn.is-disabled
-                = 'top'
-              a(download='bottom.svg' href-lang='image/svg+xml' href='#' target='_blank')#download-bottom-btn.Btn.is-disabled
-                = 'bottom'
-          #board-cu-color.Box.ColorPicker
-            h3 copper finish
-            #board-cu-color-buttons.Container
-              button(type='button').Btn.ColorPicker--btn.is-js-template color
-          #board-sm-color.Box.ColorPicker
-            h3 soldermask
-            #board-sm-color-buttons.Container
-              button(type='button').Btn.ColorPicker--btn.is-js-template color
-          #board-ss-color.Box.ColorPicker
-            h3 silkscreen
-            #board-ss-color-buttons.Container
-              button(type='button').Btn.ColorPicker--btn.is-js-template color
-        button(name='board-color-btn' type='button').Btn.Btn-lg
-          = 'download boards / change colors'
-
-      #layer-output-row.Row.is-hidden
-        output(for='file-list')#layer-output
-          .LayerContainer.is-js-template
-            +layerContainerContents('layer-template')
+      #layer-output-row.Row
+        output(for='filelist')#layer-output.layer-drawings-anchor
 
     footer.Foot
       .Foot--links
@@ -155,7 +111,14 @@ html(lang="en")
         +aNew('http://cousins.io')
           = 'built by mike cousins'
 
-    // vendor bundle (jquery)
+    // templates
+    include ./filelist-item-template.jade
+    include ./board-layer-template.jade
+    include ./color-picker-template.jade
+    include ./modal-template.jade
+    include ./unsupported-template.jade
+
+    // vendor bundle
     script(src='vendor.js')
     // app bundle
     script(src='app.js')

@@ -1,7 +1,6 @@
 {
-  "name"            : "svgerber.cousins.io",
-  "dependencies" :
-  {
-    "octicons"   : "*"
+  "name": "svgerber.cousins.io",
+  "dependencies": {
+    "octicons": "*"
   }
 }

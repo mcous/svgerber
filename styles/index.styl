@@ -14,15 +14,19 @@ BTN_TEXT      = black
 NAV_COLOR     = lighten(black, 25%)
 NAVLINK_COLOR = whitesmoke
 
-BOX_COLOR     = lighten(black, 67%)
-BOX_BORDER    = darken(BOX_COLOR, 50%)
+BOX_COLOR     = lighten(black, 50%)
+BOX_BORDER    = darken(BOX_COLOR, 25%)
 BOXTEXT_COLOR = whitesmoke
 
 FOOT_BG       = lighten(black, 67%)
 FOOR_TEXT     = whitesmoke
 
+VALID         = desaturate(lighten(green, 20%), 75%)
+INVALID       = desaturate(lighten(red, 20%), 75%)
+
 // mobile breakpoint
 BP = 43em
+FILELIST_BP = 64em
 
 // fontstants
 SIZE = 16
@@ -32,17 +36,6 @@ LINE = 1.2
 navHt = 3em
 navLinkHt = 1.5em
 navLinkPad = ( navHt - navLinkHt )/( 2 * navLinkHt )
-
-// messing around with board colors
-.Board--fr4
-  fill lighten(black, 10%)
-.Board--copper
-  color dimgrey
-.Board--silk
-  color white
-.Board--mask
-  fill indigo
-  opacity 0.7
 
 // top bottom and left right margin and padding mixins
 margin-tb(n)
@@ -88,7 +81,7 @@ body
   padding-top navHt
   cf()
 
-h1, h2, h3, h4, h5, h6, strong, .Btn, .Heading
+h1, h2, h3, h4, h5, h6, strong, .Btn, .Heading, li
   font-family Lato, sans-serif
   font-weight 700
 
@@ -117,11 +110,15 @@ a
   position absolute
   z-index 1
 
+// .is-invisible
+//   visibility hidden
+//   opacity 0
+//   transition visibility 0s 0.5s, opacity 0.5s linear
+
 .is-retracted
-  max-height 0 !important
+  height 0 !important
   margin-top 0 !important
   margin-bottom 0 !important
-  overflow hidden
 
 ul
   padding-lr 2em
@@ -139,18 +136,18 @@ ul
   border-style solid
   border-color black
   border-width 0
-  border-radius 0.5em
+  // border-radius 0.5em
   // shadows on hover
-  transition box-shadow 0.2s
+  transition box-shadow 50ms
   &:hover
-    box-shadow 0.05em 0.05em 0.2em black
+    box-shadow 0.07em 0.07em 0.2em 0.02em black
   &:active
     outline none
     box-shadow 0 0 0.1em black
   // default shadow
-  box-shadow 0.1em 0.1em 0.4em black
+  box-shadow 0.1em 0.1em 0.4em 0.04em black
   // spacing
-  padding 0.5em 1em 0.5em 1em
+  padding 0.5em
   margin 0.25em
   // size
   width 10em
@@ -162,6 +159,7 @@ ul
 // links styled as buttons
 a.Btn
   display inline-block
+  width auto
 
 .Btn-lg
   font-size 18px
@@ -187,15 +185,27 @@ button:disabled, .Btn.is-disabled
 
 // content boxes
 .Box
+  // height
+  height 10em
+  +below(FILELIST_BP)
+    height 14em
+  +below(BP)
+    height 8em
   // border and colors
-  border-radius 1em
-  border-style solid
-  border-width 1px
+  //border-style solid
+  //border-width 1px
   border-color BOX_BORDER
   background-color BOX_COLOR
   color BOXTEXT_COLOR
   // spacing
-  margin-tb 1em
+  position relative
+  margin-tb 0.5em
+
+.AlignedContent
+  width 80%
+  align()
+  +below(BP)
+    width 95%
 
 #main-nav
   text-align center
@@ -209,7 +219,8 @@ button:disabled, .Btn.is-disabled
   // fixed to top
   width 100%
   position fixed
-  z-index 1
+  z-index 10
+  transform none !important
 
 .Nav-list
   height 100%
@@ -249,23 +260,19 @@ button:disabled, .Btn.is-disabled
 
 // top row
 #information
-  col(1/3)
-  shift(1/3)
+  col(1/3, gutter: 1em)
   +below(BP)
-    unshift()
     stack()
 
 #caution
-  col(1/3)
-  shift(-1/3)
+  col(1/3, gutter: 1em)
   +below(BP)
-    unshift()
     stack()
   ul
     text-align left
 
 #sample
-  col(1/3)
+  col(1/3, gutter: 1em)
   +below(BP)
     stack()
 // end top row
@@ -273,12 +280,12 @@ button:disabled, .Btn.is-disabled
 // file upload
 #dropzone
   // border
-  border-width 2px
-  border-style dashed
+  //border-width 2px
+  //border-style dashed
   border-color black
-  border-radius 1em
+  //border-radius 1em
   // inset shadow
-  box-shadow inset 0.1em 0.1em 0.4em black
+  box-shadow inset 0.1em 0.1em 0.4em 0.1em black
   // spacing
   margin-bottom 1em
   // hide the default file select stuff
@@ -294,12 +301,14 @@ button:disabled, .Btn.is-disabled
 #url-paste-form
   textarea
     display block
-    border-radius 1em
+    resize horizontal
+    //border-radius 1em
     padding 1em
     margin 0.5em
     margin-bottom 0
     text-align left
     font-size 0.75em
+    z-index 2
 
 .DropzoneContents
   margin-tb 0.5em
@@ -312,19 +321,68 @@ button:disabled, .Btn.is-disabled
   padding 0.5em 1em 0.5em 1em
 // end file upload
 
-
 // uploaded file list
-#file-list
+#filelist-output
   center(56em)
 
 .UploadList--item
-  overflow hidden
+  cf()
+  position relative
   margin-bottom 0.5em
   padding 0.5em
   &.is-valid
-    background-color desaturate(lighten(green, 10%), 75%)
+    background-color VALID
   &.is-invalid
-    background-color desaturate(lighten(red, 10%), 75%)
+    background-color INVALID
+  &.is-unprocessable
+    background-color BOX_COLOR
+  &.is-processing
+    background-size 4em 4em
+    background-image linear-gradient(45deg, rgba(255, 255, 255, .15) 25%,
+      transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%,
+      rgba(255, 255, 255, .15) 75%, transparent 75%, transparent)
+    animation animate-stripes 2s linear infinite
+  // show buttons on hover
+  &:hover
+    button
+      opacity 1
+
+@keyframes animate-stripes
+  from
+    background-position 0 0
+  to
+    background-position 8em 0
+
+.UploadList--itemDelete
+  // cursor
+  cursor pointer
+  // color and border
+  color INVALID
+  border none
+  //border-radius 0.2em
+  background-color rgba(255, 255, 255, 0.6)
+  // hover effect
+  opacity 0.1
+  &:hover
+    opacity 1
+  transition opacity 50ms linear 20ms
+  // positioning
+  display inline-block
+  align(vertical)
+  text-align center
+  height 90%
+  margin-right 100.5%
+  right 0
+  +below(FILELIST_BP)
+    transform none
+    float left
+    clear none
+    margin-right 0.5em
+    position static
+    opacity 0.5
+    padding 0
+    padding-lr 0.1em
+    font-size 1.25em * LINE
 
 .UploadList--filename
   float left
@@ -346,6 +404,7 @@ span.UploadList--text
   font-size 1.25em
 
 select.UploadList--text
+  font-family Lato, sans-serif
   font-size 1em
   height 1.25em * LINE
   margin 0
@@ -355,6 +414,7 @@ select.UploadList--text
   background-color transparent
   // remove ugly default appearance
   cursor pointer
+  appearance none
   -moz-appearance none
   -webkit-appearance none
   // try to get text color to black when expanded
@@ -365,73 +425,115 @@ select.UploadList--text
 // board output
 #board-output-row
   background-color FOOT_BG
-  padding-tb 1em
+  //padding-tb 1em
 
 #board-output
   center(pad: 5%)
-  margin-bottom 2em
+  //margin-bottom 2em
 
-#board-output-color
-  transition max-height 0.5s, margin 0.5s
-  margin-top 0
-  max-height 20em
-  +below(BP)
-    max-height 60em
-  //height auto
+#show-color-picker-btn
+  margin-bottom 1em
+
+.ColorPicker
+  center(pad: 5%)
+
+.ColorPicker--box
+  background-color NAV_COLOR
+  margin-bottom 1em
+  position relative
+  text-align center
+  transition height 0.4s, margin 0.4s
+  height 12em
   overflow hidden
-  .Box
-    background-color NAV_COLOR
-    col(1/4, cycle: 4)
-    +below(BP)
-      stack()
-
-// .ColorPicker
+  col(1/3, cycle: 3)
+  +below(FILELIST_BP)
+    height 14em
+  +below(BP)
+    height 9em
+    stack()
+  h3
+    margin-top 0
+    color BOXTEXT_COLOR
 
 .ColorPicker--btn
-  col(1/2, cycle: 2)
+  col(1/3, cycle: 3)
+  +below(FILELIST_BP)
+    col(1/2, uncycle: 3, cycle: 2)
   +below(BP)
     col(1/4, uncycle: 2, cycle: 4)
 
 #layer-output
-  padding-tb 1em
+  //padding-tb 1em
   cf()
   center(pad: 10%)
 
+.LayerHeading *
+   vertical-align middle
+
+.Btn--download
+  padding 0.25em 
+  .mega-octicon
+    font-size 1.5em
+
 .LayerDrawing
+  cursor zoom-in
+  margin-tb 0.5em
+  display block
+  color lighten(black, 15%)
   background-color whitesmoke
-  border-radius 1em
-  height 0
-  width 100%
-  padding-bottom 100%
-  position relative
-  overflow hidden
-
-.LayerImage, .Board
-  align()
-  width 95%
-  height 95%
-
-.Board
-  //min-height 30em
+  overflow visible
+  svg
+    margin 2.5%
+    width 95%
+    height 95%
 
 .BoardContainer
-  col(1/2, cycle: 2)
+  col(1/2)
+  margin-bottom 1.5em
   +below(BP)
     stack()
   .LayerDrawing
     background-color NAV_COLOR
 
 .LayerContainer
+  margin-top 1em
   col(1/2, cycle: 2)
   +below(BP)
+    float none !important
     stack()
-  .LayerImage
-    max-height 24em
+
+// modal and unsupported error
+
+// modal
+.Modal, .Unsupported
+  position fixed
+  z-index 50
+  left 0
+  top 0
+  width 100%
+  height 100%
+  background-color rgba(0, 0, 0, 0.85)
+  
+.Modal
+  cursor zoom-out
+
+.Modal--img, .Unsupported--message
+  margin 0
+  padding 1em
+  align()
+
+.Modal--img
+  background-color BODY_COLOR
+
+.Unsupported--message
+  width 90%
+  background-color INVALID
+  color white
 
 // footer
 footer
   col()
-  margin 1em 0 0 0
+  margin 2em 0 0 0
   background-color FOOT_BG
 .Foot--links
   a

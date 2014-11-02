@@ -20,6 +20,7 @@ rimraf     = require 'gulp-rimraf'
 deploy     = require 'gulp-gh-pages'
 ignore     = require 'gulp-ignore'
 concat     = require 'gulp-concat'
+rename     = require 'gulp-rename'
 webserver  = require 'gulp-webserver'
 
 # deploy location
@@ -29,13 +30,15 @@ DEPLOY = './public'
 SAMPLES = './samples'
 
 # app files
-SCRIPT   = './coffee/app.coffee'
-TEMPLATE = './jade/index.jade'
-STYLE    = './stylus/app.styl'
+SCRIPT   = './src/index.coffee'
+TEMPLATE = './templates/index.jade'
+STYLE    = './styles/index.styl'
 
 # vendor files
 VENDOR_JS = [
   './node_modules/jquery/dist/jquery.min.js'
+  './node_modules/lodash/dist/lodash.min.js'
+  './node_modules/backbone/backbone-min.js'
 ]
 VENDOR_CSS = [
   './bower_components/octicons/octicons/octicons.css'
@@ -89,6 +92,7 @@ gulp.task 'style', ->
     .pipe stylus( { use: [ jeet(), rupture() ] } ).on 'error', gutil.log
     .pipe prefix '> 1%', 'last 3 versions', 'Firefox ESR', 'Opera 12.1'
     .pipe if argv.p then minifycss() else gutil.noop()
+    .pipe rename 'app.css'
     .pipe gulp.dest DEPLOY
 
 # compile jade
@@ -97,50 +101,48 @@ gulp.task 'template', ->
     .pipe jade().on 'error', gutil.log
     .pipe gulp.dest DEPLOY
 
-# compile and bundle coffee with browserify
-gulp.task 'script', ->
-  browserify SCRIPT, { debug: !argv.production, extensions: [ '.coffee' ] }
-    .bundle().on 'error', gutil.log
-    .pipe source path.basename gutil.replaceExtension SCRIPT, '.js'
-    # minify if production build
-    .pipe if argv.p then streamify uglify {
-      preamble: '/* view source at github.com/mcous/svgerber */'
-      compress: { drop_console: true }
-      mangle: true
-    } else gutil.noop()
-    .pipe gulp.dest DEPLOY
-
 # default task build everything
 gulp.task 'build', [ 'vendor', 'samples', 'style', 'template', 'script' ]
 
-# watch files with coffee files with watchify and others with gulp.watch
+# set watch mode
 gulp.task 'watch', ->
-  bundler = watchify browserify SCRIPT, {
+  global.watching = true
+  # watch stylus
+  gulp.watch './styles/*.styl', [ 'style' ]
+  # watch jade
+  gulp.watch './templates/*.jade', [ 'template' ]
+
+# watch files with coffee files with watchify and others with gulp.watch
+gulp.task 'script', (done) ->
+  bundler = browserify {
+    entries: [ SCRIPT ]
     extensions: [ '.coffee' ]
     debug: !argv.production
-    cache: {}
-    packageCache: {}
-    fullPaths: true
+    # watchify required options
+    cache: {}, packageCache: {}, fullPaths: true
   }
-  #bundler.transform 'coffeeify'
   rebundle = ->
     bundler.bundle()
       .on 'error', (e) ->
         gutil.log 'browserify error', e
-      .pipe source path.basename gutil.replaceExtension SCRIPT, '.js'
+      .pipe source 'app.js'
+      .pipe if argv.p then streamify uglify {
+        preamble: '/* view source at github.com/mcous/svgerber */'
+        compress: { drop_console: true }
+        mangle: true
+      } else gutil.noop()
       .pipe gulp.dest DEPLOY
-  bundler.on 'update', rebundle
+  # log when necessary
   bundler.on 'log', (msg) -> gutil.log "bundle: #{msg}"
-
-  # watch stylus
-  gulp.watch './stylus/*.styl', ['style']
-  # watch jade
-  gulp.watch './jade/*.jade', ['template']
+  # watch if watching
+  if global.watching
+    bundler = watchify bundler
+    bundler.on 'update', rebundle
   # bundle coffee
   rebundle()
 
 # deploy to gh-pages
-gulp.task 'deploy', ['build'], ->
+gulp.task 'deploy', [ 'build' ], ->
   gulp.src DEPLOY_FILES
     .pipe deploy {
       branch: if argv.p then 'gh-pages' else 'test-deploy'
@@ -148,7 +150,7 @@ gulp.task 'deploy', ['build'], ->
     }
 
 # dev server is default task
-gulp.task 'default', [ 'watch' ], ->
+gulp.task 'default', [ 'watch', 'build' ], ->
   gulp.src DEPLOY
     .pipe webserver {
       host: '0.0.0.0'
