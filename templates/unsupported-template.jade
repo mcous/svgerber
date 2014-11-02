@@ -1,0 +1,9 @@
+// template for the unsupported browser message
+script(type='text/template')#unsupported-template
+  div.Unsupported--message
+    h2 unsupported browser
+    p
+      = "The browser you are using does not support the web standards used by this webapp. This probably means your browser is out of date. Check out "
+      a(href='http://whatbrowser.org') whatbrowser.org
+      = " for information about your browser and how to update it"
+    button.Btn.Btn-lg.Unsupported--btn try anyway

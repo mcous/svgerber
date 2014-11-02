@@ -21,6 +21,9 @@ BOXTEXT_COLOR = whitesmoke
 FOOT_BG       = lighten(black, 67%)
 FOOR_TEXT     = whitesmoke
 
+VALID         = desaturate(lighten(green, 20%), 75%)
+INVALID       = desaturate(lighten(red, 20%), 75%)
+
 // mobile breakpoint
 BP = 43em
 FILELIST_BP = 64em
@@ -328,9 +331,9 @@ button:disabled, .Btn.is-disabled
   margin-bottom 0.5em
   padding 0.5em
   &.is-valid
-    background-color desaturate(lighten(green, 20%), 75%)
+    background-color VALID
   &.is-invalid
-    background-color desaturate(lighten(red, 20%), 75%)
+    background-color INVALID
   &.is-unprocessable
     background-color BOX_COLOR
   &.is-processing
@@ -354,7 +357,7 @@ button:disabled, .Btn.is-disabled
   // cursor
   cursor pointer
   // color and border
-  color desaturate(lighten(red, 10%), 75%)
+  color INVALID
   border none
   //border-radius 0.2em
   background-color rgba(255, 255, 255, 0.6)
@@ -499,8 +502,10 @@ select.UploadList--text
     float none !important
     stack()
 
+// modal and unsupported error
+
 // modal
-.Modal
+.Modal, .Unsupported
   position fixed
   z-index 50
   left 0
@@ -508,13 +513,22 @@ select.UploadList--text
   width 100%
   height 100%
   background-color rgba(0, 0, 0, 0.85)
+  
+.Modal
   cursor zoom-out
 
-.Modal--img
+.Modal--img, .Unsupported--message
   margin 0
   padding 1em
-  background-color BODY_COLOR
   align()
+
+.Modal--img
+  background-color BODY_COLOR
+
+.Unsupported--message
+  width 90%
+  background-color INVALID
+  color white
 
 // footer
 footer
