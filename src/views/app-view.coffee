@@ -4,10 +4,11 @@
 githubApiUrl = require '../github-api-url'
 
 # require our other views
-FilelistItemView = require './filelist-item.coffee'
-LayerView = require './layer-view.coffee'
-BoardView = require './board-view.coffee'
-ColorPickerView = require './color-picker.coffee'
+FilelistItemView = require './filelist-item'
+LayerView = require './layer-view'
+BoardView = require './board-view'
+ColorPickerView = require './color-picker'
+ModalView = require './modal-view'
 
 # create a layers collection
 LayerList = require '../collections/layers'
@@ -19,6 +20,9 @@ boards.add [
   { name: 'top', layers: layers }
   { name: 'bottom', layers: layers }
 ]
+
+# create the modal
+modal = new ModalView()
 
 module.exports = Backbone.View.extend {
   el: '#svgerber-app'
@@ -57,6 +61,11 @@ module.exports = Backbone.View.extend {
     # listen to the layers collection for adds and removed
     # adjust nav icons accordingly
     @listenTo layers, 'add remove', @handleNavIcons
+    # attach the modal view and listen for open modal events
+    @$el.append modal.render().el
+    @listenTo layers, 'openModal', @handleOpenModal
+    @listenTo boards, 'openModal', @handleOpenModal
+    
 
   # remove all models from the layers collection
   restart: -> layers.remove layers.models
@@ -79,6 +88,9 @@ module.exports = Backbone.View.extend {
     if board.get('svg').length and not existing.match(board.get 'name')?
       view = new BoardView { model: board }
       $('#board-output').append view.render().el
+
+  # handle an open modal event
+  handleOpenModal: (render) -> modal.openModal render
 
   # add color picker to the page if it's not there
   handleColorPicker: (boards) ->

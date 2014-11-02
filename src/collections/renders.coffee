@@ -14,7 +14,6 @@ class Renders extends Backbone.Collection
     @on 'change:svg change:style', @encode
     
   encode: (render) ->
-    console.log "encoding"
     render.set 'svg64', false
     string = render.get 'svg'
     style = render.get 'style'

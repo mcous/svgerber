@@ -464,7 +464,16 @@ select.UploadList--text
   cf()
   center(pad: 10%)
 
+.LayerHeading *
+   vertical-align middle
+
+.Btn--download
+  padding 0.25em 
+  .mega-octicon
+    font-size 1.5em
+
 .LayerDrawing
+  cursor zoom-in
   margin-tb 0.5em
   display block
   color lighten(black, 15%)
@@ -483,13 +492,29 @@ select.UploadList--text
   .LayerDrawing
     background-color NAV_COLOR
 
-
 .LayerContainer
   margin-top 1em
   col(1/2, cycle: 2)
   +below(BP)
     float none !important
     stack()
+
+// modal
+.Modal
+  position fixed
+  z-index 50
+  left 0
+  top 0
+  width 100%
+  height 100%
+  background-color rgba(0, 0, 0, 0.85)
+  cursor zoom-out
+
+.Modal--img
+  margin 0
+  padding 1em
+  background-color BODY_COLOR
+  align()
 
 // footer
 footer
