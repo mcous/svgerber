@@ -17,14 +17,15 @@ class Renders extends Backbone.Collection
     render.set 'svg64', false
     string = render.get 'svg'
     style = render.get 'style'
-    if style?
+    if string
       # insert the style into the svg string
       index = string.match(/^.*?>/)[0].length
       string = string[0...index] + style + string[index..]
-    encoder.postMessage {
-      name: render.get 'name' 
-      string: string
-    }
+      # post the message to the encoder
+      encoder.postMessage {
+        name: render.get 'name' 
+        string: string
+      }
     
   convert: (name, gerber) ->
     converter.postMessage { filename: name, gerber: gerber }  
