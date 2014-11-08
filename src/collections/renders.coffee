@@ -18,9 +18,10 @@ class Renders extends Backbone.Collection
     string = render.get 'svg'
     style = render.get 'style'
     if string
-      # insert the style into the svg string
-      index = string.match(/^.*?>/)[0].length
-      string = string[0...index] + style + string[index..]
+      # insert the style into the svg string if necessary
+      if style?
+        index = string.match(/^.*?>/)[0].length
+        string = string[0...index] + style + string[index..]
       # post the message to the encoder
       encoder.postMessage {
         name: render.get 'name' 
