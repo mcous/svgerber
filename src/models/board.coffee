@@ -29,8 +29,6 @@ class Board extends Render
     # listen for changes in the layers, and trigger a new board event
     @listenTo layers, 'change:type change:svg change:gerber remove',
       _.debounce @handleLayersChange, 10
-    # also listen to add and remove events, but debounce them by 10ms
-    # @listenTo layers, 'change:gerber remove', _.debounce @handleLayersChange, 10
 
   getBoardLayers: ->
     # filter out the layers

@@ -3,8 +3,9 @@
 # render prototype
 Render = require './render'
 
-# available layer types
+# available layer types and idetifier utility
 layerOpts = require '../layer-options'
+idLayer = require '../identify-layer'
 
 class Layer extends Render
   defaults: _.extend {
@@ -17,17 +18,12 @@ class Layer extends Render
   initialize: ->
     @setLayerType()
     # once we've got an svgObj, we don't need the gerber file anymore
-    @once 'change:svgObj', -> @unset 'gerber'
-    # once we an svg string back, check to see if it's empty
-    @once 'change:svg', ->
-      if not @get('svg').length then @set 'type', 'oth'
+    # we should also check to make sure we processed, otherwise set to 'oth'
+    @once 'change:svgObj', ->
+      @unset 'gerber'
+      if not Object.keys(@get 'svgObj').length then @set 'type', 'oth'
 
-  setLayerType: ->
-    type = 'drw'
-    for opt in layerOpts
-      if opt.match.test @get 'name'
-        type = opt.val; break
-    @set 'type', type
+  setLayerType: -> @set 'type', idLayer @get 'name'
 
   # validation
   # checks to make sure that if its layer type is singular, that no other models

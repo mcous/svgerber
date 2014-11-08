@@ -47,8 +47,6 @@ class ModalView extends Backbone.View
   closeModal: -> @$el.addClass 'is-hidden'
   
   # handle a click
-  handleClick: -> 
-    console.log 'modal click'
-    @closeModal()
+  handleClick: -> @closeModal()
   
 module.exports = ModalView
