@@ -25,7 +25,6 @@ class ModalView extends Backbone.View
       src: if svg64? then "data:image/svg+xml;base64,#{svg64}" else ''
       canDownload: canDownload
     }
-    @resize()
     # return self
     @
     
@@ -42,7 +41,7 @@ class ModalView extends Backbone.View
   openModal: (render) ->
     @$el.removeClass 'is-hidden'
     @render render
-    
+    @$('.Modal--img').one 'load', @resize
   # close the modal by hiding it
   closeModal: -> @$el.addClass 'is-hidden'
   
