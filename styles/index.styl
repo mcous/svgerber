@@ -206,7 +206,7 @@ button:disabled, .Btn.is-disabled
   margin-tb 0.5em
   // for alignment
   position relative
-  // fix boggus ie overflow
+  // fix bogus ie overflow
   overflow hidden
 
 .AlignedContent
@@ -489,11 +489,15 @@ select.UploadList--text
   display block
   color lighten(black, 15%)
   background-color whitesmoke
-  overflow visible
+  overflow hidden
+  width 100%
+  height 0
+  position relative
   svg
-    margin 2.5%
-    width 95%
-    height 95%
+    display block
+    width 94%
+    height 94%
+    align()
 
 .BoardContainer
   col(1/2)

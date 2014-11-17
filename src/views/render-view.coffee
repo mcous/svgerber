@@ -40,8 +40,20 @@ class RenderView extends Backbone.View
       name: @model.get 'name'
       img: @model.get 'svg'
     }
+    # resize (for ie)
+    @resize()
+    # return self
     @
     
+  # resize
+  resize: ->
+    svg = @$('svg')[0]
+    if svg?
+      svgWid = svg.width.baseVal.value
+      svgHgt = svg.height.baseVal.value
+      ratio = svgHgt/svgWid
+      @$('.LayerDrawing').css 'padding-bottom', "#{ratio*100}%"
+  
   # download button
   handleDownloadLink: ->
     btn = @$ '.Btn--download'
