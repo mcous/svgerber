@@ -178,6 +178,7 @@ button:disabled, .Btn.is-disabled
 .Container
   col(.95, offset: 0.025)
   margin-top 1em
+  //cf()
 
 .Row
   col()
@@ -199,11 +200,17 @@ button:disabled, .Btn.is-disabled
   background-color BOX_COLOR
   color BOXTEXT_COLOR
   // spacing
-  position relative
+  col(1/3, gutter: 1em, cycle: 3)
+  +below(BP)
+    stack()
   margin-tb 0.5em
+  // for alignment
+  position relative
+  // fix boggus ie overflow
+  overflow hidden
 
 .AlignedContent
-  width 80%
+  width 85%
   align()
   +below(BP)
     width 95%
@@ -260,22 +267,22 @@ button:disabled, .Btn.is-disabled
 // CONTENT
 
 // top row
-#information
-  col(1/3, gutter: 1em)
-  +below(BP)
-    stack()
-
-#caution
-  col(1/3, gutter: 1em)
-  +below(BP)
-    stack()
-  ul
-    text-align left
-
-#sample
-  col(1/3, gutter: 1em)
-  +below(BP)
-    stack()
+// #information
+//   col(1/3, gutter: 1em)
+//   +below(BP)
+//     stack()
+// 
+// #caution
+//   col(1/3, gutter: 1em)
+//   +below(BP)
+//     stack()
+//   ul
+//     text-align left
+// 
+// #sample
+//   col(1/3, gutter: 1em)
+//   +below(BP)
+//     stack()
 // end top row
 
 // file upload

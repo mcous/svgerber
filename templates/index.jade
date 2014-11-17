@@ -9,8 +9,11 @@ doctype html
 html(lang="en")
 
   head
+    meta(name='description' content='A web based Gerber viewer that generates SVGs')
+    meta(name='author' content='Mike Cousins')
     meta(charset='utf-8')
     meta(name='viewport' content='width=device-width, initial-scale=1')
+    
     title= 'svgerber'
 
     // vendor css
@@ -90,7 +93,7 @@ html(lang="en")
                 = 'or paste github urls'
             input#upload-select(type='file' name='upload-select' multiple)
           form#url-paste-form.is-hidden
-            - ph = 'paste the urls (one per line) to a gerber file on github\nfor example:\n  https://github.com/mcous/reflow/blob/master/pcb/plotted/gerber/reflow-pcb-F_Cu.gtl'
+            - ph = 'Paste the URLs (one per line) to a Gerber file on GitHub. For example: https://github.com/mcous/reflow/blob/master/pcb/plotted/gerber/reflow-pcb-F_Cu.gtl'
             textarea#url-paste(name='url-paste' placeholder=ph cols='50' rows='10')
             button(name='url-submit' type='button')#url-submit-btn.Btn ok
             button(name='url-cancel' type='button')#url-cancel-btn.Btn cancel
