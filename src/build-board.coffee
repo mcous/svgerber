@@ -30,6 +30,7 @@ module.exports = (name, layers = []) ->
   draw = []
   bbox = [ Infinity, Infinity, -Infinity, -Infinity ]
   units = 'px'
+  scale = null
   addVboxToBbox = (v) ->
     xMax = v[2] + v[0]
     yMax = v[3] + v[1]
@@ -52,8 +53,11 @@ module.exports = (name, layers = []) ->
     # grab the units
     u = xml.svg.width.match(/(in)|(mm)/)?[0]
     if units is 'px' then units = u
-    else if u isnt units
-      return {}
+    else if u isnt units then return {}
+    # grab the units to vbox scale
+    vbScale = parseFloat(xml.svg.width)/xml.svg.viewBox[2]
+    if not scale? then scale = vbScale
+    else if Math.abs(vbScale-scale) > 0.0000001 then return {}
     # toss the viewBox as well as the width, height and id
     delete xml.svg.viewBox
     delete xml.svg.width
@@ -174,8 +178,8 @@ module.exports = (name, layers = []) ->
   svg = attr
   svg.class = 'Board'
   svg.viewBox = getVboxFromBbox()
-  svg.width = "#{svg.viewBox[2]}#{units}"
-  svg.height = "#{svg.viewBox[3]}#{units}"
+  svg.width = "#{svg.viewBox[2]*scale}#{units}"
+  svg.height = "#{svg.viewBox[3]*scale}#{units}"
   svg._ = []
   svg._.push { defs: { _: defs } } if defs.length
   svg._.push draw if draw.g._.length
