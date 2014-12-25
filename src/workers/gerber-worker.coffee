@@ -4,11 +4,14 @@ gerberToSvg = require 'gerber-to-svg'
 
 # convert to xml object function
 convertGerber = (filename, gerber) ->
-  # try it as a gerber first
+  # warnings array
+  warnings = []
+  # if it's an object, half our job is done
   if typeof gerber is 'object' then obj = gerber
   else
+    # try it as a gerber first
     try
-      obj = gerberToSvg gerber, { object: true }
+      obj = gerberToSvg gerber, { object: true, warnArr: warnings }
     catch e
       # if that errors, try it as a drill
       try
@@ -24,6 +27,7 @@ convertGerber = (filename, gerber) ->
 self.addEventListener 'message', (e) ->
   gerber = e.data.gerber
   filename = e.data.filename
+  warnings = e.data.filename
   # post the message
   self.postMessage convertGerber filename, gerber
 , false
