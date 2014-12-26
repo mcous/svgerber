@@ -14,7 +14,7 @@ unless typeof window.atob is 'function' then window.atob = Base64.atob
 if typeof document.createElement('svg').getAttributeNS is 'undefined' or
 # check for web worker support
 typeof Worker is 'undefined'
-  unsupported = new require('./views/unsupported-view')()
+  unsupported = new (require './views/unsupported-view')()
   $('body').append unsupported.render().el
 
 # load the backbone application view to start the app
