@@ -41,7 +41,13 @@ class ModalView extends Backbone.View
   openModal: (render) ->
     @$el.removeClass 'is-hidden'
     @render render
-    @$('.Modal--img').one 'load', @resize
+    img = @$('.Modal--img')
+    # dark background for boards
+    if render.get('boardLayers')?
+      img.addClass 'Modal--dark'
+    else
+      img.removeClass 'Modal--dark'
+    img.one 'load', @resize
   # close the modal by hiding it
   closeModal: -> @$el.addClass 'is-hidden'
   

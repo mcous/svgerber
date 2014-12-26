@@ -100,7 +100,10 @@ module.exports = (name, layers = []) ->
           path = n.path
           break
       # rearragne the outline path so the shapes are manifold
-      newPathData = boardOutline path.d
+      newPathData = []
+      try
+        newPathData = boardOutline path.d
+      catch e
       # it it works, groovy, we've got a bbox and a mask
       if newPathData.length
         oldSW = path['stroke-width']
@@ -110,9 +113,11 @@ module.exports = (name, layers = []) ->
         path.d = newPathData
         # use the edge bbox for the board
         vb = xml.svg.viewBox
-        xMax = vb[2] + vb[0] - oldSW
-        yMax = vb[3] + vb[1] - oldSW
-        edgeBbox = [ vb[0] + oldSW/2, vb[1] + oldSW/2, xMax, yMax ]
+        vb[0] += oldSW/2
+        vb[1] += oldSW/2
+        vb[2] -= oldSW
+        vb[3] -= oldSW
+        edgeBbox = [ vb[0], vb[1], vb[2] + vb[0], vb[3] + vb[1] ]
         
     # undefine (to svae memory I guess?)
     xml = null
