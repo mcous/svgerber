@@ -10,6 +10,8 @@ class Render extends Backbone.Model
     svg: ''
     svgObj: null
     svg64: false
+    # any warnings from gerber-to-svg
+    warnings: []
   }
   
 module.exports = Render

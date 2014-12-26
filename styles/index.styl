@@ -23,6 +23,7 @@ FOOR_TEXT     = whitesmoke
 
 VALID         = desaturate(lighten(green, 20%), 75%)
 INVALID       = desaturate(lighten(red, 20%), 75%)
+WARNING       = desaturate(lighten(yellow, 20%), 75%)
 
 // mobile breakpoint
 BP = 43em
@@ -117,8 +118,10 @@ a
 
 .is-retracted
   height 0 !important
+  max-height 0 !important
   margin-top 0 !important
   margin-bottom 0 !important
+  overflow hidden !important
 
 ul
   padding-lr 2em
@@ -333,13 +336,18 @@ button:disabled, .Btn.is-disabled
 #filelist-output
   center(56em)
 
-.UploadList--item
+.UploadList--itemDescription
   cf()
+
+.UploadList--item
   position relative
   margin-bottom 0.5em
   padding 0.5em
   &.is-valid
     background-color VALID
+  &.is-warned
+    cursor pointer
+    background-color WARNING
   &.is-invalid
     background-color INVALID
   &.is-unprocessable
@@ -352,7 +360,7 @@ button:disabled, .Btn.is-disabled
     animation animate-stripes 2s linear infinite
   // show buttons on hover
   &:hover
-    button
+    button.UploadList--itemDelete
       opacity 1
 
 @keyframes animate-stripes
@@ -364,21 +372,16 @@ button:disabled, .Btn.is-disabled
 .UploadList--itemDelete
   // cursor
   cursor pointer
-  // color and border
-  color INVALID
+  // border
   border none
   //border-radius 0.2em
   background-color rgba(255, 255, 255, 0.6)
-  // hover effect
-  opacity 0.1
-  &:hover
-    opacity 1
-  transition opacity 50ms linear 20ms
+  // size
+  height 90%
   // positioning
   display inline-block
   align(vertical)
   text-align center
-  height 90%
   margin-right 100.5%
   right 0
   +below(FILELIST_BP)
@@ -391,6 +394,14 @@ button:disabled, .Btn.is-disabled
     padding 0
     padding-lr 0.1em
     font-size 1.25em * LINE
+
+.UploadList--itemDelete
+  color INVALID
+  // hover effect
+  opacity 0.1
+  &:hover
+    opacity 1
+    transition opacity 50ms linear 20ms
 
 .UploadList--filename
   float left
@@ -428,6 +439,23 @@ select.UploadList--text
   // try to get text color to black when expanded
   option
     color black
+    
+.UploadList--itemWarningsContainer
+  max-height 10em
+  max-width 100%
+  margin-top 0.25em
+  text-align left
+  transition max-height 0.4s, margin 0.4s
+  overflow auto
+  
+.UploadList--warningIcon
+  float left
+  font-size 1.5em
+  text-align left  
+  padding-right 0.25em
+
+.UploadList--itemWarnings
+  list-style none
 // end uploaded file list
 
 // board output

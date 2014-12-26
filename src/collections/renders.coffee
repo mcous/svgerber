@@ -48,6 +48,7 @@ class Renders extends Backbone.Collection
       if render = _self.findWhere { name: e.data.filename }
         render.set 'svgObj', e.data.svgObj
         render.set 'svg', e.data.svgString
+        render.set 'warnings', e.data.warnings
         render.trigger 'processEnd', render
     converter.addEventListener 'message', handler, false
 

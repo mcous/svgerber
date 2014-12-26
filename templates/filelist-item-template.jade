@@ -1,16 +1,24 @@
 // template for an item in the filelist
 script(type='text/template')#filelist-item-template
-
-  // delete button
-  button.UploadList--itemDelete.mega-octicon.octicon-trashcan
-  // filename
-  span.UploadList--filename.Heading <%= filename %>
-  // layer type select
-  span.UploadList--select
-    span.UploadList--selectIcon.mega-octicon.octicon-chevron-right
-    span.UploadList--text.Heading= ' layer type: '
-    select.UploadList--SelectMenu.UploadList--text
-      // options populated by app
-      <% _.forEach(options, function(opt) { %>
-      option(value!='<%= opt.val %>') <%= opt.desc %>
-      <% }); %>
+  // div for the item iteself
+  .UploadList--itemDescription
+    // delete button
+    button.UploadList--itemDelete.mega-octicon.octicon-trashcan
+    // warning icon
+    span.UploadList--warningIcon.mega-octicon.octicon-issue-opened.is-hidden
+    // filename
+    span.UploadList--filename.Heading <%= filename %>
+    // layer type select
+    span.UploadList--select
+      span.UploadList--selectIcon.mega-octicon.octicon-chevron-right
+      span.UploadList--text.Heading= ' layer type: '
+      select.UploadList--SelectMenu.UploadList--text
+        // options populated by app
+        <% _.forEach(options, function(opt) { %>
+        option(value!='<%= opt.val %>') <%= opt.desc %>
+        <% }); %>
+  // container for any warning messages
+  .UploadList--itemWarningsContainer.is-retracted
+    span.Heading warnings generated:
+    ul.UploadList--itemWarnings
+      li none

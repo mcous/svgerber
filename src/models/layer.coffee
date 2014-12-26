@@ -10,20 +10,29 @@ idLayer = require '../identify-layer'
 class Layer extends Render
   defaults: _.extend {
     gerber: ''
-    type: 'oth'
+    type: 'drw'
     svgObj: null
   }, Render.prototype.defaults
 
   # on creation, get a default layer type
   initialize: ->
-    @setLayerType()
     # once we've got an svgObj, we don't need the gerber file anymore
-    # we should also check to make sure we processed, otherwise set to 'oth'
+    # if we're processed, we should also set the layer type
     @once 'change:svgObj', ->
       @unset 'gerber'
-      if not Object.keys(@get 'svgObj').length then @set 'type', 'oth'
+      @setLayerType()
+    # once we get a warnings array, we should process it
+    @once 'change:warnings', ->
+      consolidated = {}
+      for w in @get 'warnings'
+        consolidated[w] = if consolidated[w]? then consolidated[w]+1 else 1
+      @set 'warnings', _.map consolidated, (n, w) ->
+        w + (if n > 1 then " - x#{n}" else '')
+      @trigger 'warningsConsolidated'
 
-  setLayerType: -> @set 'type', idLayer @get 'name'
+  setLayerType: -> 
+    @set 'type', 
+      if Object.keys(@get 'svgObj').length then idLayer @get 'name' else 'oth'
 
   # validation
   # checks to make sure that if its layer type is singular, that no other models
@@ -33,7 +42,9 @@ class Layer extends Render
     if attrs.type isnt 'oth' and not _.find(layerOpts, {val: attrs.type}).mult
       # pull all the models from the collection with the same layer type
       layers = @collection.where { type: attrs.type }
-      return "duplicate layer selection" if layers.length isnt 1
+      if layers.length isnt 1
+        console.log "#{attrs.name} failed validation with #{attrs.type}"
+        return "duplicate layer selection" 
     # return nothing if valid
     return null
 

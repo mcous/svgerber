@@ -16,15 +16,23 @@ module.exports = Backbone.View.extend {
     'click .UploadList--itemDelete': 'removeLayer'
     # layer select
     'change .UploadList--SelectMenu': 'changeLayerType'
+    # don't let a click on the select menu bubble up the DOM
+    'click .UploadList--SelectMenu': (e) -> e.stopPropagation()
+    # click on item
+    'click': 'showWarnings'
   }
 
   initialize: ->
     # delete self on model deletion
     @listenTo @model, 'remove', @remove
+    # listen for type changes
+    @listenTo @model, 'change:type', @renderType
     # attach event listener to model for validations
     @listenTo @model, 'valid invalid', @renderValidation
     # attach event listener to process and processend events
     @listenToOnce @model, 'processEnd', @renderProcessing
+    # attach listener to warningsConsolidated event
+    @listenToOnce @model, 'warningsConsolidated', @renderWarnings
 
   renderValidation: ->
     icon = @$el.find '.UploadList--selectIcon'
@@ -47,6 +55,18 @@ module.exports = Backbone.View.extend {
     else
       @$el.addClass 'is-processing'
 
+  renderWarnings: ->
+    warnings = @model.get 'warnings'
+    if warnings.length
+      @$el.addClass 'is-warned'
+      ul = @$('.UploadList--itemWarnings')
+      ul.html ("<li>#{w}</li>" for w in warnings)
+      @$('.UploadList--warningIcon').removeClass 'is-hidden'
+
+  showWarnings: ->
+    if @model.get('warnings').length
+      @$('.UploadList--itemWarningsContainer').toggleClass 'is-retracted'
+
   # render method
   render: ->
     @$el.html @template {
@@ -54,14 +74,19 @@ module.exports = Backbone.View.extend {
       type: @model.get 'type'
       options: layerOptions
     }
-    # select the correct option according to the model
-    @$el.find("option[value='#{@model.get 'type'}']").prop 'selected', true
+    # set the type
+    @renderType()
     # set the valid class
     @renderValidation()
     # set the processing class
     @renderProcessing()
     # return this
     return @
+
+  # render the type selection
+  renderType: ->
+    # select the correct option according to the model
+    @$el.find("option[value='#{@model.get 'type'}']").prop 'selected', true
 
   # remove layer
   removeLayer: ->

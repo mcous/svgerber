@@ -15,19 +15,21 @@ convertGerber = (filename, gerber) ->
     catch e
       # if that errors, try it as a drill
       try
-        obj = gerberToSvg gerber, { drill: true, object: true}
+        warnings = []
+        obj = gerberToSvg gerber, { 
+          drill: true, object: true, warnArr: warnings
+        }
       catch e2
-        #if that errors, too, return the original error message
+        warnings = []
         obj = {}
   # take the xmlObject and get the string
   if obj.svg? then string = gerberToSvg obj else string = ''
   # return the message
-  { filename: filename, svgObj: obj, svgString: string }
+  { filename: filename, svgObj: obj, svgString: string, warnings: warnings }
 
 self.addEventListener 'message', (e) ->
   gerber = e.data.gerber
   filename = e.data.filename
-  warnings = e.data.filename
   # post the message
   self.postMessage convertGerber filename, gerber
 , false
