@@ -1,82 +1,125 @@
 # function to create a board of the exact shape as defined by the outline
 # takes in an svg path data array and spits out an svg path data array
 
+find = require 'lodash.find'
+remove = require 'lodash.remove'
+
+# helper class: point
+class Point
+  # constructor takes an x and a y and contructs a segment array
+  # each point should have two segments
+  constructor: (@x, @y) -> @segments = []
+  # add a segment to the segment array
+  addSegment: (seg, rel) -> @segments.push { seg: seg, rel: rel }
+
 # helper class: line or arc segment
 class Segment
-  # constructor and methods for adding arc properties and an endpoint
-  constructor: (@start) ->
+  # constructor adds self to the start and end point's segment array
+  constructor: (@start, @end) ->
+    @start.addSegment @, 'start'
+    #@start = { x: start.x, y: start.y }
+    @end.addSegment @, 'end'
+    #@end = { x: end.x, y: end.y }
+  # adds arc properties to the segment
   addArc: (@radius, @largeArc, @sweep) ->
-  addEnd: (@end) ->
   # spit out the command to draw to the given endpoint
   # this assumes that the pen is already at the other enpoint
   drawTo: (point) ->
     # check to see if we're drawing to one of our endpoints
-    if point[0] is @start[0] and point[1] is @start[1] then toStart = true
-    else if point[0] is @end[0] and point[1] is @end[1] then toEnd = true
+    if point is @start then toStart=true else if point is @end then toEnd=true
     # if we're a line, we really only care if it's going somewhere we can
-    if not @radius? and (toStart or toEnd) then "L #{point[0]} #{point[1]}"
+    if not @radius? and (toStart or toEnd) then [ 'L', point.x, point.y ]
     # else if we're an arc going to our normal end, nothing changes
     else if @radius? and toEnd
-      "A #{@radius} #{@radius} 0 #{@largeArc} #{@sweep} #{point[0]} #{point[1]}" 
+      [ 'A', @radius, @radius, 0, @largeArc, @sweep, point.x, point.y ] 
     # else if we're an arc going to our start, we need to flip the @sweep flag
     else if @radius? and toStart
       sw = if @sweep is 1 then 0 else 1
-      "A #{@radius} #{@radius} 0 #{@largeArc} #{sw} #{point[0]} #{point[1]}"
+      [ 'A' ,@radius, @radius, 0, @largeArc, sw, point.x, point.y ]
     # else this isn't going to work out, so don't draw
-    else
-      console.log "#{point[0]}, #{point[1]} is not an endpoint of this segment}"
-      ''
-  # debug print
-  debugPrint: ->
-    string = ''
-    string += if @radius? then 'arc' else 'line'
-    string += " from #{@start[0]}, #{@start[1]} to #{@end[0]}, #{@end[1]}"
-    if @radius? then string += "
-      with radius #{@radius},
-      large arc flag: #{@largeArc},
-      sweep flag: #{@sweep}"
-    console.log string
+    else return []
       
 module.exports = (outline) ->
   # sanity check: first command should be a move to
   if outline[0] isnt 'M' then console.log "didn't start with 'M'"; return []
-  loopStart = [ outline[1], outline[2] ]
   
+  # we're going to save points rather than segments
+  pathStart = null
+  points = []
   # going to do a good old-fashioned while loop for this one
-  segments = []
   i = 0
   while i < outline.length - 1
     # check out current character to get our starting point
     # M and L have a point directly after them
     if outline[i] is 'M' or outline[i] is 'L'
-      seg = new Segment [ outline[i+1], outline[i+2] ]
+      x = outline[i+1]
+      y = outline[i+2]
       i += 3
     # A (arc) has some other params we need to get by
     else if outline[i] is 'A'
-      seg = new Segment [ outline[i+6], outline[i+7] ]
+      x = outline[i+6]
+      y = outline[i+7]
       i += 8
     # Z is an end of the path, so le'ts just move along
-    else if outline[i] is 'Z'
-      i++
-      continue
+    else if outline[i] is 'Z' then i++; continue
     
     # check to make sure we're not out of bounds
-    if i >= outline.length then seg = null; break
+    if i >= outline.length then break
+    else
+      start = find points, { x: x, y: y }
+      if not start? then newStart = true; start = new Point x, y
     
     # check our current character again to get the end of the segment
-    if outline[i] is 'L' then seg.addEnd [ outline[i+1], outline[i+2] ]
+    if outline[i] is 'L'
+      x = outline[i+1]
+      y = outline[i+2]
+      r = null
     else if outline[i] is 'A'
-      seg.addEnd [ outline[i+6], outline[i+7] ]
-      seg.addArc outline[i+2], outline[i+4], outline[i+5]
-    # M means a new path, so delete the segment and continue
-    if outline[i] is 'M' then seg = null; continue 
+      x = outline[i+6]
+      y = outline[i+7]
+      r = outline[i+2]
+      lrgArc = outline[i+4]
+      sweep = outline[i+5]
+    # M means a new path, so just continue
+    else if outline[i] is 'M' then continue 
+    
     # Z is an end of the path, so draw a line directly to the start
-    else if outline[i] is 'Z' then seg.addEnd loopStart
+    if outline[i] is 'Z'
+      end = pathStart
+      pathStart = null
+    else
+      # set the path start if ncessary
+      if not pathStart? then pathStart = start
+      end = find points, { x: x, y: y }
+      if not end? then newEnd = true; end = new Point x, y
     
-    # push this segment to the segments array
-    segments.push seg
-    
-  # debug: print all our segments
-  s.debugPrint() for s in segments
-  # return segments
-  segments
+    # we've got a start and an end, so create the segment and push the points
+    seg = new Segment start, end
+    if r? then seg.addArc r, lrgArc, sweep
+    if newStart then newStart = false; points.push start
+    if newEnd then newEnd = false; points.push end
+
+  # now that we're out of the loop, we should have all our points
+  # let's traverse them, drawing as we go
+  newPath = []
+  while points.length
+    startPoint = points.pop()
+    nextSegObj = startPoint.segments.pop()
+    nextPoint = null
+    newPath.push 'M', startPoint.x, startPoint.y
+    while nextPoint isnt startPoint
+      # remove nextPoint from the points array
+      remove points, (p) -> p is nextPoint
+      # go along the segment to get the next point
+      nextSeg = nextSegObj.seg
+      nextSegRel = nextSegObj.rel
+      nextPointRel = if nextSegRel is 'start' then 'end' else 'start'
+      nextPoint = nextSeg[nextPointRel]
+      # draw the segment and remove it
+      newPath.push p for p in nextSeg.drawTo nextPoint
+      remove nextPoint.segments, (sO) -> sO.seg is nextSeg 
+      # set the next segment object by popping the other segment in the array
+      nextSegObj = nextPoint.segments.pop()
+  
+  # return the new path
+  newPath

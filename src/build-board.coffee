@@ -1,6 +1,9 @@
 # new board builder
 # hopefully less janky than the first one
 
+# board outline processor
+boardOutline = require './build-board-outline.coffee'
+
 # make sure we don't have overlapping ids
 unique = 0
 uniqueId = -> unique++
@@ -29,6 +32,7 @@ module.exports = (name, layers = []) ->
   defs = []
   draw = []
   bbox = [ Infinity, Infinity, -Infinity, -Infinity ]
+  edgeBbox = null
   units = 'px'
   scale = null
   addVboxToBbox = (v) ->
@@ -38,7 +42,7 @@ module.exports = (name, layers = []) ->
     if v[1] < bbox[1] then bbox[1] = v[1]
     if xMax > bbox[2] then bbox[2] = xMax
     if yMax > bbox[3] then bbox[3] = yMax
-  getVboxFromBbox = -> [ bbox[0], bbox[1], bbox[2]-bbox[0], bbox[3]-bbox[1] ]
+  getVboxFromBbox = (bb) -> [ bb[0], bb[1], bb[2]-bb[0], bb[3]-bb[1] ]
 
   # gather all the layers to combine there defs, bboxes, and attributes
   # we're also going to push the layers themselves to the defs
@@ -59,10 +63,10 @@ module.exports = (name, layers = []) ->
     if not scale? then scale = vbScale
     else if Math.abs(vbScale-scale) > 0.0000001 then return {}
     # toss the viewBox as well as the width, height and id
-    delete xml.svg.viewBox
-    delete xml.svg.width
-    delete xml.svg.height
-    delete xml.svg.id
+    # delete xml.svg.viewBox
+    # delete xml.svg.width
+    # delete xml.svg.height
+    # delete xml.svg.id
     # gather the rest of the attributes
     for key, val of xml.svg
       attr[key] = val if not attr[key]? and key isnt '_'
@@ -84,14 +88,40 @@ module.exports = (name, layers = []) ->
     else if reMASK.test ly then mask = layerId
     else if reSILK.test ly then silk = layerId
     else if rePASTE.test ly then paste = layerId
-    else if reEDGE.test ly then edge = layerId
     else if reDRILL.test ly then drill.push layerId
-
+    # let's get a little crazy with the edge layer if we've got one
+    else if reEDGE.test ly
+      edge = layerId
+      # the last thing to get pushed to defs should be the drill g
+      # if it only has one path, let's mess with it
+      group = defs[defs.length-1].g._
+      for n in group
+        if n.path? and n.path['stroke-width']
+          path = n.path
+          break
+      # rearragne the outline path so the shapes are manifold
+      newPathData = boardOutline path.d
+      # it it works, groovy, we've got a bbox and a mask
+      if newPathData.length
+        oldSW = path['stroke-width']
+        path['stroke-width'] = 0
+        path.fill = '#fff'
+        path['fill-rule'] = 'evenodd'
+        path.d = newPathData
+        # use the edge bbox for the board
+        vb = xml.svg.viewBox
+        xMax = vb[2] + vb[0] - oldSW
+        yMax = vb[3] + vb[1] - oldSW
+        edgeBbox = [ vb[0] + oldSW/2, vb[1] + oldSW/2, xMax, yMax ]
+        
+    # undefine (to svae memory I guess?)
+    xml = null
   # we need at least a copper layer to do this
   unless copper? then return {}
 
   # viewbox and covering rectangle convenience function
-  vbox = getVboxFromBbox()
+  if edgeBbox? then bbox = edgeBbox
+  vbox = getVboxFromBbox bbox
   bboxRect = (cls = 'Board--cover', fill='currentColor') ->
     {
       rect: {
@@ -150,20 +180,20 @@ module.exports = (name, layers = []) ->
     use: { class: 'Board--sp', 'xlink:href': "##{paste}" }
   }
 
-  # add edge cuts if we gottem
-  if edge? then draw.push {
+  # add edge cuts if we gottem and our fanciness didn't work out
+  if edge? and not edgeBbox? then draw.push {
     use: { class: 'Board--out', 'xlink:href': "##{edge}" }
   }
 
-  # finally, we may have some drills
-  drlId = null
-  if drill.length
-    drlId = "#{name}-drl_#{uniqueId()}"
-    drlMask = { mask: { id: drlId, color: '#000', _: [bboxRect null, '#fff'] } }
-    for d in drill
-      drlMask.mask._.push { use: { 'xlink:href': "##{d}" } }
+  # we may have some drills or a fancy board shape
+  mechId = null
+  if drill.length || edgeBbox?
+    mechId = "#{name}-mech_#{uniqueId()}"
+    mechMask = { mask: { id: mechId, color: '#000', _: [] } }
+    mechMask.mask._.push if edgeBbox? then { use: { 'xlink:href': "##{edge}" } } else bboxRect null, '#fff'
+    mechMask.mask._.push { use: { 'xlink:href': "##{d}" } } for d in drill
     # push the mask to the defs
-    defs.push drlMask
+    defs.push mechMask        
 
   # return object
   # flip vertically always and horizontally as well if bottom of board
@@ -173,11 +203,11 @@ module.exports = (name, layers = []) ->
   else trans = "translate(0,#{bbox[3]+bbox[1]}) scale(1,-1)"
   # drawing
   draw = { g: { transform: trans, _: draw } }
-  if drlId then draw.g.mask = "url(##{drlId})"
+  if mechId then draw.g.mask = "url(##{mechId})"
   # svg
   svg = attr
   svg.class = 'Board'
-  svg.viewBox = getVboxFromBbox()
+  svg.viewBox = getVboxFromBbox bbox
   svg.width = "#{svg.viewBox[2]*scale}#{units}"
   svg.height = "#{svg.viewBox[3]*scale}#{units}"
   svg._ = []
