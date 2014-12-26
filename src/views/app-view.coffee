@@ -51,8 +51,6 @@ module.exports = Backbone.View.extend {
   initialize: ->
     # log so I don't go insane
     console.log 'svgerber app started'
-    # check application support
-    @checkSupport()
     # listen to the layers collection for additions
     @listenTo layers, 'add', @addFilelistItem
     # listen to the layers collection for rendered layers
@@ -70,14 +68,7 @@ module.exports = Backbone.View.extend {
     @listenTo boards, 'openModal', @handleOpenModal
     
 
-  # check browser support, and attach error message to dom if necessary
-  checkSupport: ->
-    # check for svg support
-    if typeof document.createElement('svg').getAttributeNS is 'undefined' or
-    # check for web worker support
-    typeof Worker is 'undefined'
-      unsupported = new UnsupportedView()
-      @$el.append unsupported.render().el
+
 
   # remove all models from the layers collection
   restart: -> layers.remove layers.models
