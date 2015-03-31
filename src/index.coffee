@@ -13,7 +13,7 @@ unless typeof window.atob is 'function' then window.atob = Base64.atob
 # check for svg support
 if typeof document.createElement('svg').getAttributeNS is 'undefined' or
 # check for web worker support
-typeof Worker is 'undefined'
+typeof Worker is 'undefined' or typeof FileReader is 'undefined'
   unsupported = new (require './views/unsupported-view')()
   $('body').append unsupported.render().el
 

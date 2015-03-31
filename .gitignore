@@ -3,4 +3,5 @@ node_modules
 bower_components
 
 # we don't need the generated app files
+.publish
 public

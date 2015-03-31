@@ -1,4 +1,4 @@
-# collection of the top and bottom board 
+# collection of the top and bottom board
 # require Renders prototype collection, board model, and builder worker
 Renders = require './renders'
 Board = require '../models/board'
