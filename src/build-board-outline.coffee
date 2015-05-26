@@ -1,8 +1,8 @@
 # function to create a board of the exact shape as defined by the outline
 # takes in an svg path data array and spits out an svg path data array
 
-find = require 'lodash.find'
-remove = require 'lodash.remove'
+find = require 'lodash/collection/find'
+remove = require 'lodash/array/remove'
 
 # helper class: point
 class Point
@@ -31,18 +31,18 @@ class Segment
     if not @radius? and (toStart or toEnd) then [ 'L', point.x, point.y ]
     # else if we're an arc going to our normal end, nothing changes
     else if @radius? and toEnd
-      [ 'A', @radius, @radius, 0, @largeArc, @sweep, point.x, point.y ] 
+      [ 'A', @radius, @radius, 0, @largeArc, @sweep, point.x, point.y ]
     # else if we're an arc going to our start, we need to flip the @sweep flag
     else if @radius? and toStart
       sw = if @sweep is 1 then 0 else 1
       [ 'A' ,@radius, @radius, 0, @largeArc, sw, point.x, point.y ]
     # else this isn't going to work out, so don't draw
     else return []
-      
+
 module.exports = (outline) ->
   # sanity check: first command should be a move to
   if outline[0] isnt 'M' then console.log "didn't start with 'M'"; return []
-  
+
   # we're going to save points rather than segments
   pathStart = null
   points = []
@@ -62,13 +62,13 @@ module.exports = (outline) ->
       i += 8
     # Z is an end of the path, so le'ts just move along
     else if outline[i] is 'Z' then i++; continue
-    
+
     # check to make sure we're not out of bounds
     if i >= outline.length then break
     else
       start = find points, { x: x, y: y }
       if not start? then newStart = true; start = new Point x, y
-    
+
     # check our current character again to get the end of the segment
     if outline[i] is 'L'
       x = outline[i+1]
@@ -81,8 +81,8 @@ module.exports = (outline) ->
       lrgArc = outline[i+4]
       sweep = outline[i+5]
     # M means a new path, so just continue
-    else if outline[i] is 'M' then continue 
-    
+    else if outline[i] is 'M' then continue
+
     # Z is an end of the path, so draw a line directly to the start
     if outline[i] is 'Z'
       end = pathStart
@@ -92,7 +92,7 @@ module.exports = (outline) ->
       if not pathStart? then pathStart = start
       end = find points, { x: x, y: y }
       if not end? then newEnd = true; end = new Point x, y
-    
+
     # we've got a start and an end, so create the segment and push the points
     seg = new Segment start, end
     if r? then seg.addArc r, lrgArc, sweep
@@ -117,9 +117,9 @@ module.exports = (outline) ->
       nextPoint = nextSeg[nextPointRel]
       # draw the segment and remove it
       newPath.push p for p in nextSeg.drawTo nextPoint
-      remove nextPoint.segments, (sO) -> sO.seg is nextSeg 
+      remove nextPoint.segments, (sO) -> sO.seg is nextSeg
       # set the next segment object by popping the other segment in the array
       nextSegObj = nextPoint.segments.pop()
-  
+
   # return the new path
   newPath

@@ -7,6 +7,7 @@ browserify = require 'browserify'
 watchify   = require 'watchify'
 source     = require 'vinyl-source-stream'
 path       = require 'path'
+del        = require 'del'
 # gulp and plugins
 gulp       = require 'gulp'
 gutil      = require 'gulp-util'
@@ -15,8 +16,7 @@ stylus     = require 'gulp-stylus'
 prefix     = require 'gulp-autoprefixer'
 minifycss  = require 'gulp-minify-css'
 jade       = require 'gulp-jade'
-uglify     = require 'gulp-uglifyjs'
-rimraf     = require 'gulp-rimraf'
+uglify     = require 'gulp-uglify'
 deploy     = require 'gulp-gh-pages'
 ignore     = require 'gulp-ignore'
 concat     = require 'gulp-concat'
@@ -37,17 +37,17 @@ STYLE    = './styles/index.styl'
 # vendor files
 VENDOR_JS = [
   './node_modules/jquery/dist/jquery.min.js'
-  './node_modules/lodash/dist/lodash.min.js'
+  './node_modules/lodash/index.js'
   './node_modules/backbone/backbone-min.js'
 ]
 VENDOR_CSS = [
-  './bower_components/octicons/octicons/octicons.css'
+  './mode_modules/octicons/octicons/octicons.css'
 ]
 VENDOR_ICON = [
-  './bower_components/octicons/octicons/octicons.eot'
-  './bower_components/octicons/octicons/octicons.ttf'
-  './bower_components/octicons/octicons/octicons.woff'
-  './bower_components/octicons/octicons/octicons.svg'
+  './node_modules/octicons/octicons/octicons.eot'
+  './node_modules/octicons/octicons/octicons.ttf'
+  './node_modules/octicons/octicons/octicons.woff'
+  './node_modules/octicons/octicons/octicons.svg'
 ]
 
 # files to deploy
@@ -82,9 +82,8 @@ gulp.task 'samples', ->
     .pipe gulp.dest DEPLOY
 
 # clean out the deploy folder
-gulp.task 'clean', ->
-  gulp.src "#{DEPLOY}/*"
-    .pipe rimraf()
+gulp.task 'clean', (done) ->
+  del "#{DEPLOY}/*", done
 
 # compile stylus
 gulp.task 'style', ->

@@ -1,4 +1,8 @@
 # svgerber (beta!)
+
+[![David](https://img.shields.io/david/mcous/svgerber.svg?style=flat-square)](https://david-dm.org/mcous/svgerber)
+[![David](https://img.shields.io/david/dev/mcous/svgerber.svg?style=flat-square)](https://david-dm.org/mcous/svgerber#info=devDependencies)
+
 giving gerber files the web-based vector love they deserve
 
 ## what?
@@ -18,6 +22,5 @@ Go to [svgerber.cousins.io](http://svgerber.cousins.io).
 This project uses [gulp](http://gulpjs.com) to build and serve the app.
 
 1. `$ npm install    # install dev and app dependencies`
-2. `$ bower install  # install webpage dependencies`
 2. `$ gulp           # start the server / file watcher / live reload server`
 3. Your browser should surf to `http://localhost:8000` automatically
