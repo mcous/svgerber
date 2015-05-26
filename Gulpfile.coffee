@@ -41,7 +41,7 @@ VENDOR_JS = [
   './node_modules/backbone/backbone-min.js'
 ]
 VENDOR_CSS = [
-  './mode_modules/octicons/octicons/octicons.css'
+  './node_modules/octicons/octicons/octicons.css'
 ]
 VENDOR_ICON = [
   './node_modules/octicons/octicons/octicons.eot'
