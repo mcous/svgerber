@@ -118,7 +118,7 @@ module.exports = (name, layers = []) ->
         vb[2] -= oldSW
         vb[3] -= oldSW
         edgeBbox = [ vb[0], vb[1], vb[2] + vb[0], vb[3] + vb[1] ]
-        
+
     # undefine (to svae memory I guess?)
     xml = null
   # we need at least a copper layer to do this
@@ -166,10 +166,18 @@ module.exports = (name, layers = []) ->
     # now build group for the color and the silkscreen (if it exists) and
     # mask away the soldermask holes
     smId = "#{name}-sm_#{uniqueId()}"
-    defs.push { mask: { id: smId, color: '#000', _: [
-          bboxRect null, '#fff'
-          { use: { 'xlink:href': "##{mask}" } }
-        ]
+    defs.push {
+      mask: {
+        id: smId
+        color: '#000'
+        _: {
+          g: {
+            _: [
+              bboxRect null, '#fff'
+              { use: { 'xlink:href': "##{mask}" } }
+            ]
+          }
+        }
       }
     }
     smPos = { g: { mask: "url(##{smId})", _: [ bboxRect 'Board--sm' ] } }
@@ -194,11 +202,14 @@ module.exports = (name, layers = []) ->
   mechId = null
   if drill.length || edgeBbox?
     mechId = "#{name}-mech_#{uniqueId()}"
-    mechMask = { mask: { id: mechId, color: '#000', _: [] } }
-    mechMask.mask._.push if edgeBbox? then { use: { 'xlink:href': "##{edge}" } } else bboxRect null, '#fff'
-    mechMask.mask._.push { use: { 'xlink:href': "##{d}" } } for d in drill
+    mechMask = { mask: { id: mechId, color: '#000', _: { g: { _: [] } } } }
+    if edgeBbox?
+      mechMask.mask._.g._.push { use: { 'xlink:href': "##{edge}" } }
+    else
+      mechMask.mask._.g._.push bboxRect null, '#fff'
+    mechMask.mask._.g._.push { use: { 'xlink:href': "##{d}" } } for d in drill
     # push the mask to the defs
-    defs.push mechMask        
+    defs.push mechMask
 
   # return object
   # flip vertically always and horizontally as well if bottom of board
