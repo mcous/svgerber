@@ -147,20 +147,20 @@ module.exports = (name, layers = []) ->
 
   # if we've got a soldermask
   if mask?
-    # mask it with the copper for copper finish
+    # clip the copper with the mask for the copper finish
     cuFinishId = "#{name}-sm_#{uniqueId()}"
     defs.push {
-      mask: {
+      clipPath: {
         id: cuFinishId
         color: '#fff'
-        _: [ { use: { 'xlink:href': "##{copper}" } } ]
+        _: [ { use: { 'xlink:href': "##{mask}" } } ]
       }
     }
     draw.push {
       use: {
         class: 'Board--cf'
-        mask: "url(##{cuFinishId})"
-        'xlink:href': "##{mask}"
+        'clip-path': "url(##{cuFinishId})"
+        'xlink:href': "##{copper}"
       }
     }
     # now build group for the color and the silkscreen (if it exists) and
