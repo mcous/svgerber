@@ -97,8 +97,10 @@ module.exports = (name, layers = []) ->
       group = defs[defs.length-1].g._
       for n in group
         if n.path? and n.path['stroke-width']
-          path = n.path
-          break
+          if not path?
+            path = n.path
+          else
+            path.d = path.d.concat(n.path.d)
       # rearragne the outline path so the shapes are manifold
       newPathData = []
       try
