@@ -97,14 +97,16 @@ module.exports = (name, layers = []) ->
       group = defs[defs.length-1].g._
       for n in group
         if n.path? and n.path['stroke-width']
-          path = n.path
-          break
-      # rearragne the outline path so the shapes are manifold
+          if not path?
+            path = n.path
+          else
+            path.d = path.d.concat(n.path.d)
+      # re-arrange the outline path so the shapes are manifold
       newPathData = []
       try
         newPathData = boardOutline path.d
       catch e
-      # it it works, groovy, we've got a bbox and a mask
+      # if it works, groovy, we've got a bbox and a mask
       if newPathData.length
         oldSW = path['stroke-width']
         path['stroke-width'] = 0
@@ -118,8 +120,8 @@ module.exports = (name, layers = []) ->
         vb[2] -= oldSW
         vb[3] -= oldSW
         edgeBbox = [ vb[0], vb[1], vb[2] + vb[0], vb[3] + vb[1] ]
-        
-    # undefine (to svae memory I guess?)
+
+    # undefine (to save memory I guess?)
     xml = null
   # we need at least a copper layer to do this
   unless copper? then return {}
@@ -198,7 +200,7 @@ module.exports = (name, layers = []) ->
     mechMask.mask._.push if edgeBbox? then { use: { 'xlink:href': "##{edge}" } } else bboxRect null, '#fff'
     mechMask.mask._.push { use: { 'xlink:href': "##{d}" } } for d in drill
     # push the mask to the defs
-    defs.push mechMask        
+    defs.push mechMask
 
   # return object
   # flip vertically always and horizontally as well if bottom of board
