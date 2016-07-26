@@ -9,7 +9,6 @@ LayerView = require './layer-view'
 BoardView = require './board-view'
 ColorPickerView = require './color-picker'
 ModalView = require './modal-view'
-UnsupportedView = require './unsupported-view'
 
 # create a layers collection
 LayerList = require '../collections/layers'
@@ -66,7 +65,7 @@ module.exports = Backbone.View.extend {
     @$el.append modal.render().el
     @listenTo layers, 'openModal', @handleOpenModal
     @listenTo boards, 'openModal', @handleOpenModal
-    
+
 
 
 

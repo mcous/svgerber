@@ -1,9 +1,9 @@
-# svgerber (beta!)
+# svgerber (deprecated!)
 
 [![David](https://img.shields.io/david/mcous/svgerber.svg?style=flat-square)](https://david-dm.org/mcous/svgerber)
 [![David](https://img.shields.io/david/dev/mcous/svgerber.svg?style=flat-square)](https://david-dm.org/mcous/svgerber#info=devDependencies)
 
-giving gerber files the web-based vector love they deserve
+svgerber has been deprecated and is no longer maintained. Please try [tracespace viewer](http://viewer.tracespace.io) for all your web-based Gerber viewing needs.
 
 ## what?
 svgerber is a browser based Gerber/drill file to SVG converter. Everything is converted locally (nothing gets sent to any server) using the [gerber-to-svg](https://github.com/mcous/gerber-to-svg) node package.

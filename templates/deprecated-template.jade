@@ -1,0 +1,12 @@
+// template for the deprecated message
+script(type='text/template')#deprecated-template
+  div.Deprecated--message
+    h2 svgerber is deprecated
+    p
+      = "svgerber has been deprecated and replaced by "
+      a(href='http://viewer.tracespace.io') tracespace viewer
+      = ". It's cool, and you will be redirected there in "
+      span(data-hook='time')
+      = ". If you really want to use svgerber instead, click \"use svgerber anyway\"."
+    button.Btn.Btn-lg.Deprecated--leave-btn go to viwer.tracespace.io
+    button.Btn.Btn-lg.Deprecated--stay-btn use svgerber anyway

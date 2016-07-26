@@ -274,14 +274,14 @@ button:disabled, .Btn.is-disabled
 //   col(1/3, gutter: 1em)
 //   +below(BP)
 //     stack()
-// 
+//
 // #caution
 //   col(1/3, gutter: 1em)
 //   +below(BP)
 //     stack()
 //   ul
 //     text-align left
-// 
+//
 // #sample
 //   col(1/3, gutter: 1em)
 //   +below(BP)
@@ -439,7 +439,7 @@ select.UploadList--text
   // try to get text color to black when expanded
   option
     color black
-    
+
 .UploadList--itemWarningsContainer
   max-height 10em
   max-width 100%
@@ -447,11 +447,11 @@ select.UploadList--text
   text-align left
   transition max-height 0.4s, margin 0.4s
   overflow auto
-  
+
 .UploadList--warningIcon
   float left
   font-size 1.5em
-  text-align left  
+  text-align left
   padding-right 0.25em
 
 .UploadList--itemWarnings
@@ -507,7 +507,7 @@ select.UploadList--text
    vertical-align middle
 
 .Btn--download
-  padding 0.25em 
+  padding 0.25em
   .mega-octicon
     font-size 1.5em
 
@@ -545,15 +545,17 @@ select.UploadList--text
 // modal and unsupported error
 
 // modal
-.Modal, .Unsupported
+.Modal,
+.Unsupported,
+.Deprecated
   position fixed
   z-index 50
   left 0
   top 0
   width 100%
   height 100%
-  background-color rgba(0, 0, 0, 0.85)
-  
+  background-color rgba(0, 0, 0, 0.50)
+
 .Modal
   cursor zoom-out
 
@@ -566,11 +568,20 @@ select.UploadList--text
   background-color BODY_COLOR
   &.Modal--dark
     background-color BOX_COLOR
-    
+
+.Unsupported--message,
+.Deprecated--message
+  width 60%
+  padding: 2em;
+  background-color whitesmoke
+  color black
+  align()
+
 .Unsupported--message
-  width 90%
   background-color INVALID
-  color white
+
+.Deprecated--message
+  background-color whitesmoke
 
 // footer
 footer
